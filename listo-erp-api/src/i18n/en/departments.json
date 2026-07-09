@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "not_found": "Department not found",
+    "has_subdepartments": "Cannot delete the department because it has {count} subdepartment(s) associated. Delete them first.",
+    "has_products": "Cannot delete the department because it has {count} product(s) associated. Reassign the products first."
+  },
+  "success": {
+    "created": "Department created successfully",
+    "updated": "Department updated successfully",
+    "deleted": "Department deleted successfully"
+  }
+}

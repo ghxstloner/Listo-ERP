@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "company_header_required": "此操作需要X-Company-Id标头",
+    "company_context_required": "此操作需要公司上下文",
+    "insufficient_permissions": "您没有足够的权限执行此操作"
+  }
+}

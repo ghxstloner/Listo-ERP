@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "未找到汇率",
+    "currency_not_found": "ID为{id}的货币不存在。",
+    "same_currency": "源货币和目标货币不能相同。",
+    "invalid_date": "日期无效。",
+    "already_exists": "该公司、货币对和日期已存在汇率。"
+  },
+  "success": {
+    "created": "汇率创建成功",
+    "updated": "汇率更新成功",
+    "deleted": "汇率删除成功"
+  }
+}

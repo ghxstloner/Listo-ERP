@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "未找到供应商",
+    "has_products": "无法删除供应商，因为它有{count}个关联的产品。请先重新分配产品。"
+  },
+  "success": {
+    "created": "供应商创建成功",
+    "updated": "供应商更新成功",
+    "deleted": "供应商删除成功"
+  }
+}

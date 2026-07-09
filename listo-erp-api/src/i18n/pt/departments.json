@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "not_found": "Departamento não encontrado",
+    "has_subdepartments": "Não é possível excluir o departamento porque tem {count} subdepartamento(s) associado(s). Elimine-os primeiro.",
+    "has_products": "Não é possível excluir o departamento porque tem {count} produto(s) associado(s). Reatribua os produtos primeiro."
+  },
+  "success": {
+    "created": "Departamento criado com sucesso",
+    "updated": "Departamento atualizado com sucesso",
+    "deleted": "Departamento excluído com sucesso"
+  }
+}

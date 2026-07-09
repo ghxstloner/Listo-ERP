@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Supplier not found",
+    "has_products": "Cannot delete the supplier because it has {count} product(s) associated. Reassign the products first."
+  },
+  "success": {
+    "created": "Supplier created successfully",
+    "updated": "Supplier updated successfully",
+    "deleted": "Supplier deleted successfully"
+  }
+}

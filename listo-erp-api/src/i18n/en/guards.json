@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "company_header_required": "X-Company-Id header is required for this operation",
+    "company_context_required": "Company context is required for this operation",
+    "insufficient_permissions": "You don't have sufficient permissions for this operation"
+  }
+}

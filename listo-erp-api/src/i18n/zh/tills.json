@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "未找到收银机",
+    "code_empty": "收银机代码不能为空",
+    "code_exists": "此分支机构中已存在具有该代码的收银机。代码必须是唯一的。",
+    "branch_not_found": "分支机构不存在或不属于该公司"
+  },
+  "success": {
+    "created": "收银机创建成功",
+    "updated": "收银机更新成功",
+    "deleted": "收银机删除成功"
+  }
+}

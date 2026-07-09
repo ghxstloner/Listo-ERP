@@ -1,0 +1,9 @@
+{
+  "errors": {
+    "not_found": "Empresa no encontrada"
+  },
+  "success": {
+    "created": "Empresa creada correctamente",
+    "updated": "Empresa actualizada correctamente"
+  }
+}

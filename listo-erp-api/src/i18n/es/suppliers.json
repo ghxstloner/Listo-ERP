@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Proveedor no encontrado",
+    "has_products": "No se puede eliminar el proveedor porque tiene {count} producto(s) asociado(s). Reasigne los productos primero."
+  },
+  "success": {
+    "created": "Proveedor creado exitosamente",
+    "updated": "Proveedor actualizado exitosamente",
+    "deleted": "Proveedor eliminado exitosamente"
+  }
+}

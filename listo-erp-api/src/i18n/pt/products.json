@@ -1,0 +1,19 @@
+{
+  "errors": {
+    "not_found": "Produto não encontrado",
+    "sku_empty": "O SKU não pode estar vazio",
+    "sku_exists": "Já existe um produto com esse SKU na empresa.",
+    "department_not_found": "O departamento não existe ou não pertence à empresa.",
+    "subdepartment_not_found": "O subdepartamento não existe ou não pertence ao departamento selecionado.",
+    "subdepartment_required": "Você deve selecionar um subdepartamento para atribuir uma categoria.",
+    "category_not_found": "A categoria não existe ou não pertence ao subdepartamento selecionado.",
+    "category_required": "Você deve selecionar uma categoria para atribuir uma subcategoria.",
+    "subcategory_not_found": "A subcategoria não existe ou não pertence à categoria selecionada.",
+    "supplier_not_found": "O fornecedor não existe ou não pertence à empresa."
+  },
+  "success": {
+    "created": "Produto criado com sucesso",
+    "updated": "Produto atualizado com sucesso",
+    "deleted": "Produto excluído com sucesso"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found_in_company": "Usuario no encontrado en esta empresa",
+    "email_already_registered": "El email ya está registrado",
+    "admin_only_role_change": "Solo los administradores pueden cambiar roles"
+  },
+  "success": {
+    "created": "Usuario creado exitosamente",
+    "updated": "Usuario actualizado exitosamente",
+    "deleted_completely": "Usuario eliminado completamente",
+    "removed_from_company": "Usuario removido de la empresa exitosamente"
+  }
+}

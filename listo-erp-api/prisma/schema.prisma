@@ -1,0 +1,350 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Country {
+  id                Int      @id @default(autoincrement())
+  code              String   @unique // ISO 3166-1 alpha-2 (PA, VE, CO, etc.)
+  name              String
+  taxDocumentTypes  Json     // [{"code": "RUC", "name": "RUC", "hasCheckDigit": true}, ...]
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  companies         Company[]
+}
+
+model Company {
+  id                      Int           @id @default(autoincrement())
+  name                    String
+  primaryColor            String        @default("#ff6600")
+  secondaryColor          String        @default("#180900")
+  isActive                Boolean       @default(true)
+  
+  // Contact information
+  address                 String?
+  city                    String?
+  phone1                  String?
+  phone2                  String?
+  email1                  String?
+  email2                  String?
+  
+  // Tax information
+  countryId               Int?
+  taxDocumentType         String?       // RUC, RIF, NIT, etc.
+  taxDocumentNumber       String?
+  taxCheckDigit           String?       // Dígito verificador (Panamá)
+  fiscalName              String?       // Razón social
+  
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  companyLogo             String?       @default("")
+  defaultCurrencyId       Int?
+  companyUsers            CompanyUser[]
+  branches                branch[]
+  tills                   till[]
+  departments             Department[]
+  subdepartments          Subdepartment[]
+  categories              Category[]
+  subcategories           Subcategory[]
+  suppliers               Supplier[]
+  products                Product[]
+  defaultCurrency         Currency?     @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
+  exchangeRates           ExchangeRate[]
+  paymentMethods          PaymentMethod[]
+  country                 Country?      @relation(fields: [countryId], references: [id])
+  auditLogs               AuditLog[]
+  warehouses              Warehouse[]
+  hierarchyConfig         CompanyHierarchyConfig?
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model CompanyUser {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  userId    Int
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([companyId, userId])
+}
+
+model User {
+  id                  Int           @id @default(autoincrement())
+  email               String        @unique
+  password            String
+  name                String
+  userCode            String?       @unique
+  isActive            Boolean       @default(true)
+  resetPasswordCode   String?
+  resetPasswordExpires DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  companyUsers        CompanyUser[]
+  auditLogs           AuditLog[]
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_SUCCESS
+  PASSWORD_CHANGE
+}
+
+model AuditLog {
+  id          Int         @id @default(autoincrement())
+  userId      Int?
+  companyId   Int?
+  action      AuditAction
+  description String
+  section     String
+  createdAt   DateTime    @default(now())
+  
+  user        User?       @relation(fields: [userId], references: [id])
+  company     Company?    @relation(fields: [companyId], references: [id])
+}
+
+model branch {
+  id          Int               @id @default(autoincrement())
+  name        String
+  address     String?
+  phone       String?
+  branchCode  String?           @unique
+  isActive    Boolean           @default(true)
+  companyId   Int
+  currencyId  Int?
+  company     Company           @relation(fields: [companyId], references: [id])
+  currency    Currency?         @relation(fields: [currencyId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  tills       till[]
+  warehouses  WarehouseBranch[]
+
+  @@unique([companyId, branchCode])
+}
+
+model till {
+  id        Int      @id @default(autoincrement())
+  tillCode  String   @unique
+  tillName  String
+  isActive  Boolean  @default(true)
+  companyId Int
+  branchId  Int
+  branch    branch   @relation(fields: [branchId], references: [id])
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([branchId, tillCode])
+}
+
+model Currency {
+  id                    Int            @id @default(autoincrement())
+  code                  String         @unique
+  name                  String
+  symbol                String
+  companiesDefault      Company[]      @relation("CompanyDefaultCurrency")
+  branches              branch[]
+  exchangeRatesFrom     ExchangeRate[] @relation("ExchangeRateFrom")
+  exchangeRatesTo       ExchangeRate[] @relation("ExchangeRateTo")
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+}
+
+model ExchangeRate {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  fromCurrencyId Int
+  toCurrencyId   Int
+  date           DateTime @db.Date
+  rate           Decimal  @db.Decimal(18, 6)
+  company        Company  @relation(fields: [companyId], references: [id])
+  fromCurrency   Currency @relation("ExchangeRateFrom", fields: [fromCurrencyId], references: [id])
+  toCurrency     Currency @relation("ExchangeRateTo", fields: [toCurrencyId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([companyId, fromCurrencyId, toCurrencyId, date])
+}
+
+model PaymentMethod {
+  id              Int      @id @default(autoincrement())
+  name            String
+  code            String
+  requiresReference Boolean @default(false)
+  isActive        Boolean  @default(true)
+  companyId       Int
+  company         Company  @relation(fields: [companyId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([companyId, code])
+}
+
+
+model Department {
+  id            Int            @id @default(autoincrement())
+  name          String
+  code          String
+  isActive      Boolean        @default(true)
+  companyId     Int
+  company       Company        @relation(fields: [companyId], references: [id])
+  subdepartments Subdepartment[]
+  products      Product[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Subdepartment {
+  id         Int         @id @default(autoincrement())
+  name       String
+  code       String
+  isActive   Boolean     @default(true)
+  departmentId Int
+  companyId  Int         @default(1)
+  department Department @relation(fields: [departmentId], references: [id])
+  company    Company    @relation(fields: [companyId], references: [id])
+  categories Category[]
+  products   Product[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Category {
+  id             Int          @id @default(autoincrement())
+  name           String
+  code           String
+  isActive       Boolean      @default(true)
+  subdepartmentId Int
+  companyId      Int          @default(1)
+  subdepartment  Subdepartment @relation(fields: [subdepartmentId], references: [id])
+  company        Company       @relation(fields: [companyId], references: [id])
+  subcategories  Subcategory[]
+  products       Product[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Subcategory {
+  id         Int       @id @default(autoincrement())
+  name       String
+  code       String
+  isActive   Boolean   @default(true)
+  categoryId Int
+  companyId  Int       @default(1)
+  category   Category  @relation(fields: [categoryId], references: [id])
+  company    Company   @relation(fields: [companyId], references: [id])
+  products   Product[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  name        String
+  taxId       String?
+  address     String?
+  phone       String?
+  email       String?
+  contactName String?
+  isActive    Boolean  @default(true)
+  companyId   Int
+  company     Company  @relation(fields: [companyId], references: [id])
+  products    Product[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  sku             String
+  name            String
+  description     String?
+  salePrice       Decimal   @db.Decimal(18, 4)
+  costPrice       Decimal?  @db.Decimal(18, 4)
+  taxRate         Decimal?  @db.Decimal(5, 4)
+  isActive        Boolean   @default(true)
+  companyId       Int
+  departmentId    Int
+  subdepartmentId Int?
+  categoryId      Int?
+  subcategoryId   Int?
+  unit            String?
+  image           String?     // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
+  supplierId      Int?
+  company         Company     @relation(fields: [companyId], references: [id])
+  department      Department  @relation(fields: [departmentId], references: [id])
+  subdepartment   Subdepartment? @relation(fields: [subdepartmentId], references: [id])
+  category        Category?     @relation(fields: [categoryId], references: [id])
+  subcategory     Subcategory?  @relation(fields: [subcategoryId], references: [id])
+  supplier        Supplier?     @relation(fields: [supplierId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([companyId, sku])
+}
+
+model Warehouse {
+  id          Int               @id @default(autoincrement())
+  name        String
+  code        String            @unique
+  address     String?
+  isActive    Boolean           @default(true)
+  companyId   Int
+  company     Company           @relation(fields: [companyId], references: [id])
+  branches    WarehouseBranch[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model WarehouseBranch {
+  id          Int       @id @default(autoincrement())
+  warehouseId Int
+  branchId    Int
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  branch      branch    @relation(fields: [branchId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([warehouseId, branchId])
+}
+
+model CompanyHierarchyConfig {
+  id         Int     @id @default(autoincrement())
+  companyId  Int     @unique
+  level1Name String  @default("Departamento")
+  level2Name String  @default("Subdepartamento")
+  level3Name String  @default("Categoría")
+  level4Name String  @default("Subcategoría")
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Currency not found",
+    "code_exists": "A currency with that code already exists.",
+    "used_by_companies": "Cannot delete the currency because {count} company(ies) use it as default currency.",
+    "used_by_branches": "Cannot delete the currency because {count} branch(es) use it.",
+    "has_exchange_rates": "Cannot delete the currency because it has {count} exchange rate(s) associated. Delete them first."
+  },
+  "success": {
+    "created": "Currency created successfully",
+    "updated": "Currency updated successfully",
+    "deleted": "Currency deleted successfully"
+  }
+}

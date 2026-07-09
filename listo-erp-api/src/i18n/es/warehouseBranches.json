@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Asignación no encontrada",
+    "already_exists": "Ya existe una asignación entre este almacén y sucursal"
+  },
+  "success": {
+    "created": "Asignación creada exitosamente",
+    "updated": "Asignación actualizada exitosamente",
+    "deleted": "Asignación eliminada exitosamente"
+  }
+}

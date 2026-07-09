@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Armazém não encontrado",
+    "has_branches": "Não é possível excluir o armazém porque tem {count} filial(is) atribuída(s). Remova as atribuições primeiro."
+  },
+  "success": {
+    "created": "Armazém criado com sucesso",
+    "updated": "Armazém atualizado com sucesso",
+    "deleted": "Armazém excluído com sucesso"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "errors": {
+    "not_found": "未找到产品",
+    "sku_empty": "SKU不能为空",
+    "sku_exists": "公司中已存在具有该SKU的产品。",
+    "department_not_found": "部门不存在或不属于该公司。",
+    "subdepartment_not_found": "子部门不存在或不属于所选部门。",
+    "subdepartment_required": "必须选择子部门才能分配类别。",
+    "category_not_found": "类别不存在或不属于所选子部门。",
+    "category_required": "必须选择类别才能分配子类别。",
+    "subcategory_not_found": "子类别不存在或不属于所选类别。",
+    "supplier_not_found": "供应商不存在或不属于该公司。"
+  },
+  "success": {
+    "created": "产品创建成功",
+    "updated": "产品更新成功",
+    "deleted": "产品删除成功"
+  }
+}

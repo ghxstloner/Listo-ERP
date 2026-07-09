@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "code_empty": "代码不能为空",
+    "not_found": "未找到{entity}",
+    "already_exists": "公司中已存在具有该代码的{entity}。",
+    "company_access_denied": "您无权访问此公司",
+    "company_inactive": "公司已停用",
+    "invalid_id": "ID必须是有效的数字"
+  },
+  "validation": {
+    "required_field": "{field}字段为必填项",
+    "invalid_email": "电子邮件无效",
+    "min_length": "{field}字段必须至少包含{min}个字符",
+    "max_length": "{field}字段最多包含{max}个字符"
+  }
+}

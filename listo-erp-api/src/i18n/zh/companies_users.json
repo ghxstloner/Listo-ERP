@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "not_found": "未找到公司用户关系"
+  },
+  "success": {
+    "created": "用户分配至公司成功",
+    "updated": "用户角色更新成功",
+    "deleted": "用户已从公司移除成功"
+  }
+}

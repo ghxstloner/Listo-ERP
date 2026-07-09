@@ -1,0 +1,9 @@
+{
+  "errors": {
+    "not_found": "未找到公司"
+  },
+  "success": {
+    "created": "公司创建成功",
+    "updated": "公司更新成功"
+  }
+}

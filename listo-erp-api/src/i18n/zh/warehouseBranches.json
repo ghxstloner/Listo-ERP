@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "未找到分配",
+    "already_exists": "此仓库和分支之间已存在分配"
+  },
+  "success": {
+    "created": "分配创建成功",
+    "updated": "分配更新成功",
+    "deleted": "分配删除成功"
+  }
+}

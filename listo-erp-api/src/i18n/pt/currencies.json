@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Moeda não encontrada",
+    "code_exists": "Já existe uma moeda com esse código.",
+    "used_by_companies": "Não é possível excluir a moeda porque {count} empresa(s) a utilizam como moeda padrão.",
+    "used_by_branches": "Não é possível excluir a moeda porque {count} filial(is) a utilizam.",
+    "has_exchange_rates": "Não é possível excluir a moeda porque tem {count} tipo(s) de câmbio associado(s). Elimine-os primeiro."
+  },
+  "success": {
+    "created": "Moeda criada com sucesso",
+    "updated": "Moeda atualizada com sucesso",
+    "deleted": "Moeda excluída com sucesso"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Subdepartamento não encontrado",
+    "not_found_or_not_company": "O subdepartamento não existe ou não pertence à empresa.",
+    "department_not_found_or_not_company": "O departamento não existe ou não pertence à empresa.",
+    "has_categories": "Não é possível excluir o subdepartamento porque tem {count} categoria(s) associada(s). Elimine-as primeiro.",
+    "has_products": "Não é possível excluir o subdepartamento porque tem {count} produto(s) associado(s). Reatribua os produtos primeiro."
+  },
+  "success": {
+    "created": "Subdepartamento criado com sucesso",
+    "updated": "Subdepartamento atualizado com sucesso",
+    "deleted": "Subdepartamento excluído com sucesso"
+  }
+}

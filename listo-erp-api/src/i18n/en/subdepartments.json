@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Subdepartment not found",
+    "not_found_or_not_company": "The subdepartment does not exist or does not belong to the company.",
+    "department_not_found_or_not_company": "The department does not exist or does not belong to the company.",
+    "has_categories": "Cannot delete the subdepartment because it has {count} category(ies) associated. Delete them first.",
+    "has_products": "Cannot delete the subdepartment because it has {count} product(s) associated. Reassign the products first."
+  },
+  "success": {
+    "created": "Subdepartment created successfully",
+    "updated": "Subdepartment updated successfully",
+    "deleted": "Subdepartment deleted successfully"
+  }
+}

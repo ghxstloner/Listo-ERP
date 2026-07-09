@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Filial não encontrada",
+    "code_empty": "O código da filial não pode estar vazio",
+    "code_exists": "Já existe uma filial com esse código na empresa. O código deve ser único.",
+    "has_tills": "Não é possível excluir a filial porque tem {count} caixa(s) associada(s). Elimine ou reatribua as caixas primeiro."
+  },
+  "success": {
+    "created": "Filial criada com sucesso",
+    "updated": "Filial atualizada com sucesso",
+    "deleted": "Filial excluída com sucesso"
+  }
+}

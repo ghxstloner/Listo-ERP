@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Método de pagamento não encontrado",
+    "code_exists": "Já existe um método de pagamento com esse código na empresa."
+  },
+  "success": {
+    "created": "Método de pagamento criado com sucesso",
+    "updated": "Método de pagamento atualizado com sucesso",
+    "deleted": "Método de pagamento excluído com sucesso"
+  }
+}

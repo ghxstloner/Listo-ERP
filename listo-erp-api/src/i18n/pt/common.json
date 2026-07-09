@@ -1,0 +1,16 @@
+{
+  "errors": {
+    "code_empty": "O código não pode estar vazio",
+    "not_found": "{entity} não encontrado",
+    "already_exists": "Já existe um/a {entity} com esse código na empresa.",
+    "company_access_denied": "Você não tem acesso a esta empresa",
+    "company_inactive": "A empresa está desativada",
+    "invalid_id": "O ID deve ser um número válido"
+  },
+  "validation": {
+    "required_field": "O campo {field} é obrigatório",
+    "invalid_email": "O email não é válido",
+    "min_length": "O campo {field} deve ter pelo menos {min} caracteres",
+    "max_length": "O campo {field} deve ter no máximo {max} caracteres"
+  }
+}

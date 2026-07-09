@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "未找到仓库",
+    "has_branches": "无法删除仓库，因为已分配 {count} 个分支。请先删除分配。"
+  },
+  "success": {
+    "created": "仓库创建成功",
+    "updated": "仓库更新成功",
+    "deleted": "仓库删除成功"
+  }
+}

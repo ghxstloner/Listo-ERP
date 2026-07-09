@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "未找到付款方式",
+    "code_exists": "公司中已存在具有该代码的付款方式。"
+  },
+  "success": {
+    "created": "付款方式创建成功",
+    "updated": "付款方式更新成功",
+    "deleted": "付款方式删除成功"
+  }
+}

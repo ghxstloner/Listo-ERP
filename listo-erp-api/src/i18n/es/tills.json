@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Caja no encontrada",
+    "code_empty": "El código de caja no puede estar vacío",
+    "code_exists": "Ya existe una caja con ese código en esta sucursal. El código debe ser único.",
+    "branch_not_found": "La sucursal no existe o no pertenece a la empresa"
+  },
+  "success": {
+    "created": "Caja creada exitosamente",
+    "updated": "Caja actualizada exitosamente",
+    "deleted": "Caja eliminada exitosamente"
+  }
+}

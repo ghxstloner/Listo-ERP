@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Till not found",
+    "code_empty": "Till code cannot be empty",
+    "code_exists": "A till with that code already exists in this branch. The code must be unique.",
+    "branch_not_found": "The branch does not exist or does not belong to the company"
+  },
+  "success": {
+    "created": "Till created successfully",
+    "updated": "Till updated successfully",
+    "deleted": "Till deleted successfully"
+  }
+}

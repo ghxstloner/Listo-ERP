@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Subcategoria não encontrada",
+    "not_found_or_not_company": "A subcategoria não existe ou não pertence à empresa.",
+    "category_not_found": "A categoria não existe ou não pertence à empresa.",
+    "has_products": "Não é possível excluir a subcategoria porque tem {count} produto(s) associado(s). Reatribua os produtos primeiro."
+  },
+  "success": {
+    "created": "Subcategoria criada com sucesso",
+    "updated": "Subcategoria atualizada com sucesso",
+    "deleted": "Subcategoria excluída com sucesso"
+  }
+}

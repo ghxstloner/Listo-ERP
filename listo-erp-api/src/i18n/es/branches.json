@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Sucursal no encontrada",
+    "code_empty": "El código de sucursal no puede estar vacío",
+    "code_exists": "Ya existe una sucursal con ese código en la empresa. El código debe ser único.",
+    "has_tills": "No se puede eliminar la sucursal porque tiene {count} caja(s) asociada(s). Elimine o reassigne las cajas primero."
+  },
+  "success": {
+    "created": "Sucursal creada exitosamente",
+    "updated": "Sucursal actualizada exitosamente",
+    "deleted": "Sucursal eliminada exitosamente"
+  }
+}

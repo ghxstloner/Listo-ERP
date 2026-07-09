@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found_in_company": "在公司中未找到用户",
+    "email_already_registered": "电子邮件已注册",
+    "admin_only_role_change": "只有管理员可以更改角色"
+  },
+  "success": {
+    "created": "用户创建成功",
+    "updated": "用户更新成功",
+    "deleted_completely": "用户已完全删除",
+    "removed_from_company": "用户已成功从公司中移除"
+  }
+}

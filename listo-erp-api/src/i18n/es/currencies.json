@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Moneda no encontrada",
+    "code_exists": "Ya existe una moneda con ese código.",
+    "used_by_companies": "No se puede eliminar la moneda porque {count} empresa(s) la tienen como moneda por defecto.",
+    "used_by_branches": "No se puede eliminar la moneda porque {count} sucursal(es) la usan.",
+    "has_exchange_rates": "No se puede eliminar la moneda porque tiene {count} tipo(s) de cambio asociado(s). Elimínelos primero."
+  },
+  "success": {
+    "created": "Moneda creada exitosamente",
+    "updated": "Moneda actualizada exitosamente",
+    "deleted": "Moneda eliminada exitosamente"
+  }
+}

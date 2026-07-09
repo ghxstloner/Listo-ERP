@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "未找到子类别",
+    "not_found_or_not_company": "子类别不存在或不属于该公司。",
+    "category_not_found": "类别不存在或不属于该公司。",
+    "has_products": "无法删除子类别，因为它有{count}个关联的产品。请先重新分配产品。"
+  },
+  "success": {
+    "created": "子类别创建成功",
+    "updated": "子类别更新成功",
+    "deleted": "子类别删除成功"
+  }
+}

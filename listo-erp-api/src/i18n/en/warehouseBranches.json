@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Assignment not found",
+    "already_exists": "An assignment already exists between this warehouse and branch"
+  },
+  "success": {
+    "created": "Assignment created successfully",
+    "updated": "Assignment updated successfully",
+    "deleted": "Assignment deleted successfully"
+  }
+}

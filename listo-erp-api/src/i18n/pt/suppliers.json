@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Fornecedor não encontrado",
+    "has_products": "Não é possível excluir o fornecedor porque tem {count} produto(s) associado(s). Reatribua os produtos primeiro."
+  },
+  "success": {
+    "created": "Fornecedor criado com sucesso",
+    "updated": "Fornecedor atualizado com sucesso",
+    "deleted": "Fornecedor excluído com sucesso"
+  }
+}

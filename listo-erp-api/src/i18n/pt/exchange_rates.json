@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Tipo de câmbio não encontrado",
+    "currency_not_found": "A moeda com ID {id} não existe.",
+    "same_currency": "A moeda de origem e destino não podem ser a mesma.",
+    "invalid_date": "Data inválida.",
+    "already_exists": "Já existe um tipo de câmbio para essa empresa, par de moedas e data."
+  },
+  "success": {
+    "created": "Tipo de câmbio criado com sucesso",
+    "updated": "Tipo de câmbio atualizado com sucesso",
+    "deleted": "Tipo de câmbio excluído com sucesso"
+  }
+}

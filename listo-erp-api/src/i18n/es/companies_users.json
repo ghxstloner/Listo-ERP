@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "not_found": "Relación empresa-usuario no encontrada"
+  },
+  "success": {
+    "created": "Usuario asignado a la empresa exitosamente",
+    "updated": "Rol de usuario actualizado exitosamente",
+    "deleted": "Usuario removido de la empresa exitosamente"
+  }
+}

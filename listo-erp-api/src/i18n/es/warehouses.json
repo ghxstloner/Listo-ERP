@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Almacén no encontrado",
+    "has_branches": "No se puede eliminar el almacén porque tiene {count} sucursal(es) asignada(s). Elimine las asignaciones primero."
+  },
+  "success": {
+    "created": "Almacén creado exitosamente",
+    "updated": "Almacén actualizado exitosamente",
+    "deleted": "Almacén eliminado exitosamente"
+  }
+}

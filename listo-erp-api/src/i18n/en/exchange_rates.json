@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "Exchange rate not found",
+    "currency_not_found": "Currency with ID {id} does not exist.",
+    "same_currency": "Source and destination currency cannot be the same.",
+    "invalid_date": "Invalid date.",
+    "already_exists": "An exchange rate already exists for that company, currency pair and date."
+  },
+  "success": {
+    "created": "Exchange rate created successfully",
+    "updated": "Exchange rate updated successfully",
+    "deleted": "Exchange rate deleted successfully"
+  }
+}

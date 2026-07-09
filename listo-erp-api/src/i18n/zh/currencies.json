@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "未找到货币",
+    "code_exists": "已存在具有该代码的货币。",
+    "used_by_companies": "无法删除货币，因为{count}个公司将其用作默认货币。",
+    "used_by_branches": "无法删除货币，因为{count}个分支机构正在使用它。",
+    "has_exchange_rates": "无法删除货币，因为它有{count}个关联的汇率。请先删除它们。"
+  },
+  "success": {
+    "created": "货币创建成功",
+    "updated": "货币更新成功",
+    "deleted": "货币删除成功"
+  }
+}

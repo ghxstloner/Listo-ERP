@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Atribuição não encontrada",
+    "already_exists": "Já existe uma atribuição entre este armazém e filial"
+  },
+  "success": {
+    "created": "Atribuição criada com sucesso",
+    "updated": "Atribuição atualizada com sucesso",
+    "deleted": "Atribuição excluída com sucesso"
+  }
+}

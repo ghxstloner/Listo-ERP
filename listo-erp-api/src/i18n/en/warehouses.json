@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Warehouse not found",
+    "has_branches": "Cannot delete warehouse because it has {count} branch(es) assigned. Remove the assignments first."
+  },
+  "success": {
+    "created": "Warehouse created successfully",
+    "updated": "Warehouse updated successfully",
+    "deleted": "Warehouse deleted successfully"
+  }
+}

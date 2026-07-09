@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Branch not found",
+    "code_empty": "Branch code cannot be empty",
+    "code_exists": "A branch with that code already exists in the company. The code must be unique.",
+    "has_tills": "Cannot delete the branch because it has {count} till(s) associated. Delete or reassign the tills first."
+  },
+  "success": {
+    "created": "Branch created successfully",
+    "updated": "Branch updated successfully",
+    "deleted": "Branch deleted successfully"
+  }
+}

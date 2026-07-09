@@ -1,0 +1,14 @@
+{
+  "errors": {
+    "not_found": "未找到子部门",
+    "not_found_or_not_company": "子部门不存在或不属于该公司。",
+    "department_not_found_or_not_company": "部门不存在或不属于该公司。",
+    "has_categories": "无法删除子部门，因为它有{count}个关联的类别。请先删除它们。",
+    "has_products": "无法删除子部门，因为它有{count}个关联的产品。请先重新分配产品。"
+  },
+  "success": {
+    "created": "子部门创建成功",
+    "updated": "子部门更新成功",
+    "deleted": "子部门删除成功"
+  }
+}

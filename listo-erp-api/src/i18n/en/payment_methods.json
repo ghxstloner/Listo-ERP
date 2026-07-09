@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Payment method not found",
+    "code_exists": "A payment method with that code already exists in the company."
+  },
+  "success": {
+    "created": "Payment method created successfully",
+    "updated": "Payment method updated successfully",
+    "deleted": "Payment method deleted successfully"
+  }
+}

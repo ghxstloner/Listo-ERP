@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "not_found": "未找到部门",
+    "has_subdepartments": "无法删除部门，因为它有{count}个关联的子部门。请先删除它们。",
+    "has_products": "无法删除部门，因为它有{count}个关联的产品。请先重新分配产品。"
+  },
+  "success": {
+    "created": "部门创建成功",
+    "updated": "部门更新成功",
+    "deleted": "部门删除成功"
+  }
+}
