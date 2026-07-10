@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "not_found": "Sesión de caja no encontrada",
+    "till_not_found": "La caja no existe, está inactiva o no pertenece a la empresa",
+    "already_open": "Ya existe una caja abierta para esta caja física o para este usuario",
+    "not_open": "La sesión de caja no está abierta"
+  },
+  "success": {
+    "opened": "Caja abierta exitosamente",
+    "closed": "Caja cerrada exitosamente"
+  }
+}

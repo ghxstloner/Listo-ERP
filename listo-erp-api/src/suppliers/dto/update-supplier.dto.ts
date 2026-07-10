@@ -7,6 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class UpdateSupplierDto {
   @ApiPropertyOptional({ description: 'Nombre del proveedor' })
@@ -35,7 +36,10 @@ export class UpdateSupplierDto {
   phone?: string;
 
   @ApiPropertyOptional({ description: 'Correo electrónico' })
-  @IsEmail()
+  @IsEmail(
+    {},
+    { message: i18nValidationMessage('common.validation.invalid_email') },
+  )
   @IsOptional()
   @MaxLength(255)
   email?: string;

@@ -10,9 +10,9 @@ export interface Product {
   name: string;
   description: string | null;
   salePrice: number;
-  costPrice: number;
-  taxRate: number;
-  unit: string;
+  costPrice: number | null;
+  taxRate: number | null;
+  unit: string | null;
   image: string | null;
   isActive: boolean;
   companyId: number;
@@ -46,6 +46,11 @@ export interface CreateProductRequest {
   isActive?: boolean;
 }
 
+export interface CreateProductResponse {
+  message: string;
+  data: Product;
+}
+
 export type UpdateProductRequest = Partial<CreateProductRequest>;
 
 export interface ProductsResponseMeta {
@@ -56,3 +61,5 @@ export interface ProductsResponse {
   data: Product[];
   meta: ProductsResponseMeta;
 }
+
+export type ProductsApiResponse = ProductsResponse | Product[];

@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "not_found": "Cliente não encontrado"
+  },
+  "success": {
+    "created": "Cliente criado com sucesso",
+    "updated": "Cliente atualizado com sucesso",
+    "deleted": "Cliente excluído com sucesso"
+  }
+}

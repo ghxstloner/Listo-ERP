@@ -1,10 +1,9 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 import { AppModule } from './app.module';
-import { I18nMiddleware, I18nService } from 'nestjs-i18n';
+import { I18nMiddleware, I18nService, I18nValidationPipe } from 'nestjs-i18n';
 import { I18nResponseInterceptor } from './common/interceptors/i18n-response.interceptor';
 
 async function bootstrap() {
@@ -14,15 +13,15 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
+  app.use(I18nMiddleware);
+
   app.useGlobalPipes(
-    new ValidationPipe({
+    new I18nValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
     }),
   );
-
-  app.use(I18nMiddleware);
 
   app.useGlobalInterceptors(new I18nResponseInterceptor(app.get(I18nService)));
 

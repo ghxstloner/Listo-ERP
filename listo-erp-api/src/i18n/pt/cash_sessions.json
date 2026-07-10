@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "not_found": "Sessão de caixa não encontrada",
+    "till_not_found": "O caixa não existe, está inativo ou não pertence à empresa",
+    "already_open": "Já existe uma sessão aberta para este caixa ou usuário",
+    "not_open": "A sessão de caixa não está aberta"
+  },
+  "success": {
+    "opened": "Caixa aberto com sucesso",
+    "closed": "Caixa fechado com sucesso"
+  }
+}

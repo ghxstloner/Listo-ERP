@@ -48,7 +48,7 @@ export class WarehouseService {
         userId,
         companyId,
         'warehouses',
-        'Almacén',
+        'Warehouse',
         warehouse.id,
       );
 
@@ -162,7 +162,7 @@ export class WarehouseService {
         userId,
         companyId,
         'warehouses',
-        'Almacén',
+        'Warehouse',
         warehouse.id,
       );
 
@@ -183,7 +183,6 @@ export class WarehouseService {
   async remove(id: number, companyId: number, userId: number) {
     await this.findOne(id, companyId);
 
-    // Verificar si tiene sucursales asignadas
     const branchesCount = await this.prisma.warehouseBranch.count({
       where: { warehouseId: id },
     });
@@ -199,7 +198,7 @@ export class WarehouseService {
       userId,
       companyId,
       'warehouses',
-      'Almacén',
+      'Warehouse',
       id,
     );
 

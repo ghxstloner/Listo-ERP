@@ -29,12 +29,19 @@ import { useEffect, useState } from "react";
 interface EditCategoryProps {
   editingCategory: Category | null;
   subdepartmentId: number;
+  hierarchyNames?: {
+    level1: string;
+    level2: string;
+    level3: string;
+    level4: string;
+  };
   onClose: () => void;
 }
 
 export function EditCategory({
   editingCategory,
   subdepartmentId,
+  hierarchyNames: _hierarchyNames,
   onClose,
 }: EditCategoryProps) {
   const t = useTranslation();

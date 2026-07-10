@@ -22,9 +22,15 @@ import { useEffect, useState } from "react";
 
 interface CreateCategoryProps {
   subdepartmentId: number;
+  hierarchyNames?: {
+    level1: string;
+    level2: string;
+    level3: string;
+    level4: string;
+  };
 }
 
-export function CreateCategory({ subdepartmentId }: CreateCategoryProps) {
+export function CreateCategory({ subdepartmentId, hierarchyNames: _hierarchyNames }: CreateCategoryProps) {
   const t = useTranslation();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);

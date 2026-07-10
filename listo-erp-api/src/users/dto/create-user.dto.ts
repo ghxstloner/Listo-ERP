@@ -6,6 +6,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export enum UserRole {
   ADMIN = 'ADMIN',
@@ -13,7 +14,10 @@ export enum UserRole {
 }
 
 export class CreateUserDto {
-  @IsEmail()
+  @IsEmail(
+    {},
+    { message: i18nValidationMessage('common.validation.invalid_email') },
+  )
   @IsNotEmpty()
   email: string;
 

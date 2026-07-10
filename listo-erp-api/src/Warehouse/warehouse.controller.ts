@@ -31,7 +31,7 @@ import { WarehouseService } from './warehouse.service';
 @ApiBearerAuth()
 @ApiHeader({
   name: 'X-Company-Id',
-  description: 'ID de la empresa activa',
+  description: 'Active company ID',
   required: true,
 })
 @Controller('warehouses')
@@ -40,7 +40,7 @@ export class WarehouseController {
 
   @Post()
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Crear nuevo almacén' })
+  @ApiOperation({ summary: 'Create a new warehouse' })
   async create(
     @Body() createWarehouseDto: CreateWarehouseDto,
     @CurrentCompanyId() companyId: number,
@@ -50,12 +50,12 @@ export class WarehouseController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los almacenes de la empresa' })
+  @ApiOperation({ summary: 'Get all company warehouses' })
   @ApiQuery({
     name: 'includeBranches',
     required: false,
     type: Boolean,
-    description: 'Incluir sucursales asignadas',
+    description: 'Include assigned branches',
   })
   findAll(
     @CurrentCompanyId() companyId: number,
@@ -66,12 +66,12 @@ export class WarehouseController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obtener un almacén por ID' })
+  @ApiOperation({ summary: 'Get a warehouse by ID' })
   @ApiQuery({
     name: 'includeBranches',
     required: false,
     type: Boolean,
-    description: 'Incluir sucursales asignadas',
+    description: 'Include assigned branches',
   })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -84,7 +84,7 @@ export class WarehouseController {
 
   @Patch(':id')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Actualizar un almacén' })
+  @ApiOperation({ summary: 'Update a warehouse' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateWarehouseDto: UpdateWarehouseDto,
@@ -101,7 +101,7 @@ export class WarehouseController {
 
   @Delete(':id')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Eliminar un almacén' })
+  @ApiOperation({ summary: 'Delete a warehouse' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentCompanyId() companyId: number,
@@ -111,9 +111,7 @@ export class WarehouseController {
   }
 
   @Get(':id/branches')
-  @ApiOperation({
-    summary: 'Obtener todas las sucursales asignadas a un almacén',
-  })
+  @ApiOperation({ summary: 'Get all branches assigned to a warehouse' })
   async findBranches(
     @Param('id', ParseIntPipe) id: number,
     @CurrentCompanyId() companyId: number,

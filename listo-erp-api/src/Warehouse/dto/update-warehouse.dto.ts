@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 
 export class UpdateWarehouseDto {
-  @ApiPropertyOptional({ description: 'Nombre del almacén' })
+  @ApiPropertyOptional({ description: 'Warehouse name' })
   @IsString()
   @IsOptional()
   @MinLength(1)
@@ -16,21 +16,21 @@ export class UpdateWarehouseDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Código único del almacén dentro de la empresa',
+    description: 'Unique warehouse code within the company',
   })
   @IsString()
   @IsOptional()
-  @MinLength(1, { message: 'El código no puede estar vacío' })
+  @MinLength(1, { message: 'Code cannot be empty' })
   @MaxLength(50)
   code?: string;
 
-  @ApiPropertyOptional({ description: 'Dirección del almacén' })
+  @ApiPropertyOptional({ description: 'Warehouse address' })
   @IsString()
   @IsOptional()
   @MaxLength(500)
   address?: string;
 
-  @ApiPropertyOptional({ description: 'Almacén activo' })
+  @ApiPropertyOptional({ description: 'Active warehouse' })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

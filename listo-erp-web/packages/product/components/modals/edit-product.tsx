@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { useGetDepartments } from "@/packages/department/api";
@@ -41,17 +44,15 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
   const queryClient = useQueryClient();
   const { validateProductFields } = useProductValidation();
   
-  // Basic fields
   const [sku, setSku] = useState(() => editingProduct?.sku ?? "");
   const [name, setName] = useState(() => editingProduct?.name ?? "");
   const [description, setDescription] = useState(() => editingProduct?.description ?? "");
   const [salePrice, setSalePrice] = useState(() => editingProduct?.salePrice.toString() ?? "");
-  const [costPrice, setCostPrice] = useState(() => editingProduct?.costPrice.toString() ?? "");
-  const [taxRate, setTaxRate] = useState(() => editingProduct?.taxRate.toString() ?? "0");
+  const [costPrice, setCostPrice] = useState(() => editingProduct?.costPrice?.toString() ?? "");
+  const [taxRate, setTaxRate] = useState(() => editingProduct?.taxRate?.toString() ?? "");
   const [unit, setUnit] = useState(() => editingProduct?.unit ?? "und");
   const [isActive, setIsActive] = useState(() => editingProduct?.isActive ?? true);
   
-  // Hierarchy fields
   const [departmentId, setDepartmentId] = useState<number | null>(() => editingProduct?.departmentId ?? null);
   const [subdepartmentId, setSubdepartmentId] = useState<number | null>(() => editingProduct?.subdepartmentId ?? null);
   const [categoryId, setCategoryId] = useState<number | null>(() => editingProduct?.categoryId ?? null);
@@ -62,7 +63,6 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
     editingProduct?.id ?? 0
   );
   
-  // Fetch hierarchy data
   const [departmentsResponse] = useGetDepartments();
   const [subdepartmentsResponse] = useGetSubDepartments(departmentId ?? undefined);
   const [categoriesResponse] = useGetCategories(subdepartmentId ?? undefined);
@@ -74,16 +74,15 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
   const categories = categoriesResponse?.data ?? [];
   const subcategories = subcategoriesResponse?.data ?? [];
 
-  // Update local state when editingProduct changes
   useEffect(() => {
     if (editingProduct) {
       setSku(editingProduct.sku);
       setName(editingProduct.name);
       setDescription(editingProduct.description ?? "");
       setSalePrice(editingProduct.salePrice.toString());
-      setCostPrice(editingProduct.costPrice.toString());
-      setTaxRate(editingProduct.taxRate.toString());
-      setUnit(editingProduct.unit);
+      setCostPrice(editingProduct.costPrice?.toString() ?? "");
+      setTaxRate(editingProduct.taxRate?.toString() ?? "");
+      setUnit(editingProduct.unit ?? "und");
       setIsActive(editingProduct.isActive);
       setDepartmentId(editingProduct.departmentId);
       setSubdepartmentId(editingProduct.subdepartmentId);
@@ -102,21 +101,23 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
     }
   }, [updateError, t]);
 
-  // Reset subdepartment, category, subcategory when parent changes
-  useEffect(() => {
+  const handleDepartmentChange = (value: string) => {
+    setDepartmentId(Number(value));
     setSubdepartmentId(null);
     setCategoryId(null);
     setSubcategoryId(null);
-  }, [departmentId]);
+  };
 
-  useEffect(() => {
+  const handleSubdepartmentChange = (value: string) => {
+    setSubdepartmentId(Number(value));
     setCategoryId(null);
     setSubcategoryId(null);
-  }, [subdepartmentId]);
+  };
 
-  useEffect(() => {
+  const handleCategoryChange = (value: string) => {
+    setCategoryId(Number(value));
     setSubcategoryId(null);
-  }, [categoryId]);
+  };
 
   const handleSave = () => {
     if (!editingProduct) return;
@@ -154,22 +155,22 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
 
   return (
     <Dialog open={!!editingProduct} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl p-0 max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="p-6 pb-0">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto p-0">
+        <DialogHeader className="p-4 pb-0">
           <DialogTitle>{t("inventory.products.editProduct")}</DialogTitle>
           <DialogDescription>
             {t("inventory.products.editProductDescription")}
           </DialogDescription>
         </DialogHeader>
+        <Separator />
         
         {editingProduct && (
-          <div className="p-6 space-y-6">
-            {/* Información Básica */}
+          <div className="space-y-3 px-4">
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h3 className="text-sm font-medium">
                 {t("inventory.products.basicInformation")}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="edit-sku">
                     {t("inventory.products.sku")} <span className="text-destructive">*</span>
@@ -194,7 +195,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                     disabled={isUpdating}
                   />
                 </div>
-                <div className="sm:col-span-2 space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="edit-description">{t("inventory.products.description")}</Label>
                   <Input
                     id="edit-description"
@@ -209,10 +210,10 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
 
             {/* Precios */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h3 className="text-sm font-medium">
                 {t("inventory.products.pricingInformation")}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-salePrice">
                     {t("inventory.products.salePrice")} <span className="text-destructive">*</span>
@@ -270,20 +271,20 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
 
             {/* Jerarquía */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h3 className="text-sm font-medium">
                 {t("inventory.products.hierarchyInformation")}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="edit-department">
                     {t("inventory.products.department")} <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={departmentId?.toString() || ""}
-                    onValueChange={(value) => setDepartmentId(Number(value))}
+                    onValueChange={handleDepartmentChange}
                     disabled={isUpdating}
                   >
-                    <SelectTrigger id="edit-department">
+                    <SelectTrigger id="edit-department" className="w-full">
                       <SelectValue placeholder={t("inventory.products.selectDepartment")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -299,10 +300,10 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                   <Label htmlFor="edit-subdepartment">{t("inventory.products.subdepartment")}</Label>
                   <Select
                     value={subdepartmentId?.toString() || ""}
-                    onValueChange={(value) => setSubdepartmentId(Number(value))}
+                    onValueChange={handleSubdepartmentChange}
                     disabled={isUpdating || !departmentId || subdepartments.length === 0}
                   >
-                    <SelectTrigger id="edit-subdepartment">
+                    <SelectTrigger id="edit-subdepartment" className="w-full">
                       <SelectValue placeholder={t("inventory.products.selectSubdepartment")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -318,10 +319,10 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                   <Label htmlFor="edit-category">{t("inventory.products.category")}</Label>
                   <Select
                     value={categoryId?.toString() || ""}
-                    onValueChange={(value) => setCategoryId(Number(value))}
+                    onValueChange={handleCategoryChange}
                     disabled={isUpdating || !subdepartmentId || categories.length === 0}
                   >
-                    <SelectTrigger id="edit-category">
+                    <SelectTrigger id="edit-category" className="w-full">
                       <SelectValue placeholder={t("inventory.products.selectCategory")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -340,7 +341,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                     onValueChange={(value) => setSubcategoryId(Number(value))}
                     disabled={isUpdating || !categoryId || subcategories.length === 0}
                   >
-                    <SelectTrigger id="edit-subcategory">
+                    <SelectTrigger id="edit-subcategory" className="w-full">
                       <SelectValue placeholder={t("inventory.products.selectSubcategory")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -357,10 +358,10 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
 
             {/* Proveedor y Estado */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h3 className="text-sm font-medium">
                 {t("inventory.products.additionalInformation")}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="edit-supplier">{t("inventory.products.supplier")}</Label>
                   <Select
@@ -368,7 +369,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                     onValueChange={(value) => setSupplierId(Number(value))}
                     disabled={isUpdating}
                   >
-                    <SelectTrigger id="edit-supplier">
+                    <SelectTrigger id="edit-supplier" className="w-full">
                       <SelectValue placeholder={t("inventory.products.selectSupplier")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -387,7 +388,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                     onValueChange={(value) => setIsActive(value === "ACTIVE")}
                     disabled={isUpdating}
                   >
-                    <SelectTrigger id="edit-status">
+                    <SelectTrigger id="edit-status" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -405,7 +406,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
           </div>
         )}
         
-        <DialogFooter className="p-6 pt-0">
+        <DialogFooter className="p-4">
           <Button variant="outline" onClick={onClose} disabled={isUpdating}>
             {t("common.cancel")}
           </Button>

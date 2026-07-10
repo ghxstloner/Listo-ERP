@@ -2,11 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt } from 'class-validator';
 
 export class CreateWarehouseBranchDto {
-  @ApiProperty({ description: 'ID del almacén' })
+  @ApiProperty({ description: 'Warehouse ID' })
   @IsInt()
   warehouseId: number;
 
-  @ApiProperty({ description: 'ID de la sucursal' })
+  @ApiProperty({ description: 'Branch ID' })
   @IsInt()
   branchId: number;
 }

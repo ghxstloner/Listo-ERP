@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "未找到销售员",
+    "users_required": "必须至少为销售员分配一个用户",
+    "invalid_users": "所有分配的用户必须属于当前公司并处于启用状态"
+  },
+  "success": {
+    "created": "销售员创建成功",
+    "updated": "销售员更新成功",
+    "deleted": "销售员删除成功",
+    "users_assigned": "用户已成功分配给销售员"
+  }
+}

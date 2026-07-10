@@ -9,13 +9,11 @@ import { ListProduct } from "@/packages/product/components/list-product";
 import { useGetProducts } from "@/packages/product/api";
 import type { Product } from "@/packages/product/types";
 import { Spinner } from "@phosphor-icons/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ProductsPage() {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
-  const router = useRouter();
   const [response, isLoading, error] = useGetProducts();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -26,6 +24,8 @@ export default function ProductsPage() {
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
   };
+
+  const products = Array.isArray(response) ? response : response?.data ?? [];
 
   if (isLoading) {
     return (
@@ -50,7 +50,7 @@ export default function ProductsPage() {
   return (
     <div className="w-full p-2">
       <ListProduct
-        products={response?.data ?? []}
+        products={products}
         onEdit={handleEdit}
         headerAction={<CreateProduct />}
       />

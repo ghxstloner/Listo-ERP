@@ -48,6 +48,7 @@ export const EntityTranslations: Record<string, string> = {
   subcategory: 'Subcategoría',
   product: 'Producto',
   supplier: 'Proveedor',
+  seller: 'Vendedor',
   currency: 'Moneda',
   'exchange-rate': 'Tipo de cambio',
   'payment-method': 'Método de pago',

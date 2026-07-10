@@ -12,7 +12,10 @@ export class MailService {
     const smtpPass = this.configService.get<string>('SMTP_PASS');
     const smtpHost =
       this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
-    const smtpPort = this.configService.get<number>('SMTP_PORT') || 587;
+    const smtpPort = Number(this.configService.get<string>('SMTP_PORT') || 587);
+    const smtpSecure =
+      this.configService.get<string>('SMTP_SECURE') === 'true' ||
+      smtpPort === 465;
 
     this.logger.log(`Configurando SMTP: ${smtpHost}:${smtpPort}`);
     this.logger.log(
@@ -34,7 +37,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
-      secure: false,
+      secure: smtpSecure,
       auth: {
         user: smtpUser,
         pass: smtpPass,
@@ -81,7 +84,7 @@ export class MailService {
       await this.transporter.sendMail(mailOptions);
       this.logger.log(`✅ Correo enviado exitosamente a: ${to}`);
     } catch (error) {
-      this.logger.error(`❌ Error al enviar correo: ${error.message}`);
+      this.logger.error(`❌ Error al enviar correo: ${error}`);
       throw error;
     }
   }

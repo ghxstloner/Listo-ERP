@@ -18,7 +18,6 @@ export class WarehouseBranchService {
     companyId: number,
     userId: number,
   ) {
-    // Verificar que el almacén existe y pertenece a la empresa
     const warehouse = await this.prisma.warehouse.findFirst({
       where: {
         id: createWarehouseBranchDto.warehouseId,
@@ -29,7 +28,6 @@ export class WarehouseBranchService {
       throw I18nException.notFound('warehouses.errors.not_found');
     }
 
-    // Verificar que la sucursal existe y pertenece a la empresa
     const branch = await this.prisma.branch.findFirst({
       where: {
         id: createWarehouseBranchDto.branchId,
@@ -40,7 +38,6 @@ export class WarehouseBranchService {
       throw I18nException.notFound('branches.errors.not_found');
     }
 
-    // Verificar que no existe ya la relación
     const existing = await this.prisma.warehouseBranch.findUnique({
       where: {
         warehouseId_branchId: {
@@ -66,7 +63,7 @@ export class WarehouseBranchService {
         userId,
         companyId,
         'warehouseBranches',
-        'Asignación Almacén-Sucursal',
+        'Warehouse-Branch Assignment',
         warehouseBranch.id,
       );
 
@@ -149,7 +146,6 @@ export class WarehouseBranchService {
   ) {
     await this.findOne(id, companyId);
 
-    // Si se actualiza el warehouseId, verificar que existe
     if (updateWarehouseBranchDto.warehouseId != null) {
       const warehouse = await this.prisma.warehouse.findFirst({
         where: {
@@ -162,7 +158,6 @@ export class WarehouseBranchService {
       }
     }
 
-    // Si se actualiza el branchId, verificar que existe
     if (updateWarehouseBranchDto.branchId != null) {
       const branch = await this.prisma.branch.findFirst({
         where: {
@@ -175,7 +170,6 @@ export class WarehouseBranchService {
       }
     }
 
-    // Verificar que no existe ya la relación con los nuevos valores
     if (
       updateWarehouseBranchDto.warehouseId != null &&
       updateWarehouseBranchDto.branchId != null
@@ -205,7 +199,7 @@ export class WarehouseBranchService {
         userId,
         companyId,
         'warehouseBranches',
-        'Asignación Almacén-Sucursal',
+        'Warehouse-Branch Assignment',
         warehouseBranch.id,
       );
 
@@ -229,10 +223,10 @@ export class WarehouseBranchService {
     await this.prisma.warehouseBranch.delete({ where: { id } });
 
     await this.auditService.logDelete(
-      userId,
-      companyId,
-      'warehouseBranches',
-      'Asignación Almacén-Sucursal',
+        userId,
+        companyId,
+        'warehouseBranches',
+      'Warehouse-Branch Assignment',
       id,
     );
 
@@ -249,7 +243,6 @@ export class WarehouseBranchService {
   }
 
   async findByBranch(branchId: number, companyId: number) {
-    // Verificar que la sucursal existe
     const branch = await this.prisma.branch.findFirst({
       where: { id: branchId, companyId },
     });
@@ -278,7 +271,6 @@ export class WarehouseBranchService {
   }
 
   async findByWarehouse(warehouseId: number, companyId: number) {
-    // Verificar que el almacén existe
     const warehouse = await this.prisma.warehouse.findFirst({
       where: { id: warehouseId, companyId },
     });

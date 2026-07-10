@@ -6,6 +6,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
+import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class UpdateCompanyDto {
   @IsString()
@@ -48,11 +49,17 @@ export class UpdateCompanyDto {
   @IsOptional()
   phone2?: string;
 
-  @IsEmail()
+  @IsEmail(
+    {},
+    { message: i18nValidationMessage('common.validation.invalid_email') },
+  )
   @IsOptional()
   email1?: string;
 
-  @IsEmail()
+  @IsEmail(
+    {},
+    { message: i18nValidationMessage('common.validation.invalid_email') },
+  )
   @IsOptional()
   email2?: string;
 

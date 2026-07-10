@@ -1,12 +1,18 @@
 import { useApiMutation, useApiQuery } from "@config";
-import type { Product, CreateProductRequest, UpdateProductRequest, ProductsResponse } from "./types";
+import type {
+  Product,
+  CreateProductRequest,
+  CreateProductResponse,
+  UpdateProductRequest,
+  ProductsApiResponse,
+} from "./types";
 
 export const useCreateProduct = () => {
-  return useApiMutation<Product, CreateProductRequest>("products", "post");
+  return useApiMutation<CreateProductResponse, CreateProductRequest>("products", "post");
 };
 
 export const useGetProducts = (departmentId?: number) => {
-  return useApiQuery<ProductsResponse>(
+  return useApiQuery<ProductsApiResponse>(
     ["products", departmentId],
     "products",
     {

@@ -85,11 +85,11 @@ function StatusPill({ isActive, t }: { isActive: boolean; t: TFunction }) {
   );
 }
 
-function formatCurrency(value: number) {
+function formatCurrency(value: number | null | undefined) {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
     currency: "USD",
-  }).format(value);
+  }).format(value ?? 0);
 }
 
 function formatDate(value?: string) {

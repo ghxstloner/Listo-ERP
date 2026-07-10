@@ -10,6 +10,8 @@
   "validation": {
     "required_field": "The {field} field is required",
     "invalid_email": "The email is not valid",
+    "invalid_string": "The {field} field must be text",
+    "invalid_boolean": "The {field} field must be true or false",
     "min_length": "The {field} field must have at least {min} characters",
     "max_length": "The {field} field must have maximum {max} characters"
   }

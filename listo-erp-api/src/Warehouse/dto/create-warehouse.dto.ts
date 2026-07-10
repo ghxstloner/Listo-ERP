@@ -8,27 +8,27 @@ import {
 } from 'class-validator';
 
 export class CreateWarehouseDto {
-  @ApiProperty({ description: 'Nombre del almacén' })
+  @ApiProperty({ description: 'Warehouse name' })
   @IsString()
   @MinLength(1)
   @MaxLength(255)
   name: string;
 
   @ApiProperty({
-    description: 'Código único del almacén dentro de la empresa',
+    description: 'Unique warehouse code within the company',
   })
   @IsString()
-  @MinLength(1, { message: 'El código no puede estar vacío' })
+  @MinLength(1, { message: 'Code cannot be empty' })
   @MaxLength(50)
   code: string;
 
-  @ApiPropertyOptional({ description: 'Dirección del almacén' })
+  @ApiPropertyOptional({ description: 'Warehouse address' })
   @IsString()
   @IsOptional()
   @MaxLength(500)
   address?: string;
 
-  @ApiPropertyOptional({ description: 'Almacén activo', default: true })
+  @ApiPropertyOptional({ description: 'Active warehouse', default: true })
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

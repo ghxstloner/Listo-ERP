@@ -7,6 +7,12 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateHierarchyConfigDto } from './dto/update-hierarchy-config.dto';
 
+const DEFAULT_PAYMENT_METHODS = [
+  { name: 'Efectivo', code: 'CASH', requiresReference: false },
+  { name: 'Tarjeta', code: 'CARD', requiresReference: true },
+  { name: 'Transferencia', code: 'TRANSFER', requiresReference: true },
+];
+
 @Injectable()
 export class CompaniesService {
   constructor(
@@ -74,6 +80,15 @@ export class CompaniesService {
           level3Name: 'Categoría',
           level4Name: 'Subcategoría',
         },
+      });
+
+      await tx.paymentMethod.createMany({
+        data: DEFAULT_PAYMENT_METHODS.map((paymentMethod) => ({
+          ...paymentMethod,
+          companyId: company.id,
+          isActive: true,
+        })),
+        skipDuplicates: true,
       });
 
       return company;

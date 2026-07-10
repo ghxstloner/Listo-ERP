@@ -10,58 +10,62 @@ datasource db {
 }
 
 model Country {
-  id                Int      @id @default(autoincrement())
-  code              String   @unique // ISO 3166-1 alpha-2 (PA, VE, CO, etc.)
-  name              String
-  taxDocumentTypes  Json     // [{"code": "RUC", "name": "RUC", "hasCheckDigit": true}, ...]
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  companies         Company[]
+  id               Int       @id @default(autoincrement())
+  code             String    @unique // ISO 3166-1 alpha-2 (PA, VE, CO, etc.)
+  name             String
+  taxDocumentTypes Json // [{"code": "RUC", "name": "RUC", "hasCheckDigit": true}, ...]
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  companies        Company[]
 }
 
 model Company {
-  id                      Int           @id @default(autoincrement())
-  name                    String
-  primaryColor            String        @default("#ff6600")
-  secondaryColor          String        @default("#180900")
-  isActive                Boolean       @default(true)
-  
+  id             Int     @id @default(autoincrement())
+  name           String
+  primaryColor   String  @default("#ff6600")
+  secondaryColor String  @default("#180900")
+  isActive       Boolean @default(true)
+
   // Contact information
-  address                 String?
-  city                    String?
-  phone1                  String?
-  phone2                  String?
-  email1                  String?
-  email2                  String?
-  
+  address String?
+  city    String?
+  phone1  String?
+  phone2  String?
+  email1  String?
+  email2  String?
+
   // Tax information
-  countryId               Int?
-  taxDocumentType         String?       // RUC, RIF, NIT, etc.
-  taxDocumentNumber       String?
-  taxCheckDigit           String?       // Dígito verificador (Panamá)
-  fiscalName              String?       // Razón social
-  
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  companyLogo             String?       @default("")
-  defaultCurrencyId       Int?
-  companyUsers            CompanyUser[]
-  branches                branch[]
-  tills                   till[]
-  departments             Department[]
-  subdepartments          Subdepartment[]
-  categories              Category[]
-  subcategories           Subcategory[]
-  suppliers               Supplier[]
-  products                Product[]
-  defaultCurrency         Currency?     @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
-  exchangeRates           ExchangeRate[]
-  paymentMethods          PaymentMethod[]
-  country                 Country?      @relation(fields: [countryId], references: [id])
-  auditLogs               AuditLog[]
-  warehouses              Warehouse[]
-  hierarchyConfig         CompanyHierarchyConfig?
+  countryId         Int?
+  taxDocumentType   String? // RUC, RIF, NIT, etc.
+  taxDocumentNumber String?
+  taxCheckDigit     String? // Dígito verificador (Panamá)
+  fiscalName        String? // Razón social
+
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  companyLogo       String?                 @default("")
+  defaultCurrencyId Int?
+  companyUsers      CompanyUser[]
+  branches          branch[]
+  tills             till[]
+  departments       Department[]
+  subdepartments    Subdepartment[]
+  categories        Category[]
+  subcategories     Subcategory[]
+  suppliers         Supplier[]
+  customers         Customer[]
+  sellers           Seller[]
+  sellerUsers       SellerUser[]
+  products          Product[]
+  defaultCurrency   Currency?               @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
+  exchangeRates     ExchangeRate[]
+  paymentMethods    PaymentMethod[]
+  country           Country?                @relation(fields: [countryId], references: [id])
+  auditLogs         AuditLog[]
+  warehouses        Warehouse[]
+  hierarchyConfig   CompanyHierarchyConfig?
+  cashSessions      CashSession[]
 }
 
 enum Role {
@@ -84,18 +88,21 @@ model CompanyUser {
 }
 
 model User {
-  id                  Int           @id @default(autoincrement())
-  email               String        @unique
-  password            String
-  name                String
-  userCode            String?       @unique
-  isActive            Boolean       @default(true)
-  resetPasswordCode   String?
+  id                   Int           @id @default(autoincrement())
+  email                String        @unique
+  password             String
+  name                 String
+  userCode             String?       @unique
+  isActive             Boolean       @default(true)
+  resetPasswordCode    String?
   resetPasswordExpires DateTime?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  companyUsers        CompanyUser[]
-  auditLogs           AuditLog[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  companyUsers         CompanyUser[]
+  sellerUsers          SellerUser[]
+  auditLogs            AuditLog[]
+  openedCashSessions   CashSession[] @relation("CashSessionOpenedBy")
+  closedCashSessions   CashSession[] @relation("CashSessionClosedBy")
 }
 
 enum AuditAction {
@@ -118,26 +125,27 @@ model AuditLog {
   description String
   section     String
   createdAt   DateTime    @default(now())
-  
-  user        User?       @relation(fields: [userId], references: [id])
-  company     Company?    @relation(fields: [companyId], references: [id])
+
+  user    User?    @relation(fields: [userId], references: [id])
+  company Company? @relation(fields: [companyId], references: [id])
 }
 
 model branch {
-  id          Int               @id @default(autoincrement())
-  name        String
-  address     String?
-  phone       String?
-  branchCode  String?           @unique
-  isActive    Boolean           @default(true)
-  companyId   Int
-  currencyId  Int?
-  company     Company           @relation(fields: [companyId], references: [id])
-  currency    Currency?         @relation(fields: [currencyId], references: [id])
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  tills       till[]
-  warehouses  WarehouseBranch[]
+  id         Int               @id @default(autoincrement())
+  name       String
+  address    String?
+  phone      String?
+  branchCode String?           @unique
+  isActive   Boolean           @default(true)
+  companyId  Int
+  currencyId Int?
+  company    Company           @relation(fields: [companyId], references: [id])
+  currency   Currency?         @relation(fields: [currencyId], references: [id])
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  tills      till[]
+  warehouses WarehouseBranch[]
+  cashSessions CashSession[]
 
   @@unique([companyId, branchCode])
 }
@@ -151,23 +159,61 @@ model till {
   branchId  Int
   branch    branch   @relation(fields: [branchId], references: [id])
   company   Company  @relation(fields: [companyId], references: [id])
+  cashSessions CashSession[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([branchId, tillCode])
 }
 
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+model CashSession {
+  id                    Int               @id @default(autoincrement())
+  companyId             Int
+  branchId              Int
+  tillId                Int
+  openedByUserId        Int
+  closedByUserId        Int?
+  status                CashSessionStatus @default(OPEN)
+  openedAt              DateTime          @default(now())
+  closedAt              DateTime?
+  openingAmount         Decimal           @db.Decimal(18, 4)
+  expectedClosingAmount Decimal?          @db.Decimal(18, 4)
+  declaredClosingAmount Decimal?          @db.Decimal(18, 4)
+  differenceAmount      Decimal?          @db.Decimal(18, 4)
+  openingNote           String?
+  closingNote           String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  company      Company @relation(fields: [companyId], references: [id])
+  branch       branch  @relation(fields: [branchId], references: [id])
+  till         till    @relation(fields: [tillId], references: [id])
+  openedByUser User    @relation("CashSessionOpenedBy", fields: [openedByUserId], references: [id])
+  closedByUser User?   @relation("CashSessionClosedBy", fields: [closedByUserId], references: [id])
+
+  @@index([companyId, status])
+  @@index([branchId])
+  @@index([tillId])
+  @@index([openedByUserId])
+  @@index([openedAt])
+}
+
 model Currency {
-  id                    Int            @id @default(autoincrement())
-  code                  String         @unique
-  name                  String
-  symbol                String
-  companiesDefault      Company[]      @relation("CompanyDefaultCurrency")
-  branches              branch[]
-  exchangeRatesFrom     ExchangeRate[] @relation("ExchangeRateFrom")
-  exchangeRatesTo       ExchangeRate[] @relation("ExchangeRateTo")
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                Int            @id @default(autoincrement())
+  code              String         @unique
+  name              String
+  symbol            String
+  companiesDefault  Company[]      @relation("CompanyDefaultCurrency")
+  branches          branch[]
+  exchangeRatesFrom ExchangeRate[] @relation("ExchangeRateFrom")
+  exchangeRatesTo   ExchangeRate[] @relation("ExchangeRateTo")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 }
 
 model ExchangeRate {
@@ -187,65 +233,64 @@ model ExchangeRate {
 }
 
 model PaymentMethod {
-  id              Int      @id @default(autoincrement())
-  name            String
-  code            String
-  requiresReference Boolean @default(false)
-  isActive        Boolean  @default(true)
-  companyId       Int
-  company         Company  @relation(fields: [companyId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  name              String
+  code              String
+  requiresReference Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  companyId         Int
+  company           Company  @relation(fields: [companyId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@unique([companyId, code])
 }
 
-
 model Department {
-  id            Int            @id @default(autoincrement())
-  name          String
-  code          String
-  isActive      Boolean        @default(true)
-  companyId     Int
-  company       Company        @relation(fields: [companyId], references: [id])
+  id             Int             @id @default(autoincrement())
+  name           String
+  code           String
+  isActive       Boolean         @default(true)
+  companyId      Int
+  company        Company         @relation(fields: [companyId], references: [id])
   subdepartments Subdepartment[]
-  products      Product[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  products       Product[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@unique([companyId, code])
 }
 
 model Subdepartment {
-  id         Int         @id @default(autoincrement())
-  name       String
-  code       String
-  isActive   Boolean     @default(true)
+  id           Int        @id @default(autoincrement())
+  name         String
+  code         String
+  isActive     Boolean    @default(true)
   departmentId Int
-  companyId  Int         @default(1)
-  department Department @relation(fields: [departmentId], references: [id])
-  company    Company    @relation(fields: [companyId], references: [id])
-  categories Category[]
-  products   Product[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  companyId    Int        @default(1)
+  department   Department @relation(fields: [departmentId], references: [id])
+  company      Company    @relation(fields: [companyId], references: [id])
+  categories   Category[]
+  products     Product[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@unique([companyId, code])
 }
 
 model Category {
-  id             Int          @id @default(autoincrement())
-  name           String
-  code           String
-  isActive       Boolean      @default(true)
+  id              Int           @id @default(autoincrement())
+  name            String
+  code            String
+  isActive        Boolean       @default(true)
   subdepartmentId Int
-  companyId      Int          @default(1)
-  subdepartment  Subdepartment @relation(fields: [subdepartmentId], references: [id])
-  company        Company       @relation(fields: [companyId], references: [id])
-  subcategories  Subcategory[]
-  products       Product[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  companyId       Int           @default(1)
+  subdepartment   Subdepartment @relation(fields: [subdepartmentId], references: [id])
+  company         Company       @relation(fields: [companyId], references: [id])
+  subcategories   Subcategory[]
+  products        Product[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@unique([companyId, code])
 }
@@ -267,63 +312,108 @@ model Subcategory {
 }
 
 model Supplier {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   taxId       String?
   address     String?
   phone       String?
   email       String?
   contactName String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean   @default(true)
   companyId   Int
-  company     Company  @relation(fields: [companyId], references: [id])
+  company     Company   @relation(fields: [companyId], references: [id])
   products    Product[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
+model Customer {
+  id              Int      @id @default(autoincrement())
+  name            String
+  taxId           String?
+  taxDocumentType String?
+  address         String?
+  phone           String?
+  email           String?
+  contactName     String?
+  isActive        Boolean  @default(true)
+  companyId       Int
+  company         Company  @relation(fields: [companyId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@unique([companyId, taxDocumentType, taxId])
+}
+
+model Seller {
+  id          Int          @id @default(autoincrement())
+  code        String
+  name        String
+  isActive    Boolean      @default(true)
+  companyId   Int
+  company     Company      @relation(fields: [companyId], references: [id])
+  sellerUsers SellerUser[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([companyId, code])
+}
+
+model SellerUser {
+  id        Int      @id @default(autoincrement())
+  sellerId  Int
+  userId    Int
+  companyId Int
+  seller    Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  company   Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([sellerId, userId])
+  @@index([companyId])
+  @@index([userId])
+}
 
 model Product {
-  id              Int       @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   sku             String
   name            String
   description     String?
-  salePrice       Decimal   @db.Decimal(18, 4)
-  costPrice       Decimal?  @db.Decimal(18, 4)
-  taxRate         Decimal?  @db.Decimal(5, 4)
-  isActive        Boolean   @default(true)
+  salePrice       Decimal        @db.Decimal(18, 4)
+  costPrice       Decimal?       @db.Decimal(18, 4)
+  taxRate         Decimal?       @db.Decimal(5, 4)
+  isActive        Boolean        @default(true)
   companyId       Int
   departmentId    Int
   subdepartmentId Int?
   categoryId      Int?
   subcategoryId   Int?
   unit            String?
-  image           String?     // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
+  image           String? // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
   supplierId      Int?
-  company         Company     @relation(fields: [companyId], references: [id])
-  department      Department  @relation(fields: [departmentId], references: [id])
+  company         Company        @relation(fields: [companyId], references: [id])
+  department      Department     @relation(fields: [departmentId], references: [id])
   subdepartment   Subdepartment? @relation(fields: [subdepartmentId], references: [id])
-  category        Category?     @relation(fields: [categoryId], references: [id])
-  subcategory     Subcategory?  @relation(fields: [subcategoryId], references: [id])
-  supplier        Supplier?     @relation(fields: [supplierId], references: [id])
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  subcategory     Subcategory?   @relation(fields: [subcategoryId], references: [id])
+  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@unique([companyId, sku])
 }
 
 model Warehouse {
-  id          Int               @id @default(autoincrement())
-  name        String
-  code        String            @unique
-  address     String?
-  isActive    Boolean           @default(true)
-  companyId   Int
-  company     Company           @relation(fields: [companyId], references: [id])
-  branches    WarehouseBranch[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id        Int               @id @default(autoincrement())
+  name      String
+  code      String            @unique
+  address   String?
+  isActive  Boolean           @default(true)
+  companyId Int
+  company   Company           @relation(fields: [companyId], references: [id])
+  branches  WarehouseBranch[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@unique([companyId, code])
 }

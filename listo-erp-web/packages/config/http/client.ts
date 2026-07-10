@@ -162,6 +162,33 @@ class HttpClient {
     return options;
   }
 
+  private extractErrorMessage(value: unknown, fallback: string): string {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value) as unknown;
+        if (parsed !== value) {
+          return this.extractErrorMessage(parsed, fallback);
+        }
+      } catch {
+      }
+
+      return value || fallback;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.extractErrorMessage(item, fallback)).join(', ');
+    }
+
+    if (value && typeof value === 'object') {
+      const message = (value as { message?: unknown }).message;
+      if (message !== undefined) {
+        return this.extractErrorMessage(message, fallback);
+      }
+    }
+
+    return fallback;
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       const error: HttpError = {
@@ -171,7 +198,7 @@ class HttpClient {
 
       try {
         const errorBody = await response.json();
-        error.message = errorBody.message || response.statusText;
+        error.message = this.extractErrorMessage(errorBody, response.statusText);
         error.errors = errorBody.errors;
       } catch {
       }

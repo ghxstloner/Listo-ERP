@@ -15,6 +15,12 @@ interface ListSubDepartmentProps {
   departmentId: number;
   onEdit: (subdepartment: SubDepartment) => void;
   onViewChildren: (subdepartment: SubDepartment) => void;
+  hierarchyNames?: {
+    level1: string;
+    level2: string;
+    level3: string;
+    level4: string;
+  };
   headerAction?: React.ReactNode;
 }
 
@@ -23,6 +29,7 @@ export function ListSubDepartment({
   departmentId,
   onEdit,
   onViewChildren,
+  hierarchyNames: _hierarchyNames,
   headerAction,
 }: ListSubDepartmentProps) {
   const t = useTranslation();

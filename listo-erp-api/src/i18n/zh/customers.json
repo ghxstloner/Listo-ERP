@@ -1,0 +1,10 @@
+{
+  "errors": {
+    "not_found": "未找到客户"
+  },
+  "success": {
+    "created": "客户创建成功",
+    "updated": "客户更新成功",
+    "deleted": "客户删除成功"
+  }
+}

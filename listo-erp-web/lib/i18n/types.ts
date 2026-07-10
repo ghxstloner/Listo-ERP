@@ -1,4 +1,3 @@
-
 export type Locale = "es" | "en" | "pt" | "zh";
 export interface Dictionary {
   common: {
@@ -588,6 +587,115 @@ export interface Dictionary {
       };
     };
   };
+  sales: {
+    customers: {
+      title: string;
+      name: string;
+      taxDocumentType: string;
+      taxId: string;
+      address: string;
+      phone: string;
+      email: string;
+      contactName: string;
+      status: string;
+      active: string;
+      inactive: string;
+      createdAt: string;
+      updatedAt: string;
+      actions: string;
+      searchCustomers: string;
+      allStatuses: string;
+      noCustomers: string;
+      addNewCustomer: string;
+      addCustomerDescription: string;
+      customerInformation: string;
+      customerAdded: string;
+      customerUpdated: string;
+      customerDeleted: string;
+      confirmDelete: string;
+      confirmDeleteMessage: string;
+      customerNotFound: string;
+      namePlaceholder: string;
+      taxDocumentTypePlaceholder: string;
+      taxIdPlaceholder: string;
+      addressPlaceholder: string;
+      phonePlaceholder: string;
+      emailPlaceholder: string;
+      contactNamePlaceholder: string;
+      contact: string;
+      validation: {
+        nameRequired: string;
+      };
+    };
+    sellers: {
+      title: string;
+      code: string;
+      name: string;
+      status: string;
+      active: string;
+      inactive: string;
+      createdAt: string;
+      updatedAt: string;
+      actions: string;
+      assignedUsers: string;
+      selectedUsers: string;
+      clearUsers: string;
+      searchUsers: string;
+      noUsers: string;
+      searchSellers: string;
+      allStatuses: string;
+      noSellers: string;
+      addNewSeller: string;
+      addSellerDescription: string;
+      sellerInformation: string;
+      sellerAdded: string;
+      sellerUpdated: string;
+      sellerDeleted: string;
+      confirmDelete: string;
+      confirmDeleteMessage: string;
+      sellerNotFound: string;
+      validation: {
+        required: string;
+        usersRequired: string;
+      };
+    };
+    cashClosures: {
+      title: string;
+      description: string;
+      searchPlaceholder: string;
+      filterByStatus: string;
+      allStatuses: string;
+      openCash: string;
+      closeCash: string;
+      openDescription: string;
+      openSessions: string;
+      openSessionsDescription: string;
+      closedSessions: string;
+      closedSessionsDescription: string;
+      noSessions: string;
+      status: string;
+      open: string;
+      closed: string;
+      till: string;
+      selectTill: string;
+      branch: string;
+      openedBy: string;
+      openedAt: string;
+      closedAt: string;
+      openingAmount: string;
+      expected: string;
+      declared: string;
+      difference: string;
+      note: string;
+      actions: string;
+      opened: string;
+      closedMessage: string;
+      validation: {
+        tillRequired: string;
+        amountRequired: string;
+      };
+    };
+  };
   navigation: {
     dashboard: string;
     administration: string;
@@ -609,6 +717,7 @@ export interface Dictionary {
     sales: string;
     commercialCatalogs: string;
     customers: string;
+    sellers: string;
     cashClosures: string;
     pointOfSale: string;
     orders: string;

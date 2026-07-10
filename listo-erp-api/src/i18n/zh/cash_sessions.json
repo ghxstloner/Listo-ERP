@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "not_found": "未找到收银会话",
+    "till_not_found": "收银机不存在、已停用或不属于该公司",
+    "already_open": "该收银机或用户已有打开的会话",
+    "not_open": "收银会话未打开"
+  },
+  "success": {
+    "opened": "收银会话已成功打开",
+    "closed": "收银会话已成功关闭"
+  }
+}

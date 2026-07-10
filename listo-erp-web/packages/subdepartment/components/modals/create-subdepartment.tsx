@@ -22,9 +22,15 @@ import { useEffect, useState } from "react";
 
 interface CreateSubDepartmentProps {
   departmentId: number;
+  hierarchyNames?: {
+    level1: string;
+    level2: string;
+    level3: string;
+    level4: string;
+  };
 }
 
-export function CreateSubDepartment({ departmentId }: CreateSubDepartmentProps) {
+export function CreateSubDepartment({ departmentId, hierarchyNames: _hierarchyNames }: CreateSubDepartmentProps) {
   const t = useTranslation();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);

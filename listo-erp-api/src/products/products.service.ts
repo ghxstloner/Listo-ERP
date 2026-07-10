@@ -162,7 +162,12 @@ export class ProductsService {
       select: this.selectWithRelations(),
       orderBy: { createdAt: 'desc' },
     });
-    return products.map((p) => this.serializeProduct(p));
+    return {
+      data: products.map((p) => this.serializeProduct(p)),
+      meta: {
+        entityName: 'Producto',
+      },
+    };
   }
 
   async findOne(id: number, companyId: number) {

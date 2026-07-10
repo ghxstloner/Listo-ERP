@@ -1,0 +1,13 @@
+{
+  "errors": {
+    "not_found": "Vendedor no encontrado",
+    "users_required": "Debe asignar al menos un usuario al vendedor",
+    "invalid_users": "Todos los usuarios asignados deben pertenecer a la empresa activa y estar activos"
+  },
+  "success": {
+    "created": "Vendedor creado exitosamente",
+    "updated": "Vendedor actualizado exitosamente",
+    "deleted": "Vendedor eliminado exitosamente",
+    "users_assigned": "Usuarios asignados al vendedor exitosamente"
+  }
+}

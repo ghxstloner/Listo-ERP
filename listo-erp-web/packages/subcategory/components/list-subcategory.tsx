@@ -14,6 +14,12 @@ interface ListSubCategoryProps {
   subcategories: SubCategory[];
   categoryId: number;
   onEdit: (subcategory: SubCategory) => void;
+  hierarchyNames?: {
+    level1: string;
+    level2: string;
+    level3: string;
+    level4: string;
+  };
   headerAction?: React.ReactNode;
 }
 
@@ -21,6 +27,7 @@ export function ListSubCategory({
   subcategories,
   categoryId,
   onEdit,
+  hierarchyNames: _hierarchyNames,
   headerAction,
 }: ListSubCategoryProps) {
   const t = useTranslation();
