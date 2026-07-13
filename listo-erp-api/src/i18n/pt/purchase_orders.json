@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "not_found": "Pedido de compra não encontrado",
+    "duplicate_product": "Um produto não pode ser repetido no pedido",
+    "supplier_not_found": "Fornecedor ativo não encontrado",
+    "warehouse_not_found": "Armazém ativo não encontrado",
+    "product_not_found": "Um ou mais produtos não estão disponíveis",
+    "product_not_supplied": "Todos os produtos devem estar associados ao fornecedor selecionado",
+    "default_currency_required": "A empresa deve ter uma moeda padrão para criar pedidos de compra",
+    "not_pending": "Somente pedidos pendentes podem ser recebidos ou cancelados"
+  },
+  "success": {
+    "created": "Pedido de compra criado com sucesso",
+    "received": "Pedido de compra recebido e adicionado ao estoque",
+    "cancelled": "Pedido de compra cancelado com sucesso"
+  }
+}

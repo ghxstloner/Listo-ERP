@@ -27,7 +27,6 @@ import { useGetDepartments } from "@/packages/department/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
 import { useGetCategories } from "@/packages/category/api";
 import { useGetSubCategories } from "@/packages/subcategory/api";
-import { useGetSuppliers } from "@/packages/suppliers/api";
 import { useUpdateProduct } from "@/packages/product/api";
 import type { Product, UpdateProductRequest } from "@/packages/product/types";
 import { useQueryClient } from "@tanstack/react-query";
@@ -49,7 +48,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
   const [description, setDescription] = useState(() => editingProduct?.description ?? "");
   const [salePrice, setSalePrice] = useState(() => editingProduct?.salePrice.toString() ?? "");
   const [costPrice, setCostPrice] = useState(() => editingProduct?.costPrice?.toString() ?? "");
-  const [taxRate, setTaxRate] = useState(() => editingProduct?.taxRate?.toString() ?? "");
+  const [taxRate, setTaxRate] = useState(() => editingProduct?.taxRate != null ? (editingProduct.taxRate * 100).toString() : "");
   const [unit, setUnit] = useState(() => editingProduct?.unit ?? "und");
   const [isActive, setIsActive] = useState(() => editingProduct?.isActive ?? true);
   
@@ -57,7 +56,6 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
   const [subdepartmentId, setSubdepartmentId] = useState<number | null>(() => editingProduct?.subdepartmentId ?? null);
   const [categoryId, setCategoryId] = useState<number | null>(() => editingProduct?.categoryId ?? null);
   const [subcategoryId, setSubcategoryId] = useState<number | null>(() => editingProduct?.subcategoryId ?? null);
-  const [supplierId, setSupplierId] = useState<number | null>(() => editingProduct?.supplierId ?? null);
   
   const [updateProduct, isUpdating, updateError] = useUpdateProduct(
     editingProduct?.id ?? 0
@@ -67,7 +65,6 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
   const [subdepartmentsResponse] = useGetSubDepartments(departmentId ?? undefined);
   const [categoriesResponse] = useGetCategories(subdepartmentId ?? undefined);
   const [subcategoriesResponse] = useGetSubCategories(categoryId ?? undefined);
-  const [suppliers] = useGetSuppliers();
   
   const departments = departmentsResponse?.data ?? [];
   const subdepartments = subdepartmentsResponse?.data ?? [];
@@ -81,14 +78,13 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
       setDescription(editingProduct.description ?? "");
       setSalePrice(editingProduct.salePrice.toString());
       setCostPrice(editingProduct.costPrice?.toString() ?? "");
-      setTaxRate(editingProduct.taxRate?.toString() ?? "");
+      setTaxRate(editingProduct.taxRate != null ? (editingProduct.taxRate * 100).toString() : "");
       setUnit(editingProduct.unit ?? "und");
       setIsActive(editingProduct.isActive);
       setDepartmentId(editingProduct.departmentId);
       setSubdepartmentId(editingProduct.subdepartmentId);
       setCategoryId(editingProduct.categoryId);
       setSubcategoryId(editingProduct.subcategoryId);
-      setSupplierId(editingProduct.supplierId);
     }
   }, [editingProduct]);
 
@@ -132,13 +128,12 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
       description: description.trim() || undefined,
       salePrice: parseFloat(salePrice),
       costPrice: costPrice ? parseFloat(costPrice) : undefined,
-      taxRate: taxRate ? parseFloat(taxRate) : undefined,
+      taxRate: taxRate ? parseFloat(taxRate) / 100 : undefined,
       departmentId: departmentId!,
       subdepartmentId: subdepartmentId ?? undefined,
       categoryId: categoryId ?? undefined,
       subcategoryId: subcategoryId ?? undefined,
       unit: unit || "und",
-      supplierId: supplierId ?? undefined,
       isActive,
     };
 
@@ -249,7 +244,7 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
                     type="number"
                     step="0.01"
                     min="0"
-                    max="1"
+                    max="100"
                     value={taxRate}
                     onChange={(e) => setTaxRate(e.target.value)}
                     placeholder={t("inventory.products.taxRatePlaceholder")}
@@ -356,31 +351,11 @@ export function EditProduct({ editingProduct, onClose }: EditProductProps) {
               </div>
             </div>
 
-            {/* Proveedor y Estado */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium">
                 {t("inventory.products.additionalInformation")}
               </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-supplier">{t("inventory.products.supplier")}</Label>
-                  <Select
-                    value={supplierId?.toString() || ""}
-                    onValueChange={(value) => setSupplierId(Number(value))}
-                    disabled={isUpdating}
-                  >
-                    <SelectTrigger id="edit-supplier" className="w-full">
-                      <SelectValue placeholder={t("inventory.products.selectSupplier")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers?.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-status">{t("inventory.products.status")}</Label>
                   <Select

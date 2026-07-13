@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "not_found": "Orden de compra no encontrada",
+    "duplicate_product": "No se puede repetir un producto dentro de la orden",
+    "supplier_not_found": "Proveedor activo no encontrado",
+    "warehouse_not_found": "Almacén activo no encontrado",
+    "product_not_found": "Uno o más productos no están disponibles",
+    "product_not_supplied": "Todos los productos deben estar asociados al proveedor seleccionado",
+    "default_currency_required": "La empresa debe tener una moneda predeterminada para crear órdenes de compra",
+    "not_pending": "Solo las órdenes pendientes pueden recibirse o cancelarse"
+  },
+  "success": {
+    "created": "Orden de compra creada exitosamente",
+    "received": "Orden de compra recibida e ingresada a inventario",
+    "cancelled": "Orden de compra cancelada exitosamente"
+  }
+}

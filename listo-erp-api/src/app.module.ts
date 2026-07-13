@@ -17,6 +17,7 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { SellersModule } from './sellers/sellers.module';
@@ -29,6 +30,8 @@ import { WarehouseModule } from './warehouse/warehouse.module';
 import { WarehouseBranchModule } from './warehouse-branch/warehouse-branch.module';
 import { I18nExceptionFilter } from './common/filters/i18n-exception.filter';
 import { I18nModule, QueryResolver, AcceptLanguageResolver } from 'nestjs-i18n';
+import { InventoryModule } from './inventory/inventory.module';
+import { InventoryTransfersModule } from './inventory-transfers/inventory-transfers.module';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -54,6 +57,8 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
         AcceptLanguageResolver,
       ],
     }),
+    InventoryModule,
+    InventoryTransfersModule,
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -74,6 +79,7 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     ProductsModule,
     ExchangeRatesModule,
     PaymentMethodsModule,
+    PurchaseOrdersModule,
     WarehouseModule,
     WarehouseBranchModule,
   ],

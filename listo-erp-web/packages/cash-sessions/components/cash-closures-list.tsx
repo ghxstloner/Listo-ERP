@@ -409,7 +409,7 @@ export function CashClosuresList() {
             <SelectValue placeholder={t("sales.cashClosures.filterByStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t("sales.cashClosures.allStatuses")}</SelectItem>
+            <SelectItem value="all">{t("sales.cashClosures.allStatuses")}</SelectItem>  
             <SelectItem value="OPEN">{t("sales.cashClosures.open")}</SelectItem>
             <SelectItem value="CLOSED">{t("sales.cashClosures.closed")}</SelectItem>
           </SelectContent>

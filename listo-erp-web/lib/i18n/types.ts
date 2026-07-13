@@ -638,6 +638,9 @@ export interface Dictionary {
       updatedAt: string;
       actions: string;
       assignedUsers: string;
+      selectUsers: string;
+      userSelected: string;
+      usersSelected: string;
       selectedUsers: string;
       clearUsers: string;
       searchUsers: string;

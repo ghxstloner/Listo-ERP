@@ -42,30 +42,35 @@ model Company {
   taxCheckDigit     String? // Dígito verificador (Panamá)
   fiscalName        String? // Razón social
 
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  companyLogo       String?                 @default("")
-  defaultCurrencyId Int?
-  companyUsers      CompanyUser[]
-  branches          branch[]
-  tills             till[]
-  departments       Department[]
-  subdepartments    Subdepartment[]
-  categories        Category[]
-  subcategories     Subcategory[]
-  suppliers         Supplier[]
-  customers         Customer[]
-  sellers           Seller[]
-  sellerUsers       SellerUser[]
-  products          Product[]
-  defaultCurrency   Currency?               @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
-  exchangeRates     ExchangeRate[]
-  paymentMethods    PaymentMethod[]
-  country           Country?                @relation(fields: [countryId], references: [id])
-  auditLogs         AuditLog[]
-  warehouses        Warehouse[]
-  hierarchyConfig   CompanyHierarchyConfig?
-  cashSessions      CashSession[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  companyLogo             String?                  @default("")
+  defaultCurrencyId       Int?
+  companyUsers            CompanyUser[]
+  branches                branch[]
+  tills                   till[]
+  departments             Department[]
+  subdepartments          Subdepartment[]
+  categories              Category[]
+  subcategories           Subcategory[]
+  suppliers               Supplier[]
+  purchaseOrders          PurchaseOrder[]
+  inventoryTransfers      InventoryTransfer[]
+  customers               Customer[]
+  sellers                 Seller[]
+  sellerUsers             SellerUser[]
+  products                Product[]
+  defaultCurrency         Currency?                @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
+  exchangeRates           ExchangeRate[]
+  paymentMethods          PaymentMethod[]
+  country                 Country?                 @relation(fields: [countryId], references: [id])
+  auditLogs               AuditLog[]
+  warehouses              Warehouse[]
+  inventoryBalances       InventoryBalance[]
+  branchInventoryBalances BranchInventoryBalance[]
+  inventoryMovements      InventoryMovement[]
+  hierarchyConfig         CompanyHierarchyConfig?
+  cashSessions            CashSession[]
 }
 
 enum Role {
@@ -131,37 +136,40 @@ model AuditLog {
 }
 
 model branch {
-  id         Int               @id @default(autoincrement())
-  name       String
-  address    String?
-  phone      String?
-  branchCode String?           @unique
-  isActive   Boolean           @default(true)
-  companyId  Int
-  currencyId Int?
-  company    Company           @relation(fields: [companyId], references: [id])
-  currency   Currency?         @relation(fields: [currencyId], references: [id])
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  tills      till[]
-  warehouses WarehouseBranch[]
-  cashSessions CashSession[]
+  id                   Int                      @id @default(autoincrement())
+  name                 String
+  address              String?
+  phone                String?
+  branchCode           String?                  @unique
+  isActive             Boolean                  @default(true)
+  companyId            Int
+  currencyId           Int?
+  company              Company                  @relation(fields: [companyId], references: [id])
+  currency             Currency?                @relation(fields: [currencyId], references: [id])
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  tills                till[]
+  warehouses           WarehouseBranch[]
+  cashSessions         CashSession[]
+  inventoryBalances    BranchInventoryBalance[]
+  inventoryMovements   InventoryMovement[]
+  destinationTransfers InventoryTransfer[]      @relation("TransferDestinationBranch")
 
   @@unique([companyId, branchCode])
 }
 
 model till {
-  id        Int      @id @default(autoincrement())
-  tillCode  String   @unique
-  tillName  String
-  isActive  Boolean  @default(true)
-  companyId Int
-  branchId  Int
-  branch    branch   @relation(fields: [branchId], references: [id])
-  company   Company  @relation(fields: [companyId], references: [id])
+  id           Int           @id @default(autoincrement())
+  tillCode     String        @unique
+  tillName     String
+  isActive     Boolean       @default(true)
+  companyId    Int
+  branchId     Int
+  branch       branch        @relation(fields: [branchId], references: [id])
+  company      Company       @relation(fields: [companyId], references: [id])
   cashSessions CashSession[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@unique([branchId, tillCode])
 }
@@ -204,16 +212,18 @@ model CashSession {
 }
 
 model Currency {
-  id                Int            @id @default(autoincrement())
-  code              String         @unique
+  id                Int               @id @default(autoincrement())
+  code              String            @unique
   name              String
   symbol            String
-  companiesDefault  Company[]      @relation("CompanyDefaultCurrency")
+  companiesDefault  Company[]         @relation("CompanyDefaultCurrency")
   branches          branch[]
-  exchangeRatesFrom ExchangeRate[] @relation("ExchangeRateFrom")
-  exchangeRatesTo   ExchangeRate[] @relation("ExchangeRateTo")
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  exchangeRatesFrom ExchangeRate[]    @relation("ExchangeRateFrom")
+  exchangeRatesTo   ExchangeRate[]    @relation("ExchangeRateTo")
+  supplierProducts  SupplierProduct[]
+  purchaseOrders    PurchaseOrder[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 }
 
 model ExchangeRate {
@@ -312,19 +322,20 @@ model Subcategory {
 }
 
 model Supplier {
-  id          Int       @id @default(autoincrement())
-  name        String
-  taxId       String?
-  address     String?
-  phone       String?
-  email       String?
-  contactName String?
-  isActive    Boolean   @default(true)
-  companyId   Int
-  company     Company   @relation(fields: [companyId], references: [id])
-  products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             Int               @id @default(autoincrement())
+  name           String
+  taxId          String?
+  address        String?
+  phone          String?
+  email          String?
+  contactName    String?
+  isActive       Boolean           @default(true)
+  companyId      Int
+  company        Company           @relation(fields: [companyId], references: [id])
+  products       SupplierProduct[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 }
 
 model Customer {
@@ -375,47 +386,237 @@ model SellerUser {
 }
 
 model Product {
-  id              Int            @id @default(autoincrement())
-  sku             String
-  name            String
-  description     String?
-  salePrice       Decimal        @db.Decimal(18, 4)
-  costPrice       Decimal?       @db.Decimal(18, 4)
-  taxRate         Decimal?       @db.Decimal(5, 4)
-  isActive        Boolean        @default(true)
-  companyId       Int
-  departmentId    Int
-  subdepartmentId Int?
-  categoryId      Int?
-  subcategoryId   Int?
-  unit            String?
-  image           String? // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
-  supplierId      Int?
-  company         Company        @relation(fields: [companyId], references: [id])
-  department      Department     @relation(fields: [departmentId], references: [id])
-  subdepartment   Subdepartment? @relation(fields: [subdepartmentId], references: [id])
-  category        Category?      @relation(fields: [categoryId], references: [id])
-  subcategory     Subcategory?   @relation(fields: [subcategoryId], references: [id])
-  supplier        Supplier?      @relation(fields: [supplierId], references: [id])
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                      Int                      @id @default(autoincrement())
+  sku                     String
+  name                    String
+  description             String?
+  salePrice               Decimal                  @db.Decimal(18, 4)
+  costPrice               Decimal?                 @db.Decimal(18, 4)
+  taxRate                 Decimal?                 @db.Decimal(5, 4)
+  isActive                Boolean                  @default(true)
+  companyId               Int
+  departmentId            Int
+  subdepartmentId         Int?
+  categoryId              Int?
+  subcategoryId           Int?
+  unit                    String?
+  image                   String? // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
+  company                 Company                  @relation(fields: [companyId], references: [id])
+  department              Department               @relation(fields: [departmentId], references: [id])
+  subdepartment           Subdepartment?           @relation(fields: [subdepartmentId], references: [id])
+  category                Category?                @relation(fields: [categoryId], references: [id])
+  subcategory             Subcategory?             @relation(fields: [subcategoryId], references: [id])
+  supplierProducts        SupplierProduct[]
+  purchaseOrderItems      PurchaseOrderItem[]
+  inventoryBalances       InventoryBalance[]
+  branchInventoryBalances BranchInventoryBalance[]
+  inventoryMovements      InventoryMovement[]
+  transferItems           InventoryTransferItem[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@unique([companyId, sku])
 }
 
-model Warehouse {
-  id        Int               @id @default(autoincrement())
-  name      String
-  code      String            @unique
-  address   String?
-  isActive  Boolean           @default(true)
+model SupplierProduct {
+  id              Int      @id @default(autoincrement())
+  supplierId      Int
+  productId       Int
+  supplierSku     String?
+  referenceCost   Decimal? @db.Decimal(18, 4)
+  currencyId      Int?
+  minimumQuantity Decimal? @db.Decimal(18, 4)
+  leadTimeDays    Int?
+  isPreferred     Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  supplier Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currency Currency? @relation(fields: [currencyId], references: [id])
+
+  @@unique([supplierId, productId])
+  @@index([productId])
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+}
+
+enum InventoryMovementType {
+  PURCHASE_RECEIPT
+  TRANSFER_OUT
+  TRANSFER_IN
+}
+
+enum InventoryTransferStatus {
+  PENDING
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id               Int                 @id @default(autoincrement())
+  companyId        Int
+  supplierId       Int
+  warehouseId      Int
+  currencyId       Int
+  exchangeRate     Decimal             @default(1) @db.Decimal(18, 6)
+  status           PurchaseOrderStatus @default(PENDING)
+  notes            String?
+  receivedAt       DateTime?
+  receivedByUserId Int?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  company   Company             @relation(fields: [companyId], references: [id])
+  supplier  Supplier            @relation(fields: [supplierId], references: [id])
+  warehouse Warehouse           @relation(fields: [warehouseId], references: [id])
+  currency  Currency            @relation(fields: [currencyId], references: [id])
+  items     PurchaseOrderItem[]
+
+  @@index([companyId, status])
+  @@index([supplierId])
+  @@index([warehouseId])
+}
+
+model PurchaseOrderItem {
+  id              Int      @id @default(autoincrement())
+  purchaseOrderId Int
+  productId       Int
+  supplierSku     String?
+  quantity        Decimal  @db.Decimal(18, 4)
+  unitCost        Decimal  @db.Decimal(18, 4)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchaseOrder PurchaseOrder       @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product             @relation(fields: [productId], references: [id])
+  movements     InventoryMovement[]
+
+  @@unique([purchaseOrderId, productId])
+}
+
+model InventoryBalance {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  warehouseId Int
+  productId   Int
+  quantity    Decimal  @default(0) @db.Decimal(18, 4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company   Company   @relation(fields: [companyId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@unique([warehouseId, productId])
+  @@index([companyId, productId])
+}
+
+model BranchInventoryBalance {
+  id        Int      @id @default(autoincrement())
   companyId Int
-  company   Company           @relation(fields: [companyId], references: [id])
-  branches  WarehouseBranch[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  branchId  Int
+  productId Int
+  quantity  Decimal  @default(0) @db.Decimal(18, 4)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  branch  branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([branchId, productId])
+  @@index([companyId, productId])
+}
+
+model InventoryMovement {
+  id                  Int                   @id @default(autoincrement())
+  companyId           Int
+  warehouseId         Int?
+  branchId            Int?
+  productId           Int
+  type                InventoryMovementType
+  quantity            Decimal               @db.Decimal(18, 4)
+  unitCost            Decimal               @db.Decimal(18, 4)
+  balanceAfter        Decimal               @db.Decimal(18, 4)
+  purchaseOrderId     Int?
+  purchaseOrderItemId Int?
+  createdByUserId     Int
+  createdAt           DateTime              @default(now())
+
+  company           Company            @relation(fields: [companyId], references: [id])
+  warehouse         Warehouse?         @relation(fields: [warehouseId], references: [id])
+  branch            branch?            @relation(fields: [branchId], references: [id])
+  product           Product            @relation(fields: [productId], references: [id])
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+
+  @@unique([purchaseOrderItemId])
+  @@index([companyId, warehouseId, productId, createdAt])
+  @@index([companyId, branchId, productId, createdAt])
+  @@index([purchaseOrderId])
+}
+
+model Warehouse {
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  code               String              @unique
+  address            String?
+  isActive           Boolean             @default(true)
+  companyId          Int
+  company            Company             @relation(fields: [companyId], references: [id])
+  branches           WarehouseBranch[]
+  inventoryBalances  InventoryBalance[]
+  inventoryMovements InventoryMovement[]
+  purchaseOrders     PurchaseOrder[]
+  sourceTransfers    InventoryTransfer[] @relation("TransferSourceWarehouse")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@unique([companyId, code])
+}
+
+model InventoryTransfer {
+  id                  Int                     @id @default(autoincrement())
+  companyId           Int
+  sourceWarehouseId   Int
+  destinationBranchId Int
+  status              InventoryTransferStatus @default(PENDING)
+  notes               String?
+  dispatchedAt        DateTime?
+  dispatchedByUserId  Int?
+  receivedAt          DateTime?
+  receivedByUserId    Int?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  company           Company                 @relation(fields: [companyId], references: [id])
+  sourceWarehouse   Warehouse               @relation("TransferSourceWarehouse", fields: [sourceWarehouseId], references: [id])
+  destinationBranch branch                  @relation("TransferDestinationBranch", fields: [destinationBranchId], references: [id])
+  items             InventoryTransferItem[]
+
+  @@index([companyId, status])
+  @@index([sourceWarehouseId])
+  @@index([destinationBranchId])
+}
+
+model InventoryTransferItem {
+  id         Int      @id @default(autoincrement())
+  transferId Int
+  productId  Int
+  quantity   Decimal  @db.Decimal(18, 4)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  transfer InventoryTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product           @relation(fields: [productId], references: [id])
+
+  @@unique([transferId, productId])
 }
 
 model WarehouseBranch {

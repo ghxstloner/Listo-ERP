@@ -158,6 +158,15 @@ export class CompaniesService {
       throw I18nException.notFound('companies.errors.not_found');
     }
 
+    if (updateCompanyDto.defaultCurrencyId != null) {
+      const currency = await this.prisma.currency.findUnique({
+        where: { id: updateCompanyDto.defaultCurrencyId },
+      });
+      if (!currency) {
+        throw I18nException.badRequest('currencies.errors.not_found');
+      }
+    }
+
     const updatedCompany = await this.prisma.company.update({
       where: { id },
       data: updateCompanyDto,
@@ -180,6 +189,7 @@ export class CompaniesService {
         taxDocumentNumber: true,
         taxCheckDigit: true,
         fiscalName: true,
+        defaultCurrencyId: true,
         country: {
           select: {
             id: true,

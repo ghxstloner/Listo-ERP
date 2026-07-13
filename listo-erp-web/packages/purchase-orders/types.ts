@@ -1,0 +1,3 @@
+export interface PurchaseOrderItem { id: number; productId: number; supplierSku: string | null; quantity: number; unitCost: number; product: { id: number; sku: string; name: string }; }
+export interface PurchaseOrder { id: number; supplierId: number; warehouseId: number; status: "PENDING" | "RECEIVED" | "CANCELLED"; createdAt: string; receivedAt: string | null; supplier: { name: string }; warehouse: { name: string }; items: PurchaseOrderItem[]; }
+export interface CreatePurchaseOrderRequest { supplierId: number; warehouseId: number; notes?: string; items: Array<{ productId: number; quantity: number; unitCost: number }>; }

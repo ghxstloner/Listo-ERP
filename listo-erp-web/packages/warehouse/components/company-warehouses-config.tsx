@@ -5,19 +5,20 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useGetWarehouses } from "@/packages/warehouse/api";
 import { ListWarehouse } from "@/packages/warehouse/components/list-warehouse";
 import { CreateWarehouse } from "@/packages/warehouse/components/modals/create-warehouse";
-import { EditWarehouse } from "@/packages/warehouse/components/modals/edit-warehouse";
 import type { Warehouse } from "@/packages/warehouse/types";
 import { Spinner } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface CompanyWarehousesConfigProps {
   companyId: number;
 }
 
-export function CompanyWarehousesConfig({ companyId }: CompanyWarehousesConfigProps) {
+export function CompanyWarehousesConfig({
+  companyId,
+}: CompanyWarehousesConfigProps) {
   const t = useTranslation();
   const [warehouses, isLoading, error] = useGetWarehouses();
-  const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
+  const router = useRouter();
 
   if (isLoading) {
     return (
@@ -47,14 +48,10 @@ export function CompanyWarehousesConfig({ companyId }: CompanyWarehousesConfigPr
       <ListWarehouse
         warehouses={companyWarehouses}
         companyId={companyId}
-        onEdit={setEditingWarehouse}
+        onEdit={(warehouse) =>
+          router.push(`/listoerp/company/warehouses/${warehouse.id}`)
+        }
         headerAction={<CreateWarehouse companyId={companyId} />}
-      />
-      <EditWarehouse
-        key={editingWarehouse?.id ?? "closed"}
-        editingWarehouse={editingWarehouse}
-        companyId={companyId}
-        onClose={() => setEditingWarehouse(null)}
       />
     </>
   );

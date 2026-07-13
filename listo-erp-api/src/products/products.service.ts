@@ -65,18 +65,6 @@ export class ProductsService {
     }
   }
 
-  private async ensureSupplierBelongsToCompany(
-    supplierId: number,
-    companyId: number,
-  ) {
-    const supplier = await this.prisma.supplier.findFirst({
-      where: { id: supplierId, companyId },
-    });
-    if (!supplier) {
-      throw I18nException.badRequest('products.errors.supplier_not_found');
-    }
-  }
-
   async create(
     createProductDto: CreateProductDto,
     companyId: number,
@@ -93,12 +81,6 @@ export class ProductsService {
       createProductDto.categoryId,
       createProductDto.subcategoryId,
     );
-    if (createProductDto.supplierId != null) {
-      await this.ensureSupplierBelongsToCompany(
-        createProductDto.supplierId,
-        companyId,
-      );
-    }
     const existing = await this.prisma.product.findUnique({
       where: { companyId_sku: { companyId, sku } },
     });
@@ -125,7 +107,6 @@ export class ProductsService {
           categoryId: createProductDto.categoryId ?? null,
           subcategoryId: createProductDto.subcategoryId ?? null,
           unit: createProductDto.unit ?? null,
-          supplierId: createProductDto.supplierId ?? null,
           isActive: createProductDto.isActive ?? true,
           companyId,
         },
@@ -202,12 +183,6 @@ export class ProductsService {
       categoryId,
       subcategoryId,
     );
-    if (updateProductDto.supplierId != null) {
-      await this.ensureSupplierBelongsToCompany(
-        updateProductDto.supplierId,
-        companyId,
-      );
-    }
     const data: Record<string, unknown> = { ...updateProductDto };
     if (updateProductDto.sku != null) {
       const sku = updateProductDto.sku.trim();
@@ -306,7 +281,6 @@ export class ProductsService {
       subdepartmentId: true,
       categoryId: true,
       subcategoryId: true,
-      supplierId: true,
       department: {
         select: { id: true, name: true, code: true },
       },
@@ -318,9 +292,6 @@ export class ProductsService {
       },
       subcategory: {
         select: { id: true, name: true, code: true },
-      },
-      supplier: {
-        select: { id: true, name: true, taxId: true },
       },
       createdAt: true,
       updatedAt: true,

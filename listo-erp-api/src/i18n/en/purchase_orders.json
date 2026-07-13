@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "not_found": "Purchase order not found",
+    "duplicate_product": "A product cannot be repeated in an order",
+    "supplier_not_found": "Active supplier not found",
+    "warehouse_not_found": "Active warehouse not found",
+    "product_not_found": "One or more products are unavailable",
+    "product_not_supplied": "All products must be linked to the selected supplier",
+    "default_currency_required": "The company must have a default currency to create purchase orders",
+    "not_pending": "Only pending orders can be received or cancelled"
+  },
+  "success": {
+    "created": "Purchase order created successfully",
+    "received": "Purchase order received and added to inventory",
+    "cancelled": "Purchase order cancelled successfully"
+  }
+}

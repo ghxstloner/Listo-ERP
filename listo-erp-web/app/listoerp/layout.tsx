@@ -104,11 +104,11 @@ function useNavigation(): SidebarNavGroup[] {
               { title: t("navigation.suppliers"), href: "/listoerp/purchases" },
               {
                 title: t("navigation.purchaseOrders"),
-                href: "/listoerp/compras/ordenes",
+                href: "/listoerp/purchases/orders",
               },
               {
                 title: t("navigation.supplierBilling"),
-                href: "/listoerp/compras/facturacion",
+                href: "/listoerp/purchases/billing",
               },
             ],
           },

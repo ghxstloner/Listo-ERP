@@ -25,7 +25,6 @@ import { useProductValidation } from "@/packages/product/hooks/use-product-valid
 import type { Product, UpdateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
-import { useGetSuppliers } from "@/packages/suppliers/api";
 import { ArrowLeft, Camera, Spinner, Upload } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApiQuery } from "@config";
@@ -53,7 +52,6 @@ interface FormState {
   subdepartmentId: number | null;
   categoryId: number | null;
   subcategoryId: number | null;
-  supplierId: number | null;
   imagePreview: string | null;
 }
 
@@ -129,7 +127,6 @@ function emptyFormState(): FormState {
     subdepartmentId: null,
     categoryId: null,
     subcategoryId: null,
-    supplierId: null,
     imagePreview: null,
   };
 }
@@ -140,15 +137,14 @@ function productToFormState(product: Product): FormState {
     name: product.name,
     description: product.description ?? "",
     salePrice: product.salePrice.toString(),
-    costPrice: product.costPrice.toString(),
-    taxRate: product.taxRate.toString(),
-    unit: product.unit,
+    costPrice: product.costPrice?.toString() ?? "",
+    taxRate: product.taxRate != null ? (product.taxRate * 100).toString() : "",
+    unit: product.unit ?? "",
     isActive: product.isActive,
     departmentId: product.departmentId,
     subdepartmentId: product.subdepartmentId,
     categoryId: product.categoryId,
     subcategoryId: product.subcategoryId,
-    supplierId: product.supplierId,
     imagePreview: product.image ? getCompanyLogoUrl(product.image) : null,
   };
 }
@@ -170,7 +166,6 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
   const [subdepartmentsResponse] = useGetSubDepartments(formState.departmentId ?? undefined);
   const [categoriesResponse] = useGetCategories(formState.subdepartmentId ?? undefined);
   const [subcategoriesResponse] = useGetSubCategories(formState.categoryId ?? undefined);
-  const [suppliers] = useGetSuppliers();
 
   const departments = departmentsResponse?.data ?? [];
   const subdepartments = subdepartmentsResponse?.data ?? [];
@@ -260,13 +255,12 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
       description: formState.description.trim() || undefined,
       salePrice: parseFloat(salePrice),
       costPrice: formState.costPrice ? parseFloat(formState.costPrice) : undefined,
-      taxRate: formState.taxRate ? parseFloat(formState.taxRate) : undefined,
+      taxRate: formState.taxRate ? parseFloat(formState.taxRate) / 100 : undefined,
       departmentId: departmentId!,
       subdepartmentId: formState.subdepartmentId ?? undefined,
       categoryId: formState.categoryId ?? undefined,
       subcategoryId: formState.subcategoryId ?? undefined,
       unit: formState.unit || "und",
-      supplierId: formState.supplierId ?? undefined,
       isActive: formState.isActive,
     };
 
@@ -385,7 +379,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                       type="number"
                       step="0.01"
                       min="0"
-                      max="1"
+                      max="100"
                       value={formState.taxRate}
                       onChange={(e) => updateField('taxRate', e.target.value)}
                       placeholder={t("inventory.products.taxRatePlaceholder")}
@@ -499,26 +493,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                 <h3 className="text-sm font-medium text-muted-foreground">
                   {t("inventory.products.additionalInformation")}
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="supplier">{t("inventory.products.supplier")}</Label>
-                    <Select
-                      value={formState.supplierId?.toString() || ""}
-                      onValueChange={(value) => updateField('supplierId', Number(value))}
-                      disabled={isUpdating}
-                    >
-                      <SelectTrigger id="supplier">
-                        <SelectValue placeholder={t("inventory.products.selectSupplier")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {suppliers?.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="status">{t("inventory.products.status")}</Label>
                     <Select

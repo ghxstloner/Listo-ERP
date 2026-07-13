@@ -13,6 +13,7 @@
     "invalid_string": "{field}字段必须是文本",
     "invalid_boolean": "{field}字段必须为真或假",
     "min_length": "{field}字段必须至少包含{min}个字符",
-    "max_length": "{field}字段最多包含{max}个字符"
+    "max_length": "{field}字段最多包含{max}个字符",
+    "forbidden_property": "不允许使用{field}字段"
   }
 }

@@ -8,6 +8,7 @@ import { decodeId } from "@/lib/hash-id";
 import { usePageTitle } from "@/lib/page-title-context";
 import { useGetSupplier } from "@/packages/suppliers/api";
 import { SupplierConfigForm } from "@/packages/suppliers/components/supplier-config-form";
+import { SupplierProducts } from "@/packages/suppliers/components/supplier-products";
 import { ArrowLeft, Spinner } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -78,12 +79,16 @@ export default function SupplierEditPage() {
               {t("purchases.suppliers.title")}
             </Link>
           </Button>
-          <TabsList>
-            <TabsTrigger value="general">{t("company.generalConfiguration")}</TabsTrigger>
+           <TabsList>
+             <TabsTrigger value="general">{t("company.generalConfiguration")}</TabsTrigger>
+             <TabsTrigger value="products">Productos</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="general" className="mt-2 w-full">
           <SupplierConfigForm key={supplier.id} supplier={supplier} supplierId={supplierId} />
+        </TabsContent>
+        <TabsContent value="products" className="mt-2 w-full">
+          <SupplierProducts supplierId={supplierId} />
         </TabsContent>
       </Tabs>
     </div>

@@ -49,7 +49,9 @@ export class UpdateProductDto {
   @Min(0)
   costPrice?: number;
 
-  @ApiPropertyOptional({ description: 'Tasa de impuesto (ej. 0.12 para 12%)' })
+  @ApiPropertyOptional({
+    description: 'Tasa de impuesto como fracción: 0.12 equivale a 12%',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
@@ -90,13 +92,6 @@ export class UpdateProductDto {
   @IsOptional()
   @MaxLength(20)
   unit?: string;
-
-  @ApiPropertyOptional({ description: 'ID del proveedor' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  supplierId?: number;
 
   @ApiPropertyOptional({ description: 'Producto activo' })
   @IsBoolean()

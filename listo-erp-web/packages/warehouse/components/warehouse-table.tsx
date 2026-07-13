@@ -74,12 +74,15 @@ function SortableHeader({
 function StatusPill({ isActive, t }: { isActive: boolean; t: TFunction }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${isActive
-        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-        : "bg-muted text-muted-foreground"
-        }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+        isActive
+          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          : "bg-muted text-muted-foreground"
+      }`}
     >
-      {isActive ? t("company.warehouses.active") : t("company.warehouses.inactive")}
+      {isActive
+        ? t("company.warehouses.active")
+        : t("company.warehouses.inactive")}
     </span>
   );
 }
@@ -105,7 +108,9 @@ function buildColumns({
     {
       id: "name",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("company.warehouses.name")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("company.warehouses.name")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.name ?? "",
       cell: ({ row }) => (
@@ -121,7 +126,9 @@ function buildColumns({
     {
       id: "address",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("company.warehouses.address")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("company.warehouses.address")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.address ?? "",
       cell: ({ row }) => (
@@ -134,12 +141,12 @@ function buildColumns({
     {
       id: "status",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("company.warehouses.status")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("company.warehouses.status")}
+        </SortableHeader>
       ),
       accessorFn: (row) => (row.isActive ? "ACTIVE" : "INACTIVE"),
-      cell: ({ row }) => (
-        <StatusPill isActive={row.original.isActive} t={t} />
-      ),
+      cell: ({ row }) => <StatusPill isActive={row.original.isActive} t={t} />,
       filterFn: (row, _id, filterValue) => {
         if (!filterValue || filterValue === "ALL") return true;
         const isActive = row.original.isActive;
@@ -171,7 +178,9 @@ function buildColumns({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <span className="sr-only">{t("company.warehouses.actions")}</span>
+                <span className="sr-only">
+                  {t("company.warehouses.actions")}
+                </span>
                 <DotsThreeVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -212,8 +221,9 @@ export function WarehouseTable({
   const [statusValue, setStatusValue] = React.useState<string>("");
 
   const columns = React.useMemo(
-    () => buildColumns({ t, onEdit, onDelete, isDeleting, deletingWarehouseId }),
-    [t, onEdit, onDelete, isDeleting, deletingWarehouseId]
+    () =>
+      buildColumns({ t, onEdit, onDelete, isDeleting, deletingWarehouseId }),
+    [t, onEdit, onDelete, isDeleting, deletingWarehouseId],
   );
 
   // eslint-disable-next-line
@@ -227,16 +237,14 @@ export function WarehouseTable({
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue ?? "").trim().toLowerCase();
+      const q = String(filterValue ?? "")
+        .trim()
+        .toLowerCase();
       if (!q) return true;
       const name = row.original.name?.toLowerCase() ?? "";
       const address = row.original.address?.toLowerCase() ?? "";
       const code = row.original.code?.toLowerCase() ?? "";
-      return (
-        name.includes(q) ||
-        address.includes(q) ||
-        code.includes(q)
-      );
+      return name.includes(q) || address.includes(q) || code.includes(q);
     },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -302,9 +310,9 @@ export function WarehouseTable({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -318,7 +326,7 @@ export function WarehouseTable({
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}

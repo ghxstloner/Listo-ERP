@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "not_found": "未找到采购订单",
+    "duplicate_product": "订单中不能重复产品",
+    "supplier_not_found": "未找到启用的供应商",
+    "warehouse_not_found": "未找到启用的仓库",
+    "product_not_found": "一个或多个产品不可用",
+    "product_not_supplied": "所有产品必须关联到所选供应商",
+    "default_currency_required": "公司必须设置默认货币才能创建采购订单",
+    "not_pending": "只有待处理订单可以接收或取消"
+  },
+  "success": {
+    "created": "采购订单创建成功",
+    "received": "采购订单已接收并入库",
+    "cancelled": "采购订单取消成功"
+  }
+}

@@ -183,19 +183,6 @@ function buildColumns({
       sortingFn: "alphanumeric",
     },
     {
-      id: "supplier",
-      header: ({ column }) => (
-        <SortableHeader column={column}>{t("inventory.products.supplier")}</SortableHeader>
-      ),
-      accessorFn: (row) => row.supplier?.name ?? "",
-      cell: ({ row }) => (
-        <span className="text-sm">
-          {row.original.supplier?.name || "-"}
-        </span>
-      ),
-      sortingFn: "alphanumeric",
-    },
-    {
       id: "status",
       header: ({ column }) => (
         <SortableHeader column={column}>{t("inventory.products.status")}</SortableHeader>
@@ -296,15 +283,13 @@ export function ProductTable({
       const department = row.original.department?.name?.toLowerCase() ?? "";
       const subdepartment = row.original.subdepartment?.name?.toLowerCase() ?? "";
       const category = row.original.category?.name?.toLowerCase() ?? "";
-      const supplier = row.original.supplier?.name?.toLowerCase() ?? "";
       return (
         sku.includes(q) ||
         name.includes(q) ||
         description.includes(q) ||
         department.includes(q) ||
         subdepartment.includes(q) ||
-        category.includes(q) ||
-        supplier.includes(q)
+        category.includes(q)
       );
     },
     getCoreRowModel: getCoreRowModel(),

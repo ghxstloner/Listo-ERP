@@ -13,6 +13,7 @@
     "invalid_string": "El campo {field} debe ser texto",
     "invalid_boolean": "El campo {field} debe ser verdadero o falso",
     "min_length": "El campo {field} debe tener al menos {min} caracteres",
-    "max_length": "El campo {field} debe tener máximo {max} caracteres"
+    "max_length": "El campo {field} debe tener máximo {max} caracteres",
+    "forbidden_property": "El campo {field} no está permitido"
   }
 }

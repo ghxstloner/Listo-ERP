@@ -83,4 +83,8 @@ export class UpdateCompanyDto {
   @IsString()
   @IsOptional()
   fiscalName?: string;
+
+  @IsInt()
+  @IsOptional()
+  defaultCurrencyId?: number;
 }

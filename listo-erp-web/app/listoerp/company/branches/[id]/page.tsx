@@ -7,6 +7,7 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useGetBranch } from "@/packages/branch/api";
 import { BranchConfigForm } from "@/packages/branch/components/branch-config-form";
 import { BranchWarehousesTab } from "@/packages/branch/components/branch-warehouses-tab";
+import { BranchInventoryTab } from "@/packages/branch/components/branch-inventory-tab";
 import { ArrowLeft, Spinner } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -77,6 +78,7 @@ export default function BranchEditPage() {
           <TabsList>
             <TabsTrigger value="general">{t("company.generalConfiguration")}</TabsTrigger>
             <TabsTrigger value="warehouses">{t("company.branches.assignedWarehouses")}</TabsTrigger>
+            <TabsTrigger value="inventory">Inventario</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="general" className="mt-2 w-full">
@@ -88,6 +90,9 @@ export default function BranchEditPage() {
         </TabsContent>
         <TabsContent value="warehouses" className="mt-2 w-full">
           <BranchWarehousesTab branchId={branch.id} companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="inventory" className="mt-2 w-full">
+          <BranchInventoryTab branchId={branch.id} />
         </TabsContent>
       </Tabs>
     </div>

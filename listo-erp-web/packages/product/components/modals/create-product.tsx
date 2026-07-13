@@ -28,7 +28,6 @@ import { useProductValidation } from "@/packages/product/hooks/use-product-valid
 import type { CreateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
-import { useGetSuppliers } from "@/packages/suppliers/api";
 import { Plus } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -51,14 +50,12 @@ export function CreateProduct() {
   const [subdepartmentId, setSubdepartmentId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [subcategoryId, setSubcategoryId] = useState<number | null>(null);
-  const [supplierId, setSupplierId] = useState<number | null>(null);
 
   const [createProduct, isCreating, createError] = useCreateProduct();
   const [departmentsResponse] = useGetDepartments();
   const [subdepartmentsResponse] = useGetSubDepartments(departmentId ?? undefined);
   const [categoriesResponse] = useGetCategories(subdepartmentId ?? undefined);
   const [subcategoriesResponse] = useGetSubCategories(categoryId ?? undefined);
-  const [suppliers] = useGetSuppliers();
 
   const departments = departmentsResponse?.data ?? [];
   const subdepartments = subdepartmentsResponse?.data ?? [];
@@ -87,7 +84,6 @@ export function CreateProduct() {
     setSubdepartmentId(null);
     setCategoryId(null);
     setSubcategoryId(null);
-    setSupplierId(null);
   };
 
   const handleClose = () => {
@@ -114,13 +110,12 @@ export function CreateProduct() {
       description: description.trim() || undefined,
       salePrice: parseFloat(salePrice),
       costPrice: costPrice ? parseFloat(costPrice) : undefined,
-      taxRate: taxRate ? parseFloat(taxRate) : undefined,
+      taxRate: taxRate ? parseFloat(taxRate) / 100 : undefined,
       departmentId: departmentId!,
       subdepartmentId: subdepartmentId ?? undefined,
       categoryId: categoryId ?? undefined,
       subcategoryId: subcategoryId ?? undefined,
       unit: unit.trim() || undefined,
-      supplierId: supplierId ?? undefined,
       isActive,
     };
 
@@ -259,7 +254,7 @@ export function CreateProduct() {
                     type="number"
                     step="0.01"
                     min="0"
-                    max="1"
+                    max="100"
                     value={taxRate}
                     onChange={(e) => setTaxRate(e.target.value)}
                     placeholder={t("inventory.products.taxRatePlaceholder")}
@@ -359,7 +354,7 @@ export function CreateProduct() {
               <h3 className="text-sm font-medium">
                 {t("inventory.products.additionalInformation")}
               </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="unit">{t("inventory.products.unit")}</Label>
                   <Input
@@ -369,25 +364,6 @@ export function CreateProduct() {
                     placeholder={t("inventory.products.unitPlaceholder")}
                     disabled={isCreating}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="supplier">{t("inventory.products.supplier")}</Label>
-                  <Select
-                    value={supplierId?.toString() || ""}
-                    onValueChange={(value) => setSupplierId(Number(value))}
-                    disabled={isCreating || !suppliers?.length}
-                  >
-                    <SelectTrigger id="supplier" className="w-full">
-                      <SelectValue placeholder={t("inventory.products.selectSupplier")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers?.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">{t("inventory.products.status")}</Label>

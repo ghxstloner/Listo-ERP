@@ -274,6 +274,14 @@ export class I18nExceptionFilter implements ExceptionFilter {
       };
     }
 
+    const forbiddenPropertyMatch = message.match(/^property (.+) should not exist$/);
+    if (forbiddenPropertyMatch) {
+      return {
+        key: 'common.validation.forbidden_property',
+        args: { field: forbiddenPropertyMatch[1] },
+      };
+    }
+
     const minLengthMatch = message.match(
       /^(.+) must be longer than or equal to (\d+) characters$/,
     );
