@@ -1,30 +1,27 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
-  IsString,
   Min,
   ValidateNested,
 } from 'class-validator';
 
-class TransferItemDto {
+class InventoryEntryItemDto {
   @Type(() => Number) @IsInt() @Min(1) productId: number;
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0.0001)
   quantity: number;
 }
 
-export class CreateInventoryTransferDto {
-  @Type(() => Number) @IsInt() @Min(1) sourceWarehouseId: number;
-  @Type(() => Number) @IsInt() @Min(1) destinationWarehouseId: number;
+export class CreateInventoryEntryDto {
+  @Type(() => Number) @IsInt() @Min(1) warehouseId: number;
+  @IsIn(['ENTRY', 'ADJUSTMENT']) type: 'ENTRY' | 'ADJUSTMENT';
   @IsArray()
   @IsNotEmpty()
   @ValidateNested({ each: true })
-  @Type(() => TransferItemDto)
-  items: TransferItemDto[];
-  @IsOptional() @IsString() notes?: string;
+  @Type(() => InventoryEntryItemDto)
+  items: InventoryEntryItemDto[];
 }

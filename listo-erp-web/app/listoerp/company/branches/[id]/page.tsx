@@ -7,7 +7,6 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useGetBranch } from "@/packages/branch/api";
 import { BranchConfigForm } from "@/packages/branch/components/branch-config-form";
 import { BranchWarehousesTab } from "@/packages/branch/components/branch-warehouses-tab";
-import { BranchInventoryTab } from "@/packages/branch/components/branch-inventory-tab";
 import { ArrowLeft, Spinner } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -18,12 +17,16 @@ export default function BranchEditPage() {
   const idParam = params.id as string;
   const branchId = idParam ? Number(idParam) : NaN;
 
-  const [branch, isLoading, error] = useGetBranch(Number.isNaN(branchId) ? 0 : branchId);
+  const [branch, isLoading, error] = useGetBranch(
+    Number.isNaN(branchId) ? 0 : branchId,
+  );
 
   if (idParam === undefined || Number.isNaN(branchId)) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">{t("company.branches.noBranches")}</p>
+        <p className="text-muted-foreground">
+          {t("company.branches.noBranches")}
+        </p>
         <Button variant="outline" asChild>
           <Link href="/listoerp/company/branches">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -48,7 +51,8 @@ export default function BranchEditPage() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-destructive">
-          {t("common.error")}: {(error as Error)?.message ?? t("company.branches.noBranches")}
+          {t("common.error")}:{" "}
+          {(error as Error)?.message ?? t("company.branches.noBranches")}
         </p>
         <Button variant="outline" asChild>
           <Link href="/listoerp/company/branches">
@@ -76,9 +80,12 @@ export default function BranchEditPage() {
             </Link>
           </Button>
           <TabsList>
-            <TabsTrigger value="general">{t("company.generalConfiguration")}</TabsTrigger>
-            <TabsTrigger value="warehouses">{t("company.branches.assignedWarehouses")}</TabsTrigger>
-            <TabsTrigger value="inventory">Inventario</TabsTrigger>
+            <TabsTrigger value="general">
+              {t("company.generalConfiguration")}
+            </TabsTrigger>
+            <TabsTrigger value="warehouses">
+              {t("company.branches.assignedWarehouses")}
+            </TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="general" className="mt-2 w-full">
@@ -90,9 +97,6 @@ export default function BranchEditPage() {
         </TabsContent>
         <TabsContent value="warehouses" className="mt-2 w-full">
           <BranchWarehousesTab branchId={branch.id} companyId={companyId} />
-        </TabsContent>
-        <TabsContent value="inventory" className="mt-2 w-full">
-          <BranchInventoryTab branchId={branch.id} />
         </TabsContent>
       </Tabs>
     </div>

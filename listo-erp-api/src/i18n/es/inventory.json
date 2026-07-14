@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "duplicate_product": "No puedes registrar el mismo producto más de una vez.",
+    "invalid_quantity": "La cantidad no es válida para este movimiento.",
+    "invalid_warehouse": "El almacén seleccionado no es válido.",
+    "invalid_product": "Uno o más productos no son válidos o están inactivos.",
+    "insufficient_stock": "La operación dejaría existencias negativas."
+  },
+  "success": {
+    "entry_created": "Movimiento de inventario registrado correctamente."
+  }
+}

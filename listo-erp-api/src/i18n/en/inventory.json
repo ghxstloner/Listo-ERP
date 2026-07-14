@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "duplicate_product": "You cannot register the same product more than once.",
+    "invalid_quantity": "The quantity is not valid for this movement.",
+    "invalid_warehouse": "The selected warehouse is not valid.",
+    "invalid_product": "One or more products are invalid or inactive.",
+    "insufficient_stock": "The operation would result in negative stock."
+  },
+  "success": {
+    "entry_created": "Inventory movement registered successfully."
+  }
+}

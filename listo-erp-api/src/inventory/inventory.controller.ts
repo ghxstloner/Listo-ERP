@@ -1,6 +1,21 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { CurrentCompanyId } from '../auth/decorators/current-user.decorator';
+import { Role } from '@prisma/client';
+import {
+  CurrentCompanyId,
+  CurrentUser,
+  CurrentUserPayload,
+} from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CreateInventoryEntryDto } from './dto/create-inventory-entry.dto';
 import { InventoryService } from './inventory.service';
 
 @ApiTags('inventory')
@@ -9,6 +24,16 @@ import { InventoryService } from './inventory.service';
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
+
+  @Post('entries')
+  @Roles(Role.ADMIN)
+  createEntry(
+    @Body() dto: CreateInventoryEntryDto,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.inventoryService.createEntry(dto, companyId, user.id);
+  }
 
   @Get('balances')
   @ApiQuery({ name: 'warehouseId', required: false, type: Number })

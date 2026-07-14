@@ -1,0 +1,12 @@
+{
+  "errors": {
+    "duplicate_product": "不能多次登记同一产品。",
+    "invalid_quantity": "该移动的数量无效。",
+    "invalid_warehouse": "所选仓库无效。",
+    "invalid_product": "一个或多个产品无效或已停用。",
+    "insufficient_stock": "该操作会导致库存为负数。"
+  },
+  "success": {
+    "entry_created": "库存移动已成功登记。"
+  }
+}

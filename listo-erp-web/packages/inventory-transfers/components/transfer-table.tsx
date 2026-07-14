@@ -44,20 +44,12 @@ function TransferAction({ transfer }: { transfer: InventoryTransfer }) {
     const mutation = receivingMode ? receive : dispatch;
     mutation(undefined, () => {
       qc.invalidateQueries({ queryKey: ["inventory-transfers"] });
-      qc.invalidateQueries({ queryKey: ["inventory", "balances"] });
-      qc.invalidateQueries({
-        queryKey: [
-          "inventory",
-          "branches",
-          transfer.destinationBranchId,
-          "balances",
-        ],
-      });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
       setConfirm(false);
       showToast({
         type: "success",
         message: receivingMode
-          ? "Transferencia recibida en sucursal."
+          ? "Transferencia recibida en el almacén destino."
           : "Transferencia despachada.",
       });
     });
@@ -99,7 +91,7 @@ function TransferAction({ transfer }: { transfer: InventoryTransfer }) {
         }
         description={
           receivingMode
-            ? "La mercancía se agregará al inventario físico de la sucursal."
+            ? "La mercancía se agregará al inventario del almacén destino."
             : "La mercancía se descontará del inventario del almacén."
         }
         confirmText={receivingMode ? "Recibir" : "Despachar"}
@@ -128,7 +120,7 @@ export function TransferTable({
         <TableHeader>
           <TableRow>
             <TableHead>Almacén origen</TableHead>
-            <TableHead>Sucursal destino</TableHead>
+            <TableHead>Almacén destino</TableHead>
             <TableHead>Productos</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead className="text-right">Acciones</TableHead>
@@ -143,7 +135,12 @@ export function TransferTable({
                   {transfer.sourceWarehouse.code}
                 </div>
               </TableCell>
-              <TableCell>{transfer.destinationBranch.name}</TableCell>
+              <TableCell>
+                {transfer.destinationWarehouse.name}
+                <div className="text-muted-foreground text-xs">
+                  {transfer.destinationWarehouse.code}
+                </div>
+              </TableCell>
               <TableCell>
                 {transfer.items
                   .map((item) => `${item.product.sku} x${item.quantity}`)

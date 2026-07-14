@@ -25,27 +25,23 @@ export class InventoryTransfersService {
       new Set(dto.items.map((item) => item.productId)).size !== dto.items.length
     )
       throw I18nException.badRequest('common.errors.duplicate_product');
-    const [warehouse, branch, assigned] = await Promise.all([
+    const [sourceWarehouse, destinationWarehouse] = await Promise.all([
       this.prisma.warehouse.findFirst({
         where: { id: dto.sourceWarehouseId, companyId, isActive: true },
       }),
-      this.prisma.branch.findFirst({
-        where: { id: dto.destinationBranchId, companyId, isActive: true },
-      }),
-      this.prisma.warehouseBranch.findUnique({
-        where: {
-          warehouseId_branchId: {
-            warehouseId: dto.sourceWarehouseId,
-            branchId: dto.destinationBranchId,
-          },
-        },
+      this.prisma.warehouse.findFirst({
+        where: { id: dto.destinationWarehouseId, companyId, isActive: true },
       }),
     ]);
-    if (!warehouse || !branch || !assigned)
+    if (
+      !sourceWarehouse ||
+      !destinationWarehouse ||
+      sourceWarehouse.id === destinationWarehouse.id
+    )
       throw I18nException.badRequest('common.errors.invalid_location');
     const balances = await this.prisma.inventoryBalance.findMany({
       where: {
-        warehouseId: warehouse.id,
+        warehouseId: sourceWarehouse.id,
         productId: { in: dto.items.map((item) => item.productId) },
       },
       select: { productId: true, quantity: true },
@@ -63,8 +59,8 @@ export class InventoryTransfersService {
     const transfer = await this.prisma.inventoryTransfer.create({
       data: {
         companyId,
-        sourceWarehouseId: warehouse.id,
-        destinationBranchId: branch.id,
+        sourceWarehouseId: sourceWarehouse.id,
+        destinationWarehouseId: destinationWarehouse.id,
         notes: dto.notes?.trim() || null,
         items: {
           create: dto.items.map((item) => ({
@@ -76,7 +72,7 @@ export class InventoryTransfersService {
       include: {
         items: { include: { product: { select: { sku: true, name: true } } } },
         sourceWarehouse: true,
-        destinationBranch: true,
+        destinationWarehouse: true,
       },
     });
     await this.audit.logCreate(
@@ -93,7 +89,7 @@ export class InventoryTransfersService {
       where: { companyId },
       include: {
         sourceWarehouse: { select: { name: true, code: true } },
-        destinationBranch: { select: { name: true, branchCode: true } },
+        destinationWarehouse: { select: { name: true, code: true } },
         items: { include: { product: { select: { sku: true, name: true } } } },
       },
       orderBy: { createdAt: 'desc' },
@@ -166,16 +162,16 @@ export class InventoryTransfersService {
       if (!current || current.status !== InventoryTransferStatus.IN_TRANSIT)
         throw I18nException.badRequest('common.errors.invalid_status');
       for (const item of current.items) {
-        const balance = await tx.branchInventoryBalance.upsert({
+        const balance = await tx.inventoryBalance.upsert({
           where: {
-            branchId_productId: {
-              branchId: current.destinationBranchId,
+            warehouseId_productId: {
+              warehouseId: current.destinationWarehouseId,
               productId: item.productId,
             },
           },
           create: {
             companyId,
-            branchId: current.destinationBranchId,
+            warehouseId: current.destinationWarehouseId,
             productId: item.productId,
             quantity: item.quantity,
           },
@@ -185,7 +181,7 @@ export class InventoryTransfersService {
         await tx.inventoryMovement.create({
           data: {
             companyId,
-            branchId: current.destinationBranchId,
+            warehouseId: current.destinationWarehouseId,
             productId: item.productId,
             type: InventoryMovementType.TRANSFER_IN,
             quantity: item.quantity,

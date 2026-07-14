@@ -105,6 +105,45 @@ export interface Dictionary {
   };
   inventory: {
     title: string;
+    control: {
+      registerEntry: string;
+      entryDialogTitle: string;
+      entryDialogDescription: string;
+      movementType: string;
+      generalEntry: string;
+      adjustment: string;
+      warehouse: string;
+      selectWarehouse: string;
+      products: string;
+      addProduct: string;
+      product: string;
+      selectProduct: string;
+      quantity: string;
+      currentStock: string;
+      entryDescription: string;
+      adjustmentDescription: string;
+      registering: string;
+      register: string;
+      entrySuccess: string;
+      adjustmentSuccess: string;
+      selectWarehouseError: string;
+      invalidEntryError: string;
+      invalidAdjustmentError: string;
+      duplicateProductError: string;
+      unableToRegisterError: string;
+      stockByWarehouse: string;
+      latestMovements: string;
+      date: string;
+      type: string;
+      location: string;
+      noStock: string;
+      noMovements: string;
+      loadingStock: string;
+      loadingMovements: string;
+      purchase: string;
+      transferIn: string;
+      transferOut: string;
+    };
     products: {
       title: string;
       addNewProduct: string;

@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
-import { useGetBranches } from "@/packages/branch/api";
 import { useGetProducts } from "@/packages/product/api";
 import { useGetWarehouses } from "@/packages/warehouse/api";
 import { useGetWarehouseInventoryBalances } from "@/packages/inventory/api";
@@ -32,15 +31,16 @@ import { useCreateInventoryTransfer } from "../../api";
 export function CreateTransfer() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [warehouseId, setWarehouseId] = useState("");
-  const [branchId, setBranchId] = useState("");
+  const [sourceWarehouseId, setSourceWarehouseId] = useState("");
+  const [destinationWarehouseId, setDestinationWarehouseId] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [createTransfer, isCreating, error] = useCreateInventoryTransfer();
   const [warehouses] = useGetWarehouses();
-  const [branches] = useGetBranches();
   const [productsResponse] = useGetProducts();
-  const [balances] = useGetWarehouseInventoryBalances(Number(warehouseId) || 0);
+  const [balances] = useGetWarehouseInventoryBalances(
+    Number(sourceWarehouseId) || 0,
+  );
   const products = Array.isArray(productsResponse)
     ? productsResponse
     : (productsResponse?.data ?? []);
@@ -51,16 +51,17 @@ export function CreateTransfer() {
 
   const close = () => {
     setOpen(false);
-    setWarehouseId("");
-    setBranchId("");
+    setSourceWarehouseId("");
+    setDestinationWarehouseId("");
     setProductId("");
     setQuantity("");
   };
   const create = () => {
     const amount = Number(quantity);
     if (
-      !warehouseId ||
-      !branchId ||
+      !sourceWarehouseId ||
+      !destinationWarehouseId ||
+      sourceWarehouseId === destinationWarehouseId ||
       !productId ||
       !Number.isFinite(amount) ||
       amount <= 0 ||
@@ -75,8 +76,8 @@ export function CreateTransfer() {
     }
     createTransfer(
       {
-        sourceWarehouseId: Number(warehouseId),
-        destinationBranchId: Number(branchId),
+        sourceWarehouseId: Number(sourceWarehouseId),
+        destinationWarehouseId: Number(destinationWarehouseId),
         items: [{ productId: Number(productId), quantity: amount }],
       },
       () => {
@@ -107,7 +108,7 @@ export function CreateTransfer() {
           <DialogHeader className="p-4 pb-0">
             <DialogTitle>Nueva transferencia</DialogTitle>
             <DialogDescription>
-              Despacha mercancía desde un almacén hacia una sucursal.
+              Mueve mercancía entre almacenes de la empresa.
             </DialogDescription>
           </DialogHeader>
           <Separator />
@@ -115,8 +116,12 @@ export function CreateTransfer() {
             <div className="space-y-2">
               <Label>Almacén origen</Label>
               <Select
-                value={warehouseId}
-                onValueChange={setWarehouseId}
+                value={sourceWarehouseId}
+                onValueChange={(value) => {
+                  setSourceWarehouseId(value);
+                  if (value === destinationWarehouseId)
+                    setDestinationWarehouseId("");
+                }}
                 disabled={isCreating}
               >
                 <SelectTrigger className="w-full">
@@ -137,21 +142,28 @@ export function CreateTransfer() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Sucursal destino</Label>
+              <Label>Almacén destino</Label>
               <Select
-                value={branchId}
-                onValueChange={setBranchId}
+                value={destinationWarehouseId}
+                onValueChange={setDestinationWarehouseId}
                 disabled={isCreating}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar sucursal" />
+                  <SelectValue placeholder="Seleccionar almacén" />
                 </SelectTrigger>
                 <SelectContent>
-                  {branches
-                    ?.filter((branch) => branch.isActive)
-                    .map((branch) => (
-                      <SelectItem key={branch.id} value={String(branch.id)}>
-                        {branch.name}
+                  {warehouses
+                    ?.filter(
+                      (warehouse) =>
+                        warehouse.isActive &&
+                        warehouse.id !== Number(sourceWarehouseId),
+                    )
+                    .map((warehouse) => (
+                      <SelectItem
+                        key={warehouse.id}
+                        value={String(warehouse.id)}
+                      >
+                        {warehouse.name} ({warehouse.code})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -162,7 +174,7 @@ export function CreateTransfer() {
               <Select
                 value={productId}
                 onValueChange={setProductId}
-                disabled={isCreating || !warehouseId}
+                disabled={isCreating || !sourceWarehouseId}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Seleccionar producto" />

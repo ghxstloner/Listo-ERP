@@ -12,7 +12,7 @@ export function TransfersPage() {
   const filtered = useMemo(
     () =>
       (transfers ?? []).filter((transfer) =>
-        `${transfer.sourceWarehouse.name} ${transfer.destinationBranch.name} ${transfer.items.map((item) => item.product.name).join(" ")}`
+        `${transfer.sourceWarehouse.name} ${transfer.destinationWarehouse.name} ${transfer.items.map((item) => item.product.name).join(" ")}`
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
@@ -40,7 +40,7 @@ export function TransfersPage() {
             Transferencias entre ubicaciones
           </h1>
           <p className="text-muted-foreground text-sm">
-            Despache desde el almacén y confirme la recepción en la sucursal.
+            Despache desde un almacén y confirme la recepción en otro almacén.
           </p>
         </div>
         <CreateTransfer />

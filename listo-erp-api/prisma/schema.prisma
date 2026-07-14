@@ -67,7 +67,6 @@ model Company {
   auditLogs               AuditLog[]
   warehouses              Warehouse[]
   inventoryBalances       InventoryBalance[]
-  branchInventoryBalances BranchInventoryBalance[]
   inventoryMovements      InventoryMovement[]
   hierarchyConfig         CompanyHierarchyConfig?
   cashSessions            CashSession[]
@@ -151,9 +150,6 @@ model branch {
   tills                till[]
   warehouses           WarehouseBranch[]
   cashSessions         CashSession[]
-  inventoryBalances    BranchInventoryBalance[]
-  inventoryMovements   InventoryMovement[]
-  destinationTransfers InventoryTransfer[]      @relation("TransferDestinationBranch")
 
   @@unique([companyId, branchCode])
 }
@@ -409,7 +405,6 @@ model Product {
   supplierProducts        SupplierProduct[]
   purchaseOrderItems      PurchaseOrderItem[]
   inventoryBalances       InventoryBalance[]
-  branchInventoryBalances BranchInventoryBalance[]
   inventoryMovements      InventoryMovement[]
   transferItems           InventoryTransferItem[]
   createdAt               DateTime                 @default(now())
@@ -448,6 +443,8 @@ enum PurchaseOrderStatus {
 
 enum InventoryMovementType {
   PURCHASE_RECEIPT
+  MANUAL_ENTRY
+  INVENTORY_ADJUSTMENT
   TRANSFER_OUT
   TRANSFER_IN
 }
@@ -518,28 +515,10 @@ model InventoryBalance {
   @@index([companyId, productId])
 }
 
-model BranchInventoryBalance {
-  id        Int      @id @default(autoincrement())
-  companyId Int
-  branchId  Int
-  productId Int
-  quantity  Decimal  @default(0) @db.Decimal(18, 4)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id])
-  branch  branch  @relation(fields: [branchId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([branchId, productId])
-  @@index([companyId, productId])
-}
-
 model InventoryMovement {
   id                  Int                   @id @default(autoincrement())
   companyId           Int
-  warehouseId         Int?
-  branchId            Int?
+  warehouseId         Int
   productId           Int
   type                InventoryMovementType
   quantity            Decimal               @db.Decimal(18, 4)
@@ -551,14 +530,12 @@ model InventoryMovement {
   createdAt           DateTime              @default(now())
 
   company           Company            @relation(fields: [companyId], references: [id])
-  warehouse         Warehouse?         @relation(fields: [warehouseId], references: [id])
-  branch            branch?            @relation(fields: [branchId], references: [id])
+  warehouse         Warehouse          @relation(fields: [warehouseId], references: [id])
   product           Product            @relation(fields: [productId], references: [id])
   purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
 
   @@unique([purchaseOrderItemId])
   @@index([companyId, warehouseId, productId, createdAt])
-  @@index([companyId, branchId, productId, createdAt])
   @@index([purchaseOrderId])
 }
 
@@ -573,8 +550,9 @@ model Warehouse {
   branches           WarehouseBranch[]
   inventoryBalances  InventoryBalance[]
   inventoryMovements InventoryMovement[]
-  purchaseOrders     PurchaseOrder[]
-  sourceTransfers    InventoryTransfer[] @relation("TransferSourceWarehouse")
+  purchaseOrders        PurchaseOrder[]
+  sourceTransfers       InventoryTransfer[] @relation("TransferSourceWarehouse")
+  destinationTransfers  InventoryTransfer[] @relation("TransferDestinationWarehouse")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -582,10 +560,10 @@ model Warehouse {
 }
 
 model InventoryTransfer {
-  id                  Int                     @id @default(autoincrement())
-  companyId           Int
-  sourceWarehouseId   Int
-  destinationBranchId Int
+  id                     Int                     @id @default(autoincrement())
+  companyId              Int
+  sourceWarehouseId      Int
+  destinationWarehouseId Int
   status              InventoryTransferStatus @default(PENDING)
   notes               String?
   dispatchedAt        DateTime?
@@ -595,14 +573,14 @@ model InventoryTransfer {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 
-  company           Company                 @relation(fields: [companyId], references: [id])
-  sourceWarehouse   Warehouse               @relation("TransferSourceWarehouse", fields: [sourceWarehouseId], references: [id])
-  destinationBranch branch                  @relation("TransferDestinationBranch", fields: [destinationBranchId], references: [id])
+  company              Company                 @relation(fields: [companyId], references: [id])
+  sourceWarehouse      Warehouse               @relation("TransferSourceWarehouse", fields: [sourceWarehouseId], references: [id])
+  destinationWarehouse Warehouse               @relation("TransferDestinationWarehouse", fields: [destinationWarehouseId], references: [id])
   items             InventoryTransferItem[]
 
   @@index([companyId, status])
   @@index([sourceWarehouseId])
-  @@index([destinationBranchId])
+  @@index([destinationWarehouseId])
 }
 
 model InventoryTransferItem {

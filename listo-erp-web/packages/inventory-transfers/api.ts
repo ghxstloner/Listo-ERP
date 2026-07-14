@@ -4,10 +4,10 @@ export type TransferStatus =
 export interface InventoryTransfer {
   id: number;
   sourceWarehouseId: number;
-  destinationBranchId: number;
+  destinationWarehouseId: number;
   status: { code: TransferStatus; label: string };
   sourceWarehouse: { name: string; code: string };
-  destinationBranch: { name: string; branchCode: string };
+  destinationWarehouse: { name: string; code: string };
   items: Array<{
     productId: number;
     quantity: number;
@@ -16,7 +16,7 @@ export interface InventoryTransfer {
 }
 export interface CreateInventoryTransfer {
   sourceWarehouseId: number;
-  destinationBranchId: number;
+  destinationWarehouseId: number;
   items: Array<{ productId: number; quantity: number }>;
   notes?: string;
 }
