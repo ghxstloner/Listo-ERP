@@ -205,6 +205,7 @@ export const en: Dictionary = {
       productAdded: "Product created successfully",
       productUpdated: "Product updated successfully",
       productDeleted: "Product deleted successfully",
+      imageUpdatedSuccessfully: "Product image updated successfully",
       validation: {
         skuRequired: "SKU is required",
         nameRequired: "Name is required",

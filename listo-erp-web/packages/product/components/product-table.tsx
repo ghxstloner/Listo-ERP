@@ -37,6 +37,7 @@ import {
 } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import * as React from "react";
+import { getProductImageUrl } from "../api";
 import type { Product } from "../types";
 
 type TFunction = (key: string) => string;
@@ -110,6 +111,24 @@ function buildColumns({
   "t" | "onEdit" | "onDelete" | "isDeleting" | "deletingProductId"
 >): ColumnDef<Product>[] {
   return [
+    {
+      id: "image",
+      header: () => <span className="sr-only">{t("inventory.products.image")}</span>,
+      cell: ({ row }) =>
+        row.original.image ? (
+          <img
+            src={getProductImageUrl(row.original.image)}
+            alt={row.original.name}
+            className="size-10 rounded-md object-cover"
+          />
+        ) : (
+          <div className="flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+            <span className="text-xs">-</span>
+          </div>
+        ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       id: "sku",
       header: ({ column }) => (

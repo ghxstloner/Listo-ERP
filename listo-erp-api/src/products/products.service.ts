@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { isUniqueConstraintError } from '../common/utils/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
+import { removeUploadedFile } from '../upload/upload.config';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -255,12 +258,21 @@ export class ProductsService {
   }
 
   async updateImage(id: number, companyId: number, relativePath: string) {
-    await this.findOne(id, companyId);
+    const currentProduct = await this.findOne(id, companyId);
     const product = await this.prisma.product.update({
       where: { id },
       data: { image: relativePath },
       select: this.selectWithRelations(),
     });
+    if (currentProduct.image && currentProduct.image !== relativePath) {
+      try {
+        await removeUploadedFile('products', currentProduct.image);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo eliminar la imagen anterior del producto ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     return this.serializeProduct(product);
   }
 

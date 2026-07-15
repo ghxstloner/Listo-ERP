@@ -210,6 +210,7 @@ export const es: Dictionary = {
       productAdded: "Producto creado exitosamente",
       productUpdated: "Producto actualizado exitosamente",
       productDeleted: "Producto eliminado exitosamente",
+      imageUpdatedSuccessfully: "Imagen del producto actualizada exitosamente",
       validation: {
         skuRequired: "El SKU es obligatorio",
         nameRequired: "El nombre es obligatorio",

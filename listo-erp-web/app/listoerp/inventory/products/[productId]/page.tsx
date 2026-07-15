@@ -14,13 +14,13 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
+import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/hooks/use-translation";
 import { decodeId } from "@/lib/hash-id";
 import { usePageTitle } from "@/lib/page-title-context";
 import { useGetCategories } from "@/packages/category/api";
-import { getCompanyLogoUrl } from "@/packages/company/api";
 import { useGetDepartments } from "@/packages/department/api";
-import { useUpdateProduct, useUploadProductImage } from "@/packages/product/api";
+import { getProductImageUrl, useUpdateProduct, useUploadProductImage } from "@/packages/product/api";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
 import type { Product, UpdateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
@@ -31,12 +31,12 @@ import { useApiQuery } from "@config";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { use, useEffect, useRef, useState, type ChangeEvent } from "react";
 
 interface ProductDetailPageProps {
-  params: {
+  params: Promise<{
     productId: string;
-  };
+  }>;
 }
 
 interface FormState {
@@ -59,8 +59,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
   const router = useRouter();
+  const { productId } = use(params);
 
-  const decodedProductId = decodeId(params.productId);
+  const decodedProductId = decodeId(productId);
   const [product, isLoading, error] = useApiQuery<Product>(
     ["products", decodedProductId ?? "invalid"],
     `products/${decodedProductId ?? 0}`,
@@ -145,7 +146,7 @@ function productToFormState(product: Product): FormState {
     subdepartmentId: product.subdepartmentId,
     categoryId: product.categoryId,
     subcategoryId: product.subcategoryId,
-    imagePreview: product.image ? getCompanyLogoUrl(product.image) : null,
+    imagePreview: getProductImageUrl(product.image) || null,
   };
 }
 
@@ -230,10 +231,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
     };
     reader.readAsDataURL(file);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    uploadImage(formData, () => {
+    uploadImage(file, () => {
       queryClient.invalidateQueries({ queryKey: ["products", productId] });
       showToast({
         type: "success",
@@ -276,7 +274,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
 
   return (
     <div className="w-full p-4 space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link
             href="/listoerp/inventory/products"
@@ -286,15 +284,17 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
             {t("inventory.products.backToProducts")}
           </Link>
         </Button>
+        <Button onClick={handleSave} disabled={isUpdating}>
+          {isUpdating ? t("common.saving") : t("common.save")}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="min-w-0 space-y-6">
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-muted-foreground">
                   {t("inventory.products.basicInformation")}
@@ -415,7 +415,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                       onValueChange={(value) => updateField('departmentId', Number(value))}
                       disabled={isUpdating}
                     >
-                      <SelectTrigger id="department">
+                      <SelectTrigger id="department" className="w-full">
                         <SelectValue placeholder={t("inventory.products.selectDepartment")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -434,7 +434,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                       onValueChange={(value) => updateField('subdepartmentId', Number(value))}
                       disabled={isUpdating || !formState.departmentId || subdepartments.length === 0}
                     >
-                      <SelectTrigger id="subdepartment">
+                      <SelectTrigger id="subdepartment" className="w-full">
                         <SelectValue placeholder={t("inventory.products.selectSubdepartment")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -453,7 +453,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                       onValueChange={(value) => updateField('categoryId', Number(value))}
                       disabled={isUpdating || !formState.subdepartmentId || categories.length === 0}
                     >
-                      <SelectTrigger id="category">
+                      <SelectTrigger id="category" className="w-full">
                         <SelectValue placeholder={t("inventory.products.selectCategory")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -472,7 +472,7 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                       onValueChange={(value) => updateField('subcategoryId', Number(value))}
                       disabled={isUpdating || !formState.categoryId || subcategories.length === 0}
                     >
-                      <SelectTrigger id="subcategory">
+                      <SelectTrigger id="subcategory" className="w-full">
                         <SelectValue placeholder={t("inventory.products.selectSubcategory")} />
                       </SelectTrigger>
                       <SelectContent>
@@ -489,131 +489,77 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
 
               <Separator />
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("inventory.products.additionalInformation")}
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">{t("inventory.products.status")}</Label>
-                    <Select
-                      value={formState.isActive ? "ACTIVE" : "INACTIVE"}
-                      onValueChange={(value) => updateField('isActive', value === "ACTIVE")}
-                      disabled={isUpdating}
-                    >
-                      <SelectTrigger id="status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">
-                          {t("inventory.products.active")}
-                        </SelectItem>
-                        <SelectItem value="INACTIVE">
-                          {t("inventory.products.inactive")}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">{t("inventory.products.status")}</span>
+                <Switch
+                  id="status"
+                  checked={formState.isActive}
+                  onCheckedChange={(checked) => updateField("isActive", checked)}
+                  disabled={isUpdating}
+                />
+                <Label htmlFor="status" className="cursor-pointer">
+                  {formState.isActive ? t("inventory.products.active") : t("inventory.products.inactive")}
+                </Label>
               </div>
+          </div>
 
-              <Separator />
+          <div className="space-y-3 border-t pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6">
+            <h3 className="text-sm font-medium text-muted-foreground">{t("inventory.products.image")}</h3>
+            <div
+              className="relative flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:border-muted-foreground/50"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {formState.imagePreview ? (
+                <Image
+                  src={formState.imagePreview}
+                  alt={formState.name}
+                  fill
+                  sizes="(max-width: 1280px) 100vw, 280px"
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <div className="p-4 text-center">
+                  <Camera className="mx-auto mb-2 h-12 w-12 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    {t("inventory.products.uploadImage")}
+                  </p>
+                </div>
+              )}
 
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={isUpdating}>
-                  {isUpdating ? t("common.saving") : t("common.save")}
+              {isUploadingImage && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Spinner className="h-8 w-8 animate-spin" />
+                </div>
+              )}
+
+              <div className="absolute right-2 bottom-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="shadow-lg"
+                  disabled={isUploadingImage}
+                >
+                  <Upload className="mr-1 h-4 w-4" />
+                  {formState.imagePreview ? t("inventory.products.changeImage") : t("inventory.products.uploadImage")}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("inventory.products.image")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div
-                className="relative aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 transition-colors cursor-pointer overflow-hidden bg-muted/50 flex items-center justify-center"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {formState.imagePreview ? (
-                  <Image
-                    src={formState.imagePreview}
-                    alt={formState.name}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 33vw"
-                    className="object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="text-center p-4">
-                    <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      {t("inventory.products.uploadImage")}
-                    </p>
-                  </div>
-                )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
 
-                {isUploadingImage && (
-                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                    <Spinner className="h-8 w-8 animate-spin" />
-                  </div>
-                )}
-
-                <div className="absolute bottom-2 right-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="shadow-lg"
-                    disabled={isUploadingImage}
-                  >
-                    <Upload className="h-4 w-4 mr-1" />
-                    {formState.imagePreview ? t("inventory.products.changeImage") : t("inventory.products.uploadImage")}
-                  </Button>
-                </div>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
-
-              <p className="text-xs text-muted-foreground text-center">
-                {t("inventory.products.imageFormats")}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("inventory.products.additionalInformation")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ID:</span>
-                <span>#{product.id}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {t("inventory.products.createdAt")}:
-                </span>
-                <span>{new Date(product.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  {t("inventory.products.updatedAt")}:
-                </span>
-                <span>{new Date(product.updatedAt).toLocaleDateString()}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            <p className="text-center text-xs text-muted-foreground">
+              {t("inventory.products.imageFormats")}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

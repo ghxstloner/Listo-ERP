@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { removeUploadedFile } from '../upload/upload.config';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateHierarchyConfigDto } from './dto/update-hierarchy-config.dto';
@@ -15,6 +16,8 @@ const DEFAULT_PAYMENT_METHODS = [
 
 @Injectable()
 export class CompaniesService {
+  private readonly logger = new Logger(CompaniesService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -249,6 +252,16 @@ export class CompaniesService {
         },
       },
     });
+
+    if (company.companyLogo && company.companyLogo !== relativePath) {
+      try {
+        await removeUploadedFile('companies', company.companyLogo);
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo eliminar el logo anterior de la empresa ${id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
 
     await this.auditService.logUpdate(userId, id, 'companies', 'Empresa', id);
 

@@ -1,14 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,25 +11,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
+import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/hooks/use-translation";
 import { useGetCategories } from "@/packages/category/api";
 import { useGetDepartments } from "@/packages/department/api";
-import { useCreateProduct } from "@/packages/product/api";
+import { uploadProductImage, useCreateProduct } from "@/packages/product/api";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
 import type { CreateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
-import { Plus } from "@phosphor-icons/react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { encodeId } from "@/lib/hash-id";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export function CreateProduct() {
+export function CreateProductPage() {
   const t = useTranslation();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { validateProductFields } = useProductValidation();
-  const [isOpen, setIsOpen] = useState(false);
 
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
@@ -50,6 +46,10 @@ export function CreateProduct() {
   const [subdepartmentId, setSubdepartmentId] = useState<number | null>(null);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [subcategoryId, setSubcategoryId] = useState<number | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [createProduct, isCreating, createError] = useCreateProduct();
   const [departmentsResponse] = useGetDepartments();
@@ -71,32 +71,19 @@ export function CreateProduct() {
     }
   }, [createError, t]);
 
-  const handleReset = () => {
-    setSku("");
-    setName("");
-    setDescription("");
-    setSalePrice("");
-    setCostPrice("");
-    setTaxRate("");
-    setUnit("und");
-    setIsActive(true);
-    setDepartmentId(null);
-    setSubdepartmentId(null);
-    setCategoryId(null);
-    setSubcategoryId(null);
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-    handleReset();
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      setIsOpen(true);
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      showToast({ type: "error", message: t("common.error") });
       return;
     }
-    handleClose();
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleCreateProduct = () => {
@@ -119,13 +106,23 @@ export function CreateProduct() {
       isActive,
     };
 
-    createProduct(request, () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      handleClose();
-      showToast({
-        type: "success",
-        message: t("inventory.products.productAdded"),
-      });
+    createProduct(request, async (response) => {
+      if (imageFile) {
+        setIsUploadingImage(true);
+        try {
+          await uploadProductImage(response.data.id, imageFile);
+        } catch (error) {
+          showToast({
+            type: "error",
+            message: error instanceof Error ? error.message : t("common.error"),
+          });
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      showToast({ type: "success", message: t("inventory.products.productAdded") });
+      router.push(`/listoerp/inventory/products/${encodeId(response.data.id)}`);
     });
   };
 
@@ -155,21 +152,19 @@ export function CreateProduct() {
     !!departmentId;
 
   return (
-    <>
-      <Button onClick={() => setIsOpen(true)} size="sm">
-        <Plus className="mr-2 h-4 w-4" />
-        {t("inventory.products.addNewProduct")}
+    <div className="w-full space-y-4 p-4">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/listoerp/inventory/products" className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          {t("inventory.products.backToProducts")}
+        </Link>
       </Button>
-
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto p-0">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle>{t("inventory.products.addNewProduct")}</DialogTitle>
-            <DialogDescription>
-              {t("inventory.products.addProductDescription")}
-            </DialogDescription>
-          </DialogHeader>
-          <Separator />
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("inventory.products.addNewProduct")}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t("inventory.products.addProductDescription")}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
 
           <div className="space-y-3 px-4">
             <div className="space-y-4">
@@ -367,38 +362,59 @@ export function CreateProduct() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">{t("inventory.products.status")}</Label>
-                  <Select
-                    value={isActive ? "ACTIVE" : "INACTIVE"}
-                    onValueChange={(value) => setIsActive(value === "ACTIVE")}
-                    disabled={isCreating}
-                  >
-                    <SelectTrigger id="status" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">
-                        {t("inventory.products.active")}
-                      </SelectItem>
-                      <SelectItem value="INACTIVE">
-                        {t("inventory.products.inactive")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex h-9 items-center gap-3">
+                    <Switch
+                      id="status"
+                      checked={isActive}
+                      onCheckedChange={setIsActive}
+                      disabled={isCreating}
+                    />
+                    <span className="text-sm">
+                      {isActive ? t("inventory.products.active") : t("inventory.products.inactive")}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>{t("inventory.products.image")}</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isCreating || isUploadingImage}
+                className="flex w-full items-center gap-3 rounded-md border border-dashed p-3 text-left hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt={name || "Producto"} className="size-16 rounded object-cover" />
+                ) : (
+                  <div className="flex size-16 items-center justify-center rounded bg-muted text-muted-foreground">+</div>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  {imageFile ? imageFile.name : t("inventory.products.uploadImage")}
+                </span>
+              </button>
+              <p className="text-xs text-muted-foreground">{t("inventory.products.imageFormats")}</p>
+            </div>
           </div>
 
-          <DialogFooter className="p-4">
-            <Button variant="outline" onClick={handleClose} disabled={isCreating}>
-              {t("common.cancel")}
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button variant="outline" asChild disabled={isCreating || isUploadingImage}>
+              <Link href="/listoerp/inventory/products">{t("common.cancel")}</Link>
             </Button>
-            <Button onClick={handleCreateProduct} disabled={isCreating || !formValid}>
-              {isCreating ? t("common.saving") : t("common.create")}
+            <Button onClick={handleCreateProduct} disabled={isCreating || isUploadingImage || !formValid}>
+              {isCreating || isUploadingImage ? t("common.saving") : t("common.create")}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

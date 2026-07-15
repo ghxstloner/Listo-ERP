@@ -199,6 +199,7 @@ export interface Dictionary {
       productAdded: string;
       productUpdated: string;
       productDeleted: string;
+      imageUpdatedSuccessfully: string;
       validation: {
         skuRequired: string;
         nameRequired: string;

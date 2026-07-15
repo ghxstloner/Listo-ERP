@@ -1,7 +1,8 @@
 import { mkdirSync } from 'fs';
+import { rm } from 'fs/promises';
 import { diskStorage } from 'multer';
 import { customAlphabet } from 'nanoid';
-import { extname, join } from 'path';
+import { basename, extname, join } from 'path';
 
 const nanoid = customAlphabet(
   '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
@@ -73,4 +74,19 @@ export function toRelativePath(
   filename: string,
 ): string {
   return `${subfolder}/${filename}`;
+}
+
+export async function removeUploadedFile(
+  subfolder: UploadSubfolder,
+  relativePath: string | null | undefined,
+): Promise<void> {
+  if (!relativePath) return;
+
+  const prefix = `${subfolder}/`;
+  if (!relativePath.startsWith(prefix)) return;
+
+  const filename = relativePath.slice(prefix.length);
+  if (!filename || filename !== basename(filename)) return;
+
+  await rm(join(getUploadDir(subfolder), filename), { force: true });
 }

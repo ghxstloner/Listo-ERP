@@ -202,6 +202,7 @@ export const zh: Dictionary = {
       productAdded: "产品创建成功",
       productUpdated: "产品更新成功",
       productDeleted: "产品删除成功",
+      imageUpdatedSuccessfully: "产品图片更新成功",
       validation: {
         skuRequired: "SKU是必填项",
         nameRequired: "名称是必填项",
