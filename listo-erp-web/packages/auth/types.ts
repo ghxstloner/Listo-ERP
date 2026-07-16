@@ -15,7 +15,7 @@ export interface LoginResponse {
       name: string,
       primaryColor: string
       secondaryColor: string
-      role: string
+      permissions: string[]
     }
   ],
   access_token: string
@@ -37,4 +37,8 @@ export interface ResetPasswordRequest {
 
 export interface ResetPasswordResponse {
   message: string;
+}
+
+export interface SessionResponse {
+  permissions: string[];
 }

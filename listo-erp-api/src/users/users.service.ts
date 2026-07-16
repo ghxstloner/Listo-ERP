@@ -1,7 +1,6 @@
 import { AuditService } from '../audit/audit.service';
 import { Injectable } from '@nestjs/common';
 import { I18nException } from '../common/exceptions/i18n-exception';
-import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { customAlphabet } from 'nanoid';
 import { PrismaService } from '../prisma/prisma.service';
@@ -75,18 +74,19 @@ export class UsersService {
         },
       });
 
+      const roleIds = await this.validRoleIds(createUserDto.roleIds ?? [], companyId);
       const companyUser = await tx.companyUser.create({
         data: {
           userId: user.id,
           companyId,
-          role: createUserDto.role || Role.USER,
+          roles: { create: roleIds.map((roleId) => ({ roleId })) },
         },
         select: {
-          role: true,
+          roles: { select: { role: { select: { id: true, name: true } } } },
         },
       });
 
-      return { ...user, role: companyUser.role };
+      return { ...user, roles: companyUser.roles.map(({ role }) => role) };
     });
 
     return {
@@ -99,6 +99,7 @@ export class UsersService {
     const companyUsers = await this.prisma.companyUser.findMany({
       where: { companyId },
       include: {
+        roles: { select: { role: { select: { id: true, name: true } } } },
         user: {
           select: {
             id: true,
@@ -116,7 +117,7 @@ export class UsersService {
 
     return companyUsers.map((cu) => ({
       ...cu.user,
-      role: cu.role,
+      roles: cu.roles.map(({ role }) => role),
     }));
   }
 
@@ -126,6 +127,7 @@ export class UsersService {
         companyId_userId: { companyId, userId: id },
       },
       include: {
+        roles: { select: { role: { select: { id: true, name: true } } } },
         user: {
           select: {
             id: true,
@@ -146,7 +148,7 @@ export class UsersService {
 
     return {
       ...companyUser.user,
-      role: companyUser.role,
+      roles: companyUser.roles.map(({ role }) => role),
     };
   }
 
@@ -154,13 +156,8 @@ export class UsersService {
     id: number,
     updateUserDto: UpdateUserDto,
     companyId: number,
-    currentUserRole: Role,
   ) {
     const userInfo = await this.findOne(id, companyId);
-
-    if (updateUserDto.role && currentUserRole !== Role.ADMIN) {
-      throw I18nException.forbidden('users.errors.admin_only_role_change');
-    }
 
     if (updateUserDto.email && updateUserDto.email !== userInfo.email) {
       const existingUser = await this.prisma.user.findUnique({
@@ -172,7 +169,7 @@ export class UsersService {
       }
     }
 
-    const { role, ...userUpdateData } = updateUserDto;
+    const { roleIds, ...userUpdateData } = updateUserDto;
 
     if (userUpdateData.password) {
       userUpdateData.password = await bcrypt.hash(userUpdateData.password, 10);
@@ -193,19 +190,20 @@ export class UsersService {
         },
       });
 
-      let updatedRole = userInfo.role;
-      if (role) {
+      let roles = userInfo.roles;
+      if (roleIds) {
+        const validRoleIds = await this.validRoleIds(roleIds, companyId);
         const updatedCompanyUser = await tx.companyUser.update({
           where: {
             companyId_userId: { companyId, userId: id },
           },
-          data: { role },
-          select: { role: true },
+          data: { roles: { deleteMany: {}, create: validRoleIds.map((roleId) => ({ roleId })) } },
+          select: { roles: { select: { role: { select: { id: true, name: true } } } } },
         });
-        updatedRole = updatedCompanyUser.role;
+        roles = updatedCompanyUser.roles.map(({ role }) => role);
       }
 
-      return { ...updatedUser, role: updatedRole };
+      return { ...updatedUser, roles };
     });
 
     return {
@@ -235,5 +233,16 @@ export class UsersService {
     }
 
     return { message: 'users.success.removed_from_company' };
+  }
+
+  private async validRoleIds(roleIds: number[], companyId: number) {
+    const roles = await this.prisma.companyRole.findMany({
+      where: { id: { in: roleIds }, companyId },
+      select: { id: true },
+    });
+    if (roles.length !== roleIds.length) {
+      throw I18nException.badRequest('common.errors.invalid_id');
+    }
+    return roles.map(({ id }) => id);
   }
 }

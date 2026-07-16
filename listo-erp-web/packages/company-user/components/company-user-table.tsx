@@ -71,18 +71,9 @@ function SortableHeader({
   );
 }
 
-function RolePill({ role, t }: { role: CompanyUserWithUser["role"]; t: TFunction }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        role === "ADMIN"
-          ? "bg-primary/10 text-primary"
-          : "bg-muted text-muted-foreground"
-      }`}
-    >
-      {role === "ADMIN" ? t("company.users.roleAdmin") : t("company.users.roleUser")}
-    </span>
-  );
+function RolePill({ roles }: { roles: CompanyUserWithUser["roles"] }) {
+  if (roles.length === 0) return <span className="text-sm text-muted-foreground">Sin roles</span>;
+  return <div className="flex flex-wrap gap-1">{roles.map(({ role }) => <span key={role.id} className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">{role.name}</span>)}</div>;
 }
 
 function StatusPill({ isActive, t }: { isActive: boolean; t: TFunction }) {
@@ -147,12 +138,8 @@ function buildColumns({
       header: ({ column }) => (
         <SortableHeader column={column}>{t("company.users.role")}</SortableHeader>
       ),
-      accessorFn: (row) => row.role,
-      cell: ({ row }) => <RolePill role={row.original.role} t={t} />,
-      filterFn: (row, _id, filterValue) => {
-        if (!filterValue || filterValue === "ALL") return true;
-        return row.original.role === filterValue;
-      },
+      accessorFn: (row) => row.roles.map(({ role }) => role.name).join(", "),
+      cell: ({ row }) => <RolePill roles={row.original.roles} />,
     },
     {
       id: "status",
@@ -226,7 +213,6 @@ export function CompanyUserTable({
 }: CompanyUserTableProps) {
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [roleValue, setRoleValue] = React.useState<string>("");
   const [statusValue, setStatusValue] = React.useState<string>("");
 
   const columns = React.useMemo(
@@ -267,30 +253,6 @@ export function CompanyUserTable({
             className="sm:max-w-sm"
           />
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Select
-                value={roleValue}
-                onValueChange={(value) => {
-                  if (value === "ALL") {
-                    table.getColumn("role")?.setFilterValue(undefined);
-                    setRoleValue("");
-                    return;
-                  }
-
-                  setRoleValue(value);
-                  table.getColumn("role")?.setFilterValue(value);
-                }}
-              >
-                <SelectTrigger size="default" className="min-w-40">
-                  <SelectValue placeholder={t("company.users.role")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">{t("company.users.allRoles")}</SelectItem>
-                  <SelectItem value="ADMIN">{t("company.users.roleAdmin")}</SelectItem>
-                  <SelectItem value="USER">{t("company.users.roleUser")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="flex items-center gap-2">
               <Select
                 value={statusValue}

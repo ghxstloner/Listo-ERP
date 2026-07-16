@@ -11,25 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
-import { ConfirmDialog } from "@/components/ui/use-confirm";
 import { useTranslation } from "@/hooks/use-translation";
 import { useUpdateCompanyUser } from "@/packages/company-user/api";
-import type {
-  CompanyUserRole,
-  CompanyUserWithUser,
-  UpdateCompanyUserRequest,
-} from "@/packages/company-user/types";
+import { useGetCompanyRoles } from "@/packages/company/api";
+import { RoleSelector } from "@/packages/company/components/role-selector";
+import type { CompanyUserWithUser, UpdateCompanyUserRequest } from "@/packages/company-user/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface EditCompanyUserProps {
   editingUser: CompanyUserWithUser | null;
@@ -40,30 +30,25 @@ interface EditCompanyUserProps {
 export function EditCompanyUser({ editingUser, companyId, onClose }: EditCompanyUserProps) {
   const t = useTranslation();
   const queryClient = useQueryClient();
-  const [pendingRole, setPendingRole] = useState<CompanyUserRole | null>(null);
+  const [roleIds, setRoleIds] = useState<number[]>([]);
   const [updateCompanyUser, isUpdating] = useUpdateCompanyUser(
     editingUser?.id || 0
   );
+  const [roles] = useGetCompanyRoles();
 
-  const handleRoleChange = (newRole: CompanyUserRole) => {
+  useEffect(() => setRoleIds(editingUser?.roles.map(({ role }) => role.id) ?? []), [editingUser]);
+
+  const handleUpdateRoles = () => {
     if (!editingUser) return;
-    if (newRole !== editingUser.role) {
-      setPendingRole(newRole);
-    }
-  };
-
-  const handleConfirmUpdateRole = () => {
-    if (!editingUser || !pendingRole) return;
 
     const request: UpdateCompanyUserRequest = {
-      role: pendingRole,
+      roleIds,
     };
 
     updateCompanyUser(request, () => {
       queryClient.invalidateQueries({
         queryKey: ["companies-users", "company", companyId],
       });
-      setPendingRole(null);
       onClose();
       showToast({
         type: "success",
@@ -104,52 +89,19 @@ export function EditCompanyUser({ editingUser, companyId, onClose }: EditCompany
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-role-select">{t("company.users.role")}</Label>
-                  <Select
-                    value={editingUser.role}
-                    onValueChange={(value) => {
-                      handleRoleChange(value as CompanyUserRole);
-                    }}
-                    disabled={isUpdating}
-                  >
-                    <SelectTrigger id="edit-role-select" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">
-                        {t("company.users.roleAdmin")}
-                      </SelectItem>
-                      <SelectItem value="USER">
-                        {t("company.users.roleUser")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>{t("company.users.role")}</Label>
+                  <RoleSelector roles={roles || []} value={roleIds} onChange={setRoleIds} disabled={isUpdating} />
                 </div>
               </div>
             </div>
           </div>
         )}
         <DialogFooter className="p-4">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isUpdating}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isUpdating}>
             {t("common.cancel")}
-          </Button>
+          </Button><Button onClick={handleUpdateRoles} disabled={isUpdating}>{isUpdating ? t("common.saving") : t("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
-      <ConfirmDialog
-        open={!!pendingRole}
-        onOpenChange={(open) => !open && setPendingRole(null)}
-        onConfirm={handleConfirmUpdateRole}
-        title={t("company.users.confirmEdit")}
-        description={t("company.users.confirmEditMessage")}
-        confirmText={t("common.save")}
-        cancelText={t("common.cancel")}
-        severity="warning"
-        isLoading={isUpdating}
-      />
     </Dialog>
   );
 }

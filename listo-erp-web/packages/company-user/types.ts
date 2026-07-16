@@ -1,10 +1,13 @@
-export type CompanyUserRole = 'ADMIN' | 'USER';
+export interface AssignedRole {
+  id: number;
+  name: string;
+}
 
 export interface CompanyUser {
   id: number;
   userId: number;
   companyId: number;
-  role: CompanyUserRole;
+  roles: Array<{ role: AssignedRole }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,11 +41,11 @@ export interface CompanyUserWithUser extends CompanyUser {
 
 export interface CreateCompanyUserRequest {
   userId: number;
-  role: CompanyUserRole;
+  roleIds?: number[];
 }
 
 export interface UpdateCompanyUserRequest {
-  role: CompanyUserRole;
+  roleIds: number[];
 }
 
 export interface DeleteCompanyUserResponse {

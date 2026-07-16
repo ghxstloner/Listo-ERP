@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "duplicate_product": "The same product cannot be registered more than once.",
+    "cash_session_required": "You must have an open cash session to register a sale.",
+    "customer_not_found": "The selected customer is not available.",
+    "seller_not_found": "The selected seller is not available for your user.",
+    "payment_method_not_found": "The selected payment method is not available.",
+    "product_not_found": "One or more products are not available.",
+    "warehouse_not_found": "The cash session branch has no associated active warehouses.",
+    "insufficient_stock": "There is not enough stock in the branch warehouses."
+  },
+  "success": {
+    "created": "Sale registered successfully."
+  }
+}

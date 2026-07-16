@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { ArrayUnique, IsArray, IsInt, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateCompanyUserDto {
   @ApiProperty({ description: 'ID del usuario a agregar' })
@@ -8,11 +7,10 @@ export class CreateCompanyUserDto {
   @IsNotEmpty()
   userId: number;
 
-  @ApiPropertyOptional({
-    enum: Role,
-    description: 'Rol del usuario en la empresa',
-  })
-  @IsEnum(Role)
+  @ApiPropertyOptional({ type: [Number], description: 'IDs de roles personalizados de la empresa' })
   @IsOptional()
-  role?: Role;
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  roleIds?: number[];
 }

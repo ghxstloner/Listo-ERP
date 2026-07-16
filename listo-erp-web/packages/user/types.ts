@@ -1,5 +1,3 @@
-export type UserRole = 'ADMIN' | 'USER';
-
 export interface User {
   id: number;
   email: string;
@@ -7,21 +5,21 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  role: UserRole;
+  roles: Array<{ id: number; name: string }>;
 }
 
 export interface CreateUserRequest {
   email: string;
   password: string;
   name: string;
-  role: UserRole;
+  roleIds?: number[];
 }
 
 export interface UpdateUserRequest {
   email?: string;
   password?: string;
   name?: string;
-  role?: UserRole;
+  roleIds?: number[];
   isActive?: boolean;
 }
 

@@ -3,18 +3,26 @@ import { getApiUserInfo } from "@config";
 import { useGetCustomers } from "@/packages/customers/api";
 import type { Customer } from "@/packages/customers/types";
 import { useGetDepartments } from "@/packages/department/api";
-import { useGetInventoryBalances } from "@/packages/inventory/api";
+import { useGetCategories } from "@/packages/category/api";
+import { useGetBranchInventoryBalances } from "@/packages/inventory/api";
+import { useGetCurrentCashSession } from "@/packages/cash-sessions/api";
+import { queryClient } from "@/packages/config/query/client";
 import { useGetProducts } from "@/packages/product/api";
+import { useGetSubCategories } from "@/packages/subcategory/api";
+import { useGetSubDepartments } from "@/packages/subdepartment/api";
 import type { Product } from "@/packages/product/types";
 import { useGetSellers } from "@/packages/sellers/api";
 import type { Seller } from "@/packages/sellers/types";
 import { useEffect, useRef, useState } from "react";
-import { useGetPaymentMethods } from "../api";
+import { useCreateSale, useGetPaymentMethods } from "../api";
 import type { CartItem, PaymentMethod } from "../types";
 import { getTaxRate } from "../utils";
 
 export function usePointOfSale() {
   const [departmentId, setDepartmentId] = useState<number | undefined>();
+  const [subdepartmentId, setSubdepartmentId] = useState<number | undefined>();
+  const [categoryId, setCategoryId] = useState<number | undefined>();
+  const [subcategoryId, setSubcategoryId] = useState<number | undefined>();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -27,17 +35,25 @@ export function usePointOfSale() {
   const noSellerToastShown = useRef(false);
   const loggedUser = getApiUserInfo();
 
-  const [productsResponse, productsLoading] = useGetProducts(departmentId);
+  const [productsResponse, productsLoading] = useGetProducts({ departmentId, subdepartmentId, categoryId, subcategoryId });
   const [departmentsResponse, departmentsLoading] = useGetDepartments();
+  const [subdepartmentsResponse] = useGetSubDepartments(departmentId);
+  const [categoriesResponse] = useGetCategories(subdepartmentId);
+  const [subcategoriesResponse] = useGetSubCategories(categoryId);
   const [customersResponse, customersLoading] = useGetCustomers();
   const [sellersResponse, sellersLoading] = useGetSellers();
   const [paymentMethodsResponse, paymentMethodsLoading] = useGetPaymentMethods();
-  const [inventoryBalances, inventoryLoading] = useGetInventoryBalances();
+  const [cashSession, cashSessionLoading] = useGetCurrentCashSession();
+  const [inventoryBalances, inventoryLoading] = useGetBranchInventoryBalances(cashSession?.branchId);
+  const [createSale, creatingSale, createSaleError] = useCreateSale();
 
   const products = (Array.isArray(productsResponse) ? productsResponse : productsResponse?.data ?? []).filter(
     (product) => product.isActive,
   );
   const departments = (departmentsResponse?.data ?? []).filter((department) => department.isActive);
+  const subdepartments = (subdepartmentsResponse?.data ?? []).filter((subdepartment) => subdepartment.isActive);
+  const categories = (categoriesResponse?.data ?? []).filter((category) => category.isActive);
+  const subcategories = (subcategoriesResponse?.data ?? []).filter((subcategory) => subcategory.isActive);
   const customers = (customersResponse ?? []).filter((item) => item.isActive);
   const sellers = (sellersResponse ?? []).filter(
     (item) =>
@@ -50,11 +66,11 @@ export function usePointOfSale() {
   const stockByProduct = new Map<number, number>();
   for (const balance of inventoryBalances ?? []) {
     stockByProduct.set(
-      balance.productId,
-      (stockByProduct.get(balance.productId) ?? 0) + Math.max(0, Number(balance.quantity)),
+      balance.product.id,
+      (stockByProduct.get(balance.product.id) ?? 0) + Math.max(0, Number(balance.quantity)),
     );
   }
-  const loading = productsLoading || departmentsLoading || customersLoading || sellersLoading || paymentMethodsLoading || inventoryLoading;
+  const loading = productsLoading || departmentsLoading || customersLoading || sellersLoading || paymentMethodsLoading || cashSessionLoading || inventoryLoading;
 
   useEffect(() => {
     if (customersLoading) return;
@@ -110,7 +126,7 @@ export function usePointOfSale() {
   const subtotal = cart.reduce((sum, item) => sum + item.product.salePrice * item.quantity, 0);
   const tax = cart.reduce((sum, item) => sum + item.product.salePrice * item.quantity * getTaxRate(item.product), 0);
   const total = subtotal + tax;
-  const canOperate = Boolean(selectedCustomer && selectedSeller);
+  const canOperate = Boolean(selectedCustomer && selectedSeller && cashSession);
 
   const addProduct = (product: Product) => {
     if (!selectedCustomer || !selectedSeller) {
@@ -168,21 +184,43 @@ export function usePointOfSale() {
       showToast({ type: "error", message: "Agrega al menos un producto al ticket." });
       return;
     }
-    showToast({
-      type: "success",
-      message: "Venta preparada para cobro.",
-      description: "El registro de ventas estará disponible en la siguiente fase.",
-    });
+    if (!cashSession) {
+      showToast({ type: "error", message: "Debes tener una caja abierta para registrar una venta." });
+      return;
+    }
+    createSale(
+      {
+        customerId: selectedCustomer.id,
+        sellerId: selectedSeller.id,
+        paymentMethodId: selectedPaymentMethod.id,
+        items: cart.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+      },
+      () => {
+        setCart([]);
+        queryClient.invalidateQueries({ queryKey: ["inventory", "branches", cashSession.branchId, "balances"] });
+        showToast({ type: "success", message: "Venta registrada correctamente." });
+      },
+    );
   };
+
+  useEffect(() => {
+    if (createSaleError) {
+      showToast({ type: "error", message: createSaleError.message });
+    }
+  }, [createSaleError]);
 
   return {
     addProduct,
     canOperate,
+    cashSession,
     cart,
     catalogViewportRef,
     charge,
     currentPage,
+    creatingSale,
     customers,
+    categories,
+    categoryId,
     departmentId,
     departments,
     loading,
@@ -194,13 +232,20 @@ export function usePointOfSale() {
     selectedPaymentMethod,
     selectedSeller,
     setCustomer,
+    setCategoryId,
     setDepartmentId,
     setPage,
     setPaymentMethod,
     setSearch,
     setSeller,
+    setSubcategoryId,
+    setSubdepartmentId,
     sellers,
     stockByProduct,
+    subcategories,
+    subcategoryId,
+    subdepartments,
+    subdepartmentId,
     subtotal,
     tax,
     total,

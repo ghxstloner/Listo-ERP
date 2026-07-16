@@ -8,17 +8,20 @@ import { usePageTitle } from "@/lib/page-title-context";
 import { useGetCompany, useUpdateCompany } from "@/packages/company/api";
 import { CompanyConfig } from "@/packages/company/components/company-config";
 import { CompanyHierarchyConfig } from "@/packages/company/components/company-hierarchy-config";
+import { CompanyRolesConfig } from "@/packages/company/components/company-roles-config";
 import { CompanyUsersConfig } from "@/packages/company/components/company-users-config";
 import { CompanyWarehousesConfig } from "@/packages/warehouse/components/company-warehouses-config";
 import { getApiCompanyId } from "@config";
 import { Spinner } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 export default function CompanyPage() {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const companyId = Number(getApiCompanyId());
   const [company, isLoading, error] = useGetCompany(companyId);
   const [updateCompany, isUpdating] = useUpdateCompany(companyId);
@@ -65,10 +68,11 @@ export default function CompanyPage() {
 
   return (
     <div className="w-full p-2">
-      <Tabs defaultValue="general" className="w-full">
+      <Tabs defaultValue={searchParams.get("tab") ?? "general"} className="w-full">
         <TabsList>
           <TabsTrigger value="general">{t("company.generalConfiguration")}</TabsTrigger>
           <TabsTrigger value="users">{t("company.usersConfiguration")}</TabsTrigger>
+          <TabsTrigger value="roles">Roles y permisos</TabsTrigger>
           <TabsTrigger value="warehouses">{t("company.warehousesConfiguration")}</TabsTrigger>
           <TabsTrigger value="hierarchy">{t("company.hierarchyConfiguration")}</TabsTrigger>
         </TabsList>
@@ -82,6 +86,9 @@ export default function CompanyPage() {
         </TabsContent>
         <TabsContent value="users" className="mt-2 w-full">
           <CompanyUsersConfig companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="roles" className="mt-2 w-full">
+          <CompanyRolesConfig />
         </TabsContent>
         <TabsContent value="warehouses" className="mt-2 w-full">
           <CompanyWarehousesConfig companyId={companyId} />

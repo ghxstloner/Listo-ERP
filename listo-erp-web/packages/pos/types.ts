@@ -13,3 +13,22 @@ export interface PaymentMethod {
   isActive: boolean;
   companyId: number;
 }
+
+export interface CreateSaleRequest {
+  customerId: number;
+  sellerId: number;
+  paymentMethodId: number;
+  items: Array<{ productId: number; quantity: number }>;
+}
+
+export interface Sale {
+  id: number;
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+}
+
+export interface ApiMessageResponse<T> {
+  message: string;
+  data: T;
+}

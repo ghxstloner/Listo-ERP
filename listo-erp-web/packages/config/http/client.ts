@@ -3,6 +3,7 @@ import type { HttpClientConfig, HttpError, RequestConfig } from './types';
 const AUTH_TOKEN_KEY = 'auth-token';
 const SELECTED_COMPANY_KEY = 'selected-company';
 const USER_INFO_KEY = 'user-info';
+const PERMISSIONS_KEY = 'company-permissions';
 
 function setCookie(name: string, value: string, days = 7): void {
   if (typeof document === 'undefined') return;
@@ -160,6 +161,25 @@ class HttpClient {
     if (config?.signal) options.signal = config.signal;
 
     return options;
+  }
+
+  setPermissions(permissions: string[] | null): void {
+    if (permissions) {
+      setCookie(PERMISSIONS_KEY, JSON.stringify(permissions));
+    } else {
+      deleteCookie(PERMISSIONS_KEY);
+    }
+  }
+
+  getPermissions(): string[] {
+    const value = getCookie(PERMISSIONS_KEY);
+    if (!value) return [];
+    try {
+      const permissions = JSON.parse(value);
+      return Array.isArray(permissions) ? permissions.filter((permission): permission is string => typeof permission === 'string') : [];
+    } catch {
+      return [];
+    }
   }
 
   private extractErrorMessage(value: unknown, fallback: string): string {

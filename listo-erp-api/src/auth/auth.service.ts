@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { JwtService } from '@nestjs/jwt';
-import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
@@ -62,7 +61,6 @@ export class AuthService {
         data: {
           userId: user.id,
           companyId: registerDto.companyId,
-          role: Role.USER,
         },
       });
 
@@ -84,7 +82,7 @@ export class AuthService {
           name: company.name,
           primaryColor: company.primaryColor,
           secondaryColor: company.secondaryColor,
-          role: Role.USER,
+          permissions: [],
         },
       ],
       access_token: token,
@@ -137,6 +135,16 @@ export class AuthService {
             isActive: true,
           },
         },
+        roles: {
+          where: { role: { isActive: true } },
+          select: {
+            role: {
+              select: {
+                permissions: { select: { permission: { select: { code: true } } } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -147,7 +155,9 @@ export class AuthService {
         name: cu.company.name,
         primaryColor: cu.company.primaryColor,
         secondaryColor: cu.company.secondaryColor,
-        role: cu.role,
+        permissions: [...new Set(cu.roles.flatMap((assignment) =>
+          assignment.role.permissions.map(({ permission }) => permission.code),
+        ))],
       }));
 
     if (activeCompanies.length === 0) {

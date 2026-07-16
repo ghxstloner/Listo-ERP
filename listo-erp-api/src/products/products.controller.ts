@@ -68,16 +68,43 @@ export class ProductsController {
     type: Number,
     description: 'Filtrar por departamento',
   })
+  @ApiQuery({
+    name: 'subdepartmentId',
+    required: false,
+    type: Number,
+    description: 'Filtrar por subdepartamento',
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    type: Number,
+    description: 'Filtrar por categoría',
+  })
+  @ApiQuery({
+    name: 'subcategoryId',
+    required: false,
+    type: Number,
+    description: 'Filtrar por subcategoría',
+  })
   findAll(
     @CurrentCompanyId() companyId: number,
     @Query('departmentId') departmentId?: string,
+    @Query('subdepartmentId') subdepartmentId?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('subcategoryId') subcategoryId?: string,
   ) {
-    let departmentIdNum: number | undefined;
-    if (departmentId != null && departmentId !== '') {
-      const parsed = parseInt(departmentId, 10);
-      departmentIdNum = Number.isNaN(parsed) ? undefined : parsed;
-    }
-    return this.productsService.findAll(companyId, departmentIdNum);
+    const parseId = (value?: string) => {
+      if (value == null || value === '') return undefined;
+      const parsed = parseInt(value, 10);
+      return Number.isNaN(parsed) ? undefined : parsed;
+    };
+
+    return this.productsService.findAll(companyId, {
+      departmentId: parseId(departmentId),
+      subdepartmentId: parseId(subdepartmentId),
+      categoryId: parseId(categoryId),
+      subcategoryId: parseId(subcategoryId),
+    });
   }
 
   @Get(':id')

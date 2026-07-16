@@ -47,6 +47,7 @@ model Company {
   companyLogo             String?                  @default("")
   defaultCurrencyId       Int?
   companyUsers            CompanyUser[]
+  roles                   CompanyRole[]
   branches                branch[]
   tills                   till[]
   departments             Department[]
@@ -70,25 +71,77 @@ model Company {
   inventoryMovements      InventoryMovement[]
   hierarchyConfig         CompanyHierarchyConfig?
   cashSessions            CashSession[]
-}
-
-enum Role {
-  ADMIN
-  USER
+  sales                   Sale[]
 }
 
 model CompanyUser {
   id        Int      @id @default(autoincrement())
   companyId Int
   userId    Int
-  role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
+  roles   CompanyUserRole[]
 
   @@unique([companyId, userId])
+}
+
+// Kept only for compatibility with historical migrations. Authorization uses CompanyRole.
+enum Role {
+  ADMIN
+  USER
+}
+
+model CompanyRole {
+  id          Int       @id @default(autoincrement())
+  companyId   Int
+  name        String
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  permissions CompanyRolePermission[]
+  users       CompanyUserRole[]
+
+  @@unique([companyId, name])
+  @@index([companyId, isActive])
+}
+
+model Permission {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  roles       CompanyRolePermission[]
+}
+
+model CompanyRolePermission {
+  roleId       Int
+  permissionId Int
+
+  role       CompanyRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model CompanyUserRole {
+  companyUserId Int
+  roleId        Int
+
+  companyUser CompanyUser @relation(fields: [companyUserId], references: [id], onDelete: Cascade)
+  role        CompanyRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([companyUserId, roleId])
+  @@index([roleId])
 }
 
 model User {
@@ -107,6 +160,7 @@ model User {
   auditLogs            AuditLog[]
   openedCashSessions   CashSession[] @relation("CashSessionOpenedBy")
   closedCashSessions   CashSession[] @relation("CashSessionClosedBy")
+  sales                Sale[]
 }
 
 enum AuditAction {
@@ -150,6 +204,7 @@ model branch {
   tills                till[]
   warehouses           WarehouseBranch[]
   cashSessions         CashSession[]
+  sales                Sale[]
 
   @@unique([companyId, branchCode])
 }
@@ -197,6 +252,7 @@ model CashSession {
   company      Company @relation(fields: [companyId], references: [id])
   branch       branch  @relation(fields: [branchId], references: [id])
   till         till    @relation(fields: [tillId], references: [id])
+  sales        Sale[]
   openedByUser User    @relation("CashSessionOpenedBy", fields: [openedByUserId], references: [id])
   closedByUser User?   @relation("CashSessionClosedBy", fields: [closedByUserId], references: [id])
 
@@ -246,6 +302,7 @@ model PaymentMethod {
   isActive          Boolean  @default(true)
   companyId         Int
   company           Company  @relation(fields: [companyId], references: [id])
+  sales             Sale[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -346,6 +403,7 @@ model Customer {
   isActive        Boolean  @default(true)
   companyId       Int
   company         Company  @relation(fields: [companyId], references: [id])
+  sales           Sale[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -360,6 +418,7 @@ model Seller {
   companyId   Int
   company     Company      @relation(fields: [companyId], references: [id])
   sellerUsers SellerUser[]
+  sales       Sale[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -406,6 +465,7 @@ model Product {
   purchaseOrderItems      PurchaseOrderItem[]
   inventoryBalances       InventoryBalance[]
   inventoryMovements      InventoryMovement[]
+  saleItems               SaleItem[]
   transferItems           InventoryTransferItem[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
@@ -447,6 +507,7 @@ enum InventoryMovementType {
   INVENTORY_ADJUSTMENT
   TRANSFER_OUT
   TRANSFER_IN
+  SALE
 }
 
 enum InventoryTransferStatus {
@@ -526,6 +587,7 @@ model InventoryMovement {
   balanceAfter        Decimal               @db.Decimal(18, 4)
   purchaseOrderId     Int?
   purchaseOrderItemId Int?
+  saleItemId          Int?
   createdByUserId     Int
   createdAt           DateTime              @default(now())
 
@@ -533,8 +595,10 @@ model InventoryMovement {
   warehouse         Warehouse          @relation(fields: [warehouseId], references: [id])
   product           Product            @relation(fields: [productId], references: [id])
   purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+  saleItem          SaleItem?          @relation(fields: [saleItemId], references: [id])
 
   @@unique([purchaseOrderItemId])
+  @@index([saleItemId])
   @@index([companyId, warehouseId, productId, createdAt])
   @@index([purchaseOrderId])
 }
@@ -606,6 +670,56 @@ model WarehouseBranch {
   createdAt   DateTime  @default(now())
 
   @@unique([warehouseId, branchId])
+}
+
+model Sale {
+  id              Int           @id @default(autoincrement())
+  companyId       Int
+  branchId        Int
+  cashSessionId   Int
+  customerId      Int
+  sellerId        Int
+  paymentMethodId Int
+  createdByUserId Int
+  subtotal        Decimal       @db.Decimal(18, 4)
+  taxAmount       Decimal       @db.Decimal(18, 4)
+  total           Decimal       @db.Decimal(18, 4)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  company       Company       @relation(fields: [companyId], references: [id])
+  branch        branch        @relation(fields: [branchId], references: [id])
+  cashSession   CashSession   @relation(fields: [cashSessionId], references: [id])
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  seller        Seller        @relation(fields: [sellerId], references: [id])
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+  createdByUser User          @relation(fields: [createdByUserId], references: [id])
+  items         SaleItem[]
+
+  @@index([companyId, createdAt])
+  @@index([cashSessionId])
+  @@index([customerId])
+  @@index([sellerId])
+}
+
+model SaleItem {
+  id        Int      @id @default(autoincrement())
+  saleId    Int
+  productId Int
+  quantity  Decimal  @db.Decimal(18, 4)
+  unitPrice Decimal  @db.Decimal(18, 4)
+  taxRate   Decimal  @db.Decimal(5, 4)
+  taxAmount Decimal  @db.Decimal(18, 4)
+  lineTotal Decimal  @db.Decimal(18, 4)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sale               Sale                @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product            Product             @relation(fields: [productId], references: [id])
+  inventoryMovements InventoryMovement[]
+
+  @@unique([saleId, productId])
+  @@index([productId])
 }
 
 model CompanyHierarchyConfig {

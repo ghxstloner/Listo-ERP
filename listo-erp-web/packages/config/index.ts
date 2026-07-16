@@ -1,5 +1,5 @@
 
-export { api, getApiBaseUrl, getApiCompanyId, getApiToken, getApiUserInfo, logout, setApiCompanyId, setApiToken, setApiUserInfo } from './api';
+export { api, getApiBaseUrl, getApiCompanyId, getApiPermissions, getApiToken, getApiUserInfo, logout, setApiCompanyId, setApiPermissions, setApiToken, setApiUserInfo } from './api';
 export { HttpClient } from './http';
 export type {
     ApiResponse, HttpClientConfig, HttpError, PaginatedResponse,

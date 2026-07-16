@@ -31,8 +31,17 @@ export const getApiUserInfo = () => {
   return api.getUserInfo();
 };
 
+export const setApiPermissions = (permissions: string[] | null) => {
+  api.setPermissions(permissions);
+};
+
+export const getApiPermissions = () => {
+  return api.getPermissions();
+};
+
 export const logout = () => {
   api.setToken(null);
   api.setCompanyId(null);
   api.setUserInfo(null);
+  api.setPermissions(null);
 };

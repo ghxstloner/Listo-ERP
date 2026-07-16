@@ -11,17 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
 import { useTranslation } from "@/hooks/use-translation";
-import type { CompanyUserRole } from "@/packages/company-user/types";
+import { useGetCompanyRoles } from "@/packages/company/api";
+import { RoleSelector } from "@/packages/company/components/role-selector";
 import { useCreateUser } from "@/packages/user/api";
 import type { CreateUserRequest } from "@/packages/user/types";
 import { Plus } from "@phosphor-icons/react";
@@ -39,8 +33,9 @@ export function CreateCompanyUser({ companyId }: CreateCompanyUserProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [companyRole, setCompanyRole] = useState<CompanyUserRole>("USER");
+  const [roleIds, setRoleIds] = useState<number[]>([]);
   const [createUser, isCreatingUser, createUserError] = useCreateUser();
+  const [roles] = useGetCompanyRoles();
 
   const isCreating = isCreatingUser;
 
@@ -57,7 +52,7 @@ export function CreateCompanyUser({ companyId }: CreateCompanyUserProps) {
     setName("");
     setEmail("");
     setPassword("");
-    setCompanyRole("USER");
+    setRoleIds([]);
   };
 
   const handleClose = () => {
@@ -93,7 +88,7 @@ export function CreateCompanyUser({ companyId }: CreateCompanyUserProps) {
       name: name.trim(),
       email: email.trim(),
       password,
-      role: companyRole,
+      roleIds,
     };
     createUser(userRequest, () => {
       queryClient.invalidateQueries({
@@ -161,26 +156,8 @@ export function CreateCompanyUser({ companyId }: CreateCompanyUserProps) {
                   />
                 </div>
                 <div className="space-y-2 col-span-2">
-                  <Label htmlFor="company-role">{t("company.users.role")}</Label>
-                  <Select
-                    value={companyRole}
-                    onValueChange={(value) =>
-                      setCompanyRole(value as CompanyUserRole)
-                    }
-                    disabled={isCreating}
-                  >
-                    <SelectTrigger id="company-role" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADMIN">
-                        {t("company.users.roleAdmin")}
-                      </SelectItem>
-                      <SelectItem value="USER">
-                        {t("company.users.roleUser")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>{t("company.users.role")}</Label>
+                  <RoleSelector roles={roles || []} value={roleIds} onChange={setRoleIds} disabled={isCreating} />
                 </div>
               </div>
             </div>

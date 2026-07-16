@@ -7,6 +7,11 @@ export interface InventoryBalance {
   warehouse: { id: number; name: string; code: string };
   product: { id: number; sku: string; name: string; unit: string | null };
 }
+export interface BranchInventoryBalance {
+  product: { id: number; sku: string; name: string; unit: string | null };
+  quantity: number;
+  updatedAt: string;
+}
 export interface InventoryMovement {
   id: number;
   type: string;
@@ -38,6 +43,13 @@ export const useGetWarehouseInventoryBalances = (warehouseId: number) =>
     ["inventory", "warehouses", warehouseId, "balances"],
     "inventory/balances",
     { params: { warehouseId } },
+  );
+export const useGetBranchInventoryBalances = (branchId?: number) =>
+  useApiQuery<BranchInventoryBalance[]>(
+    ["inventory", "branches", branchId, "balances"],
+    `inventory/branches/${branchId}/balances`,
+    undefined,
+    { enabled: branchId != null },
   );
 export const useCreateInventoryEntry = () =>
   useApiMutation<{ message: string }, CreateInventoryEntryRequest>(

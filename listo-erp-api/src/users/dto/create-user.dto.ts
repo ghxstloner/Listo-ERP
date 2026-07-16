@@ -1,17 +1,14 @@
 import {
   IsEmail,
-  IsEnum,
+  ArrayUnique,
+  IsArray,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  USER = 'USER',
-}
 
 export class CreateUserDto {
   @IsEmail(
@@ -30,7 +27,9 @@ export class CreateUserDto {
   @IsNotEmpty()
   name: string;
 
-  @IsEnum(UserRole)
   @IsOptional()
-  role?: UserRole;
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  roleIds?: number[];
 }

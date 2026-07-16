@@ -18,7 +18,7 @@ import {
 import { showToast } from "@/components/ui/sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { applyCompanyTheme } from '@/lib/company-theme';
-import { setApiCompanyId } from "@config";
+import { setApiCompanyId, setApiPermissions } from "@config";
 import { useRouter } from "next/navigation";
 import { useState } from 'react';
 import { LoginResponse } from '../types';
@@ -43,6 +43,7 @@ export function SelectCompany({ companies }: SelectCompanyProps) {
     }
 
     setApiCompanyId(String(company.id));
+    setApiPermissions(company.permissions);
 
     applyCompanyTheme({
       primaryColor: company.primaryColor,

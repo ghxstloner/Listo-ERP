@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { I18nException } from '../common/exceptions/i18n-exception';
-import { Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { removeUploadedFile } from '../upload/upload.config';
@@ -67,12 +66,24 @@ export class CompaniesService {
         },
       });
 
-      await tx.companyUser.create({
+      const companyUser = await tx.companyUser.create({
         data: {
           userId,
           companyId: company.id,
-          role: Role.ADMIN,
         },
+      });
+
+      const permissions = await tx.permission.findMany({ select: { id: true } });
+      const ownerRole = await tx.companyRole.create({
+        data: {
+          companyId: company.id,
+          name: 'Administrador',
+          description: 'Acceso inicial completo; puede reemplazarse por roles personalizados.',
+          permissions: { create: permissions.map(({ id }) => ({ permissionId: id })) },
+        },
+      });
+      await tx.companyUserRole.create({
+        data: { companyUserId: companyUser.id, roleId: ownerRole.id },
       });
 
       await tx.companyHierarchyConfig.create({

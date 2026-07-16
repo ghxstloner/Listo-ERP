@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AccessModule } from './access/access.module';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from './auth/guards/permissions.guard';
 import { BranchesModule } from './branches/branches.module';
 import { CashSessionsModule } from './cash-sessions/cash-sessions.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -21,6 +23,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { SellersModule } from './sellers/sellers.module';
+import { SalesModule } from './sales/sales.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { SubdepartmentsModule } from './subdepartments/subdepartments.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
@@ -43,6 +46,7 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
 
 @Module({
   imports: [
+    AccessModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -76,6 +80,7 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     SubcategoriesModule,
     SuppliersModule,
     SellersModule,
+    SalesModule,
     ProductsModule,
     ExchangeRatesModule,
     PaymentMethodsModule,
@@ -93,6 +98,10 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     {
       provide: APP_GUARD,
       useClass: CompanyAccessGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
     {
       provide: APP_FILTER,

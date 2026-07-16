@@ -14,13 +14,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
-import {
-  CompanyUserPayload,
-  CurrentCompanyId,
-  CurrentCompanyUser,
-} from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentCompanyId } from '../auth/decorators/current-user.decorator';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
@@ -37,7 +32,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @RequirePermissions('administration.general')
   @ApiOperation({ summary: 'Crear nuevo usuario en la empresa' })
   async create(
     @Body() createUserDto: CreateUserDto,
@@ -62,24 +57,22 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions('administration.general')
   @ApiOperation({ summary: 'Actualizar un usuario' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
     @CurrentCompanyId() companyId: number,
-    @CurrentCompanyUser() companyUser: CompanyUserPayload,
   ) {
     return this.usersService.update(
       id,
       updateUserDto,
       companyId,
-      companyUser.role,
     );
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions('administration.general')
   @ApiOperation({
     summary: 'Eliminar un usuario. (esto lo elimina de todas las empresas)',
   })

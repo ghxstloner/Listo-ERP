@@ -1,11 +1,12 @@
-import { useApiMutation } from "@config";
+import { useApiMutation, useApiQuery } from "@config";
 import type { 
   LoginRequest, 
   LoginResponse, 
   ForgotPasswordRequest, 
   ForgotPasswordResponse,
   ResetPasswordRequest,
-  ResetPasswordResponse 
+  ResetPasswordResponse,
+  SessionResponse,
 } from "./types";
 
 export const useLogin = () => {
@@ -18,4 +19,17 @@ export const useForgotPassword = () => {
 
 export const useResetPassword = () => {
   return useApiMutation<ResetPasswordResponse, ResetPasswordRequest>('auth/reset-password');
+};
+
+export const useSessionPermissions = (companyId: string | null) => {
+  return useApiQuery<SessionResponse>(
+    ['auth', 'session', companyId],
+    'auth/session',
+    undefined,
+    {
+      enabled: Boolean(companyId),
+      refetchInterval: 60_000,
+      refetchOnWindowFocus: true,
+    },
+  );
 };

@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "duplicate_product": "O mesmo produto não pode ser registrado mais de uma vez.",
+    "cash_session_required": "Você deve ter um caixa aberto para registrar uma venda.",
+    "customer_not_found": "O cliente selecionado não está disponível.",
+    "seller_not_found": "O vendedor selecionado não está disponível para seu usuário.",
+    "payment_method_not_found": "O método de pagamento selecionado não está disponível.",
+    "product_not_found": "Um ou mais produtos não estão disponíveis.",
+    "warehouse_not_found": "A filial do caixa não possui armazéns ativos associados.",
+    "insufficient_stock": "Não há estoque suficiente nos armazéns da filial."
+  },
+  "success": {
+    "created": "Venda registrada com sucesso."
+  }
+}

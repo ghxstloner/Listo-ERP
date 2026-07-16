@@ -11,8 +11,10 @@ export interface CurrentUserPayload {
 }
 
 export interface CompanyUserPayload {
+  id: number;
   companyId: number;
-  role: Role;
+  permissions: string[];
+  role?: Role;
 }
 
 export const CurrentUser = createParamDecorator(

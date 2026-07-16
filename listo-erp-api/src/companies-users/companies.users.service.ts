@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { I18nException } from '../common/exceptions/i18n-exception';
-import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCompanyUserDto } from './dto/create-company-user.dto';
 import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
@@ -9,14 +8,14 @@ import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
 export class CompaniesUsersService {
   constructor(private prisma: PrismaService) {}
 
-  async findOne(id: number) {
-    const companyUser = await this.prisma.companyUser.findUnique({
-      where: { id },
+  async findOne(id: number, companyId: number) {
+    const companyUser = await this.prisma.companyUser.findFirst({
+      where: { id, companyId },
       select: {
         id: true,
         userId: true,
         companyId: true,
-        role: true,
+        roles: { select: { role: { select: { id: true, name: true } } } },
         createdAt: true,
         updatedAt: true,
       },
@@ -31,7 +30,7 @@ export class CompaniesUsersService {
         id: true,
         userId: true,
         companyId: true,
-        role: true,
+        roles: { select: { role: { select: { id: true, name: true } } } },
         createdAt: true,
         updatedAt: true,
         company: {
@@ -55,7 +54,7 @@ export class CompaniesUsersService {
         id: true,
         userId: true,
         companyId: true,
-        role: true,
+        roles: { select: { role: { select: { id: true, name: true } } } },
         createdAt: true,
         updatedAt: true,
         user: {
@@ -90,17 +89,18 @@ export class CompaniesUsersService {
       });
     }
 
+    const roleIds = await this.validRoleIds(createCompanyUserDto.roleIds ?? [], createCompanyUserDto.companyId);
     const companyUser = await this.prisma.companyUser.create({
       data: {
         userId: createCompanyUserDto.userId,
         companyId: createCompanyUserDto.companyId,
-        role: createCompanyUserDto.role || Role.USER,
+        roles: { create: roleIds.map((roleId) => ({ roleId })) },
       },
       select: {
         id: true,
         userId: true,
         companyId: true,
-        role: true,
+        roles: { select: { role: { select: { id: true, name: true } } } },
         createdAt: true,
         updatedAt: true,
       },
@@ -111,15 +111,23 @@ export class CompaniesUsersService {
     };
   }
 
-  async update(id: number, updateCompanyUserDto: UpdateCompanyUserDto) {
+  async update(id: number, companyId: number, updateCompanyUserDto: UpdateCompanyUserDto) {
+    const membership = await this.prisma.companyUser.findFirst({
+      where: { id, companyId },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw I18nException.notFound('common.errors.not_found', { entity: 'user in company' });
+    }
+    const roleIds = await this.validRoleIds(updateCompanyUserDto.roleIds, companyId);
     const companyUser = await this.prisma.companyUser.update({
       where: { id },
-      data: { role: updateCompanyUserDto.role },
+      data: { roles: { deleteMany: {}, create: roleIds.map((roleId) => ({ roleId })) } },
       select: {
         id: true,
         userId: true,
         companyId: true,
-        role: true,
+        roles: { select: { role: { select: { id: true, name: true } } } },
         createdAt: true,
         updatedAt: true,
       },
@@ -130,10 +138,24 @@ export class CompaniesUsersService {
     };
   }
 
-  async delete(id: number) {
-    await this.prisma.companyUser.delete({
-      where: { id },
+  async delete(id: number, companyId: number) {
+    const result = await this.prisma.companyUser.deleteMany({
+      where: { id, companyId },
     });
+    if (result.count === 0) {
+      throw I18nException.notFound('common.errors.not_found', { entity: 'user in company' });
+    }
     return { message: 'users.success.removed_from_company' };
+  }
+
+  private async validRoleIds(roleIds: number[], companyId: number) {
+    const roles = await this.prisma.companyRole.findMany({
+      where: { id: { in: roleIds }, companyId },
+      select: { id: true },
+    });
+    if (roles.length !== roleIds.length) {
+      throw I18nException.badRequest('common.errors.invalid_id');
+    }
+    return roles.map(({ id }) => id);
   }
 }

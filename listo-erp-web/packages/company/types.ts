@@ -42,3 +42,26 @@ export interface UpdateHierarchyConfigRequest {
   level3Name: string;
   level4Name: string;
 }
+
+export interface Permission {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+}
+
+export interface CompanyRole {
+  id: number;
+  companyId: number;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  permissions: Array<{ permission: Permission }>;
+}
+
+export interface CompanyRoleRequest {
+  name: string;
+  description?: string;
+  permissionCodes: string[];
+  isActive?: boolean;
+}

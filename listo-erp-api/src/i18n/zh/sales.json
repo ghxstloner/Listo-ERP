@@ -1,0 +1,15 @@
+{
+  "errors": {
+    "duplicate_product": "同一商品不能重复登记。",
+    "cash_session_required": "登记销售前必须打开收银班次。",
+    "customer_not_found": "所选客户不可用。",
+    "seller_not_found": "所选销售员不适用于当前用户。",
+    "payment_method_not_found": "所选支付方式不可用。",
+    "product_not_found": "一个或多个商品不可用。",
+    "warehouse_not_found": "收银分店没有关联的活跃仓库。",
+    "insufficient_stock": "分店仓库库存不足。"
+  },
+  "success": {
+    "created": "销售登记成功。"
+  }
+}

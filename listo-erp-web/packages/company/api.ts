@@ -1,6 +1,6 @@
 import { api, getApiBaseUrl, useApiMutation, useApiQuery } from "@config";
 import { useMutation } from "@tanstack/react-query";
-import { Company, UpdateCompanyResponse, HierarchyConfig, UpdateHierarchyConfigRequest } from "./types";
+import { Company, UpdateCompanyResponse, HierarchyConfig, UpdateHierarchyConfigRequest, CompanyRole, CompanyRoleRequest, Permission } from "./types";
 
 export const useGetCompany = ( companyId: Company['id'] ) => {
   return useApiQuery<Company>(['company'], `companies/${companyId}`);
@@ -42,4 +42,24 @@ export const useGetHierarchyConfig = (companyId: Company['id']) => {
 
 export const useUpdateHierarchyConfig = (companyId: Company['id']) => {
   return useApiMutation<HierarchyConfig, UpdateHierarchyConfigRequest>(`companies/${companyId}/hierarchy-config`, 'patch');
+};
+
+export const useGetPermissions = () => {
+  return useApiQuery<Permission[]>(["access", "permissions"], "access/permissions");
+};
+
+export const useGetCompanyRoles = () => {
+  return useApiQuery<CompanyRole[]>(["access", "roles"], "access/roles");
+};
+
+export const useCreateCompanyRole = () => {
+  return useApiMutation<{ data: CompanyRole }, CompanyRoleRequest>("access/roles", "post");
+};
+
+export const useUpdateCompanyRole = (roleId: number) => {
+  return useApiMutation<{ data: CompanyRole }, Partial<CompanyRoleRequest>>(`access/roles/${roleId}`, "patch");
+};
+
+export const useDeleteCompanyRole = (roleId: number) => {
+  return useApiMutation<{ message: string }, void>(`access/roles/${roleId}`, "delete");
 };

@@ -136,11 +136,14 @@ export class ProductsService {
     }
   }
 
-  async findAll(companyId: number, departmentId?: number) {
-    const where: { companyId: number; departmentId?: number } = { companyId };
-    if (departmentId != null) {
-      where.departmentId = departmentId;
-    }
+  async findAll(
+    companyId: number,
+    filters: Pick<
+      Prisma.ProductWhereInput,
+      'departmentId' | 'subdepartmentId' | 'categoryId' | 'subcategoryId'
+    > = {},
+  ) {
+    const where: Prisma.ProductWhereInput = { companyId, ...filters };
     const products = await this.prisma.product.findMany({
       where,
       select: this.selectWithRelations(),

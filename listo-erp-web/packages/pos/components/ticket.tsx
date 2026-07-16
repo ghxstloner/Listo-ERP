@@ -19,6 +19,8 @@ interface TicketProps {
   subtotal: number;
   tax: number;
   total: number;
+  canCharge: boolean;
+  charging?: boolean;
   stockByProduct: Map<number, number>;
   onCustomerChange: (id: string) => void;
   onSellerChange: (id: string) => void;
@@ -49,7 +51,7 @@ export function Ticket(props: TicketProps) {
           </div>
           <TicketSummary subtotal={props.subtotal} tax={props.tax} total={props.total} />
           <PaymentMethodSelector paymentMethod={props.paymentMethod} paymentMethods={props.paymentMethods} onChange={props.onPaymentMethodChange} />
-          <TicketCheckout total={props.total} disabled={!props.customer || !props.seller || !props.paymentMethod || props.cart.length === 0} onCharge={props.onCharge} />
+          <TicketCheckout total={props.total} loading={props.charging} disabled={!props.canCharge || !props.customer || !props.seller || !props.paymentMethod || props.cart.length === 0} onCharge={props.onCharge} />
         </CardContent>
       </Card>
     </aside>

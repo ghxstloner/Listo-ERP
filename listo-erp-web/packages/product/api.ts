@@ -8,16 +8,23 @@ import type {
   ProductsApiResponse,
 } from "./types";
 
+export interface ProductFilters {
+  departmentId?: number;
+  subdepartmentId?: number;
+  categoryId?: number;
+  subcategoryId?: number;
+}
+
 export const useCreateProduct = () => {
   return useApiMutation<CreateProductResponse, CreateProductRequest>("products", "post");
 };
 
-export const useGetProducts = (departmentId?: number) => {
+export const useGetProducts = (filters: ProductFilters = {}) => {
   return useApiQuery<ProductsApiResponse>(
-    ["products", departmentId],
+    ["products", filters],
     "products",
     {
-      params: departmentId !== undefined ? { departmentId } : undefined
+      params: Object.keys(filters).length > 0 ? filters as Record<string, number | undefined> : undefined
     }
   );
 };

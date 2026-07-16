@@ -19,7 +19,7 @@ import { showToast } from "@/components/ui/sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { applyCompanyTheme } from '@/lib/company-theme';
 import { createLoginSchema } from '@/lib/validator/login';
-import { setApiCompanyId, setApiToken, setApiUserInfo } from "@config";
+import { setApiCompanyId, setApiPermissions, setApiToken, setApiUserInfo } from "@config";
 import { ArrowRight } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -93,6 +93,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
       if (response.companies.length === 1) {
         const company = response.companies[0];
         setApiCompanyId(String(company.id));
+        setApiPermissions(company.permissions);
 
         applyCompanyTheme({
           primaryColor: company.primaryColor,

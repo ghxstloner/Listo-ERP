@@ -14,13 +14,12 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import {
   CurrentCompanyId,
   CurrentUser,
   CurrentUserPayload,
 } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { SkipCompanyCheck } from '../common/decorators/skip-company-check.decorator';
 import { CompaniesUsersService } from './companies.users.service';
 import { CreateCompanyUserDto } from './dto/create-company-user.dto';
@@ -38,7 +37,7 @@ export class CompaniesUsersController {
   constructor(private readonly companiesUsersService: CompaniesUsersService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @RequirePermissions('administration.general')
   @ApiOperation({ summary: 'Agregar un usuario a una empresa' })
   async create(
     @Body() createCompanyUserDto: CreateCompanyUserDto,
@@ -59,8 +58,8 @@ export class CompaniesUsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un usuario de una empresa' })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.companiesUsersService.findOne(id);
+  async findOne(@Param('id', ParseIntPipe) id: number, @CurrentCompanyId() companyId: number) {
+    return this.companiesUsersService.findOne(id, companyId);
   }
 
   @Get('company/:companyId')
@@ -75,21 +74,22 @@ export class CompaniesUsersController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions('administration.general')
   @ApiOperation({
-    summary: 'Actualizar rol de un usuario en la empresa (solo ADMIN)',
+    summary: 'Actualizar los roles personalizados de un usuario en la empresa',
   })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCompanyUserDto: UpdateCompanyUserDto,
+    @CurrentCompanyId() companyId: number,
   ) {
-    return this.companiesUsersService.update(id, updateCompanyUserDto);
+    return this.companiesUsersService.update(id, companyId, updateCompanyUserDto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @RequirePermissions('administration.general')
   @ApiOperation({ summary: 'Eliminar un usuario de una empresa' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
-    return this.companiesUsersService.delete(id);
+  async delete(@Param('id', ParseIntPipe) id: number, @CurrentCompanyId() companyId: number) {
+    return this.companiesUsersService.delete(id, companyId);
   }
 }

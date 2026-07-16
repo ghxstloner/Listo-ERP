@@ -1,6 +1,6 @@
 "use client";
 
-import { AppSidebar, SidebarNavGroup } from "@/components/app-sidebar";
+import { AppSidebar, SidebarNavGroup, SidebarNavItem } from "@/components/app-sidebar";
 import { PageLoading } from "@/components/page-loading";
 import { useLanguage } from "@/components/providers/language-provider";
 import { LanguageToggle } from "@/components/ui/language-toggle";
@@ -13,8 +13,9 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTranslation } from "@/hooks/use-translation";
 import { PageTitleProvider, usePageTitle } from "@/lib/page-title-context";
 import { useCompanyTheme } from "@/lib/use-company-theme";
+import { useSessionPermissions } from "@/packages/auth/api";
 import { useGetCompany } from "@/packages/company/api";
-import { getApiCompanyId } from "@config";
+import { getApiCompanyId, getApiPermissions, setApiPermissions } from "@config";
 import {
   Bank,
   ChartLine,
@@ -27,7 +28,7 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 
-function useNavigation(): SidebarNavGroup[] {
+function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
   const t = useTranslation();
   const { locale } = useLanguage();
   const [mounted, setMounted] = useState(false);
@@ -209,14 +210,61 @@ function useNavigation(): SidebarNavGroup[] {
     ];
   }
 
-  return navigation;
+  const permissionByPath: Record<string, string> = {
+    "/listoerp/dashboard": "dashboard",
+    "/listoerp/company": "administration.general",
+    "/listoerp/company/branches": "administration.branches",
+    "/listoerp/administracion/series": "administration.series",
+    "/listoerp/administracion/monedas": "administration.currencies",
+    "/listoerp/company/tills": "administration.tills",
+    "/listoerp/inventory": "inventory.catalogs",
+    "/listoerp/inventory/products": "inventory.products",
+    "/listoerp/inventory/services": "inventory.services",
+    "/listoerp/inventory/control": "inventory.control",
+    "/listoerp/inventory/warehouse-transfers": "inventory.transfers",
+    "/listoerp/purchases": "purchases.suppliers",
+    "/listoerp/purchases/orders": "purchases.orders",
+    "/listoerp/purchases/billing": "purchases.billing",
+    "/listoerp/ventas/catalogos": "sales.catalogs",
+    "/listoerp/ventas/clientes": "sales.customers",
+    "/listoerp/ventas/vendedores": "sales.sellers",
+    "/listoerp/ventas/cierres-caja": "sales.cash-closures",
+    "/listoerp/ventas/pos": "sales.pos",
+    "/listoerp/ventas/pedidos": "sales.orders",
+    "/listoerp/ventas/facturacion-rapida": "sales.quick-billing",
+    "/listoerp/ventas/notas-credito": "sales.credit-notes",
+    "/listoerp/tesoreria/cuentas-bancarias": "treasury.bank-accounts",
+    "/listoerp/tesoreria/cobros": "treasury.customer-payments",
+    "/listoerp/tesoreria/movimientos": "treasury.financial-movements",
+    "/listoerp/reportes/libro-compras": "reports.purchase-book",
+    "/listoerp/reportes/libro-ventas": "reports.sales-book",
+    "/listoerp/reportes/ventas-articulo": "reports.sales-by-article",
+    "/listoerp/reportes/ventas-cliente": "reports.sales-by-customer",
+    "/listoerp/reportes/compras-proveedor": "reports.purchases-by-supplier",
+  };
+
+  return navigation.reduce<SidebarNavGroup[]>((groups, group) => {
+    const items: SidebarNavItem[] = [];
+    group.items.forEach((item) => {
+      if (item.href) {
+        if (permissions.has(permissionByPath[item.href])) items.push(item);
+        return;
+      }
+      const allowedItems = item.items?.filter((subItem) => permissions.has(permissionByPath[subItem.href])) ?? [];
+      if (allowedItems.length > 0) items.push({ ...item, items: allowedItems });
+    });
+    if (items.length > 0) groups.push({ ...group, items });
+    return groups;
+  }, []);
 }
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const companyId = getApiCompanyId();
   const [company, isLoading] = useGetCompany(companyId ? Number(companyId) : 0);
+  const [session] = useSessionPermissions(companyId);
   const { title } = usePageTitle();
-  const navigation = useNavigation();
+  const [permissions, setPermissions] = useState(() => new Set(getApiPermissions()));
+  const navigation = useNavigation(permissions);
   const t = useTranslation();
   const [themeApplied, setThemeApplied] = useState(false);
 
@@ -228,6 +276,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         }
       : null,
   );
+
+  useEffect(() => {
+    if (!session) return;
+    setApiPermissions(session.permissions);
+    setPermissions(new Set(session.permissions));
+  }, [session]);
 
   useEffect(() => {
     if (isLoading || !company) {

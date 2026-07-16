@@ -16,6 +16,12 @@ export function PointOfSale() {
           <PosToolbar
             departmentId={pos.departmentId}
             departments={pos.departments}
+            subdepartmentId={pos.subdepartmentId}
+            subdepartments={pos.subdepartments}
+            categoryId={pos.categoryId}
+            categories={pos.categories}
+            subcategoryId={pos.subcategoryId}
+            subcategories={pos.subcategories}
             search={pos.search}
             onSearchChange={(search) => {
               pos.setSearch(search);
@@ -23,6 +29,24 @@ export function PointOfSale() {
             }}
             onDepartmentChange={(departmentId) => {
               pos.setDepartmentId(departmentId);
+              pos.setSubdepartmentId(undefined);
+              pos.setCategoryId(undefined);
+              pos.setSubcategoryId(undefined);
+              pos.setPage(1);
+            }}
+            onSubdepartmentChange={(subdepartmentId) => {
+              pos.setSubdepartmentId(subdepartmentId);
+              pos.setCategoryId(undefined);
+              pos.setSubcategoryId(undefined);
+              pos.setPage(1);
+            }}
+            onCategoryChange={(categoryId) => {
+              pos.setCategoryId(categoryId);
+              pos.setSubcategoryId(undefined);
+              pos.setPage(1);
+            }}
+            onSubcategoryChange={(subcategoryId) => {
+              pos.setSubcategoryId(subcategoryId);
               pos.setPage(1);
             }}
           />
@@ -44,6 +68,8 @@ export function PointOfSale() {
           subtotal={pos.subtotal}
           tax={pos.tax}
           total={pos.total}
+          canCharge={pos.canOperate}
+          charging={pos.creatingSale}
           stockByProduct={pos.stockByProduct}
           onCustomerChange={(id) => pos.setCustomer(pos.customers.find((item) => item.id === Number(id)) ?? null)}
           onSellerChange={(id) => pos.setSeller(pos.sellers.find((item) => item.id === Number(id)) ?? null)}

@@ -1,13 +1,14 @@
 import {
   IsBoolean,
   IsEmail,
-  IsEnum,
+  ArrayUnique,
+  IsArray,
+  IsInt,
   IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
 import { i18nValidationMessage } from 'nestjs-i18n';
-import { UserRole } from './create-user.dto';
 
 export class UpdateUserDto {
   @IsEmail(
@@ -26,9 +27,11 @@ export class UpdateUserDto {
   @IsOptional()
   name?: string;
 
-  @IsEnum(UserRole)
   @IsOptional()
-  role?: UserRole;
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  roleIds?: number[];
 
   @IsBoolean()
   @IsOptional()

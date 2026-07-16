@@ -1,6 +1,10 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import {
+  CompanyUserPayload,
+  CurrentCompanyUser,
+} from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -32,6 +36,12 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Get('session')
+  @ApiOperation({ summary: 'Obtener los permisos vigentes de la empresa activa' })
+  async session(@CurrentCompanyUser() companyUser: CompanyUserPayload) {
+    return { permissions: companyUser.permissions };
   }
 
   @Public()
