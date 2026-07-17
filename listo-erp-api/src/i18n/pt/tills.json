@@ -3,7 +3,8 @@
     "not_found": "Caixa não encontrada",
     "code_empty": "O código da caixa não pode estar vazio",
     "code_exists": "Já existe uma caixa com esse código nesta filial. O código deve ser único.",
-    "branch_not_found": "A filial não existe ou não pertence à empresa"
+    "branch_not_found": "A filial não existe ou não pertence à empresa",
+    "payment_method_not_found": "Um ou mais métodos de pagamento não existem ou não pertencem à empresa"
   },
   "success": {
     "created": "Caixa criada com sucesso",

@@ -9,6 +9,7 @@ import { useGetCompany, useUpdateCompany } from "@/packages/company/api";
 import { CompanyConfig } from "@/packages/company/components/company-config";
 import { CompanyHierarchyConfig } from "@/packages/company/components/company-hierarchy-config";
 import { CompanyRolesConfig } from "@/packages/company/components/company-roles-config";
+import { PaymentMethodsConfig } from "@/packages/payment-methods/components/payment-methods-config";
 import { CompanyUsersConfig } from "@/packages/company/components/company-users-config";
 import { CompanyWarehousesConfig } from "@/packages/warehouse/components/company-warehouses-config";
 import { getApiCompanyId } from "@config";
@@ -74,6 +75,7 @@ export default function CompanyPage() {
           <TabsTrigger value="users">{t("company.usersConfiguration")}</TabsTrigger>
           <TabsTrigger value="roles">Roles y permisos</TabsTrigger>
           <TabsTrigger value="warehouses">{t("company.warehousesConfiguration")}</TabsTrigger>
+          <TabsTrigger value="payment-methods">Métodos de pago</TabsTrigger>
           <TabsTrigger value="hierarchy">{t("company.hierarchyConfiguration")}</TabsTrigger>
         </TabsList>
         <TabsContent value="general" className="mt-2 w-full">
@@ -92,6 +94,9 @@ export default function CompanyPage() {
         </TabsContent>
         <TabsContent value="warehouses" className="mt-2 w-full">
           <CompanyWarehousesConfig companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="payment-methods" className="mt-2 w-full">
+          <PaymentMethodsConfig />
         </TabsContent>
         <TabsContent value="hierarchy" className="mt-2 w-full">
           <CompanyHierarchyConfig companyId={companyId} />

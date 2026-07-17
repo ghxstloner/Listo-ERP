@@ -5,6 +5,11 @@ import { CatalogPagination } from "./catalog-pagination";
 import { PosToolbar } from "./pos-toolbar";
 import { ProductCatalog } from "./product-catalog";
 import { Ticket } from "./ticket";
+import {
+  CashSessionInUseDialog,
+  CloseExpiredCashSessionDialog,
+  PosAccessActions,
+} from "./pos-session-gate";
 
 export function PointOfSale() {
   const pos = usePointOfSale();
@@ -51,10 +56,27 @@ export function PointOfSale() {
             }}
           />
           <div className="flex min-h-0 flex-1 flex-col gap-3">
-            {pos.loading ? <div className="text-muted-foreground flex min-h-80 flex-1 items-center justify-center text-sm">Cargando punto de venta...</div> : <>
-              <ProductCatalog products={pos.pageProducts} rows={pos.rows} stockByProduct={pos.stockByProduct} disabled={!pos.canOperate} viewportRef={pos.catalogViewportRef} onAdd={pos.addProduct} />
-              <CatalogPagination currentPage={pos.currentPage} totalPages={pos.totalPages} onPageChange={pos.setPage} />
-            </>}
+            {pos.loading ? (
+              <div className="text-muted-foreground flex min-h-80 flex-1 items-center justify-center text-sm">
+                Cargando punto de venta...
+              </div>
+            ) : (
+              <>
+                <ProductCatalog
+                  products={pos.pageProducts}
+                  rows={pos.rows}
+                  stockByProduct={pos.stockByProduct}
+                  disabled={!pos.canOperate}
+                  viewportRef={pos.catalogViewportRef}
+                  onAdd={pos.addProduct}
+                />
+                <CatalogPagination
+                  currentPage={pos.currentPage}
+                  totalPages={pos.totalPages}
+                  onPageChange={pos.setPage}
+                />
+              </>
+            )}
           </div>
         </main>
         <Ticket
@@ -71,13 +93,36 @@ export function PointOfSale() {
           canCharge={pos.canOperate}
           charging={pos.creatingSale}
           stockByProduct={pos.stockByProduct}
-          onCustomerChange={(id) => pos.setCustomer(pos.customers.find((item) => item.id === Number(id)) ?? null)}
-          onSellerChange={(id) => pos.setSeller(pos.sellers.find((item) => item.id === Number(id)) ?? null)}
-          onPaymentMethodChange={(id) => pos.setPaymentMethod(pos.paymentMethods.find((item) => item.id === Number(id)) ?? null)}
+          onCustomerChange={(id) =>
+            pos.setCustomer(
+              pos.customers.find((item) => item.id === Number(id)) ?? null,
+            )
+          }
+          onSellerChange={(id) =>
+            pos.setSeller(
+              pos.sellers.find((item) => item.id === Number(id)) ?? null,
+            )
+          }
+          onPaymentMethodChange={(id) =>
+            pos.setPaymentMethod(
+              pos.paymentMethods.find((item) => item.id === Number(id)) ?? null,
+            )
+          }
           onQuantityChange={pos.updateQuantity}
           onCharge={pos.charge}
         />
       </div>
+      {!pos.loading && pos.cashSession?.status === "EXPIRED" && (
+        <CloseExpiredCashSessionDialog session={pos.cashSession} />
+      )}
+      {!pos.loading &&
+        pos.cashSession?.status === "OPEN" &&
+        pos.cashSession.deviceKey !== pos.deviceKey && (
+          <CashSessionInUseDialog />
+        )}
+      {!pos.loading && !pos.cashSession && pos.deviceKey && (
+        <PosAccessActions deviceKey={pos.deviceKey} till={pos.posTill ?? null} />
+      )}
     </div>
   );
 }

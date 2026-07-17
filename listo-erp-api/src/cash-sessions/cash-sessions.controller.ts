@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -14,6 +15,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import {
   CurrentCompanyId,
   CurrentUser,
@@ -22,6 +24,8 @@ import {
 import { CashSessionsService } from './cash-sessions.service';
 import { CloseCashSessionDto } from './dto/close-cash-session.dto';
 import { OpenCashSessionDto } from './dto/open-cash-session.dto';
+import { TillsService } from '../tills/tills.service';
+import { I18nException } from '../common/exceptions/i18n-exception';
 
 @ApiTags('cash-sessions')
 @ApiBearerAuth()
@@ -32,15 +36,29 @@ import { OpenCashSessionDto } from './dto/open-cash-session.dto';
 })
 @Controller('cash-sessions')
 export class CashSessionsController {
-  constructor(private readonly cashSessionsService: CashSessionsService) {}
+  constructor(
+    private readonly cashSessionsService: CashSessionsService,
+    private readonly tillsService: TillsService,
+  ) {}
 
   @Post('open')
   @ApiOperation({ summary: 'Abrir una caja operativa' })
-  open(
+  async open(
     @Body() openCashSessionDto: OpenCashSessionDto,
     @CurrentCompanyId() companyId: number,
     @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
   ) {
+    const till = await this.tillsService.findPosAccess(
+      companyId,
+      user,
+      request.ip.replace(/^::ffff:/, ''),
+    );
+    if (!till || till.id !== openCashSessionDto.tillId) {
+      throw I18nException.badRequest(
+        'cash_sessions.errors.till_not_associated',
+      );
+    }
     return this.cashSessionsService.open(
       openCashSessionDto,
       companyId,
@@ -57,9 +75,19 @@ export class CashSessionsController {
     return this.cashSessionsService.findCurrent(companyId, user.id);
   }
 
+  @Get('available-tills')
+  @ApiOperation({ summary: 'Obtener cajas activas disponibles para el POS' })
+  availableTills(@CurrentCompanyId() companyId: number) {
+    return this.cashSessionsService.findAvailableTills(companyId);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar aperturas y cierres de caja' })
-  @ApiQuery({ name: 'status', required: false, enum: ['OPEN', 'CLOSED'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['OPEN', 'EXPIRED', 'CLOSED'],
+  })
   @ApiQuery({ name: 'branchId', required: false, type: Number })
   @ApiQuery({ name: 'tillId', required: false, type: Number })
   findAll(

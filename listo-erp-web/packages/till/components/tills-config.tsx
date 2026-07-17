@@ -33,7 +33,7 @@ export function TillsConfig({ companyId }: TillsConfigProps) {
 
   const companyBranches = useMemo(
     () => branches?.filter((b) => b.companyId === companyId) ?? branches ?? [],
-    [branches, companyId]
+    [branches, companyId],
   );
 
   const filteredTills = useMemo(() => {
@@ -46,15 +46,17 @@ export function TillsConfig({ companyId }: TillsConfigProps) {
           till.tillName?.toLowerCase().includes(q) ||
           till.tillCode?.toLowerCase().includes(q) ||
           till.branch?.name?.toLowerCase().includes(q) ||
-          till.branch?.branchCode?.toLowerCase().includes(q)
+          till.branch?.branchCode?.toLowerCase().includes(q),
       );
     }
     if (branchFilter !== "all") {
       const bid = Number(branchFilter);
-      if (!Number.isNaN(bid)) list = list.filter((till) => till.branchId === bid);
+      if (!Number.isNaN(bid))
+        list = list.filter((till) => till.branchId === bid);
     }
     if (statusFilter === "ACTIVE") list = list.filter((till) => till.isActive);
-    if (statusFilter === "INACTIVE") list = list.filter((till) => !till.isActive);
+    if (statusFilter === "INACTIVE")
+      list = list.filter((till) => !till.isActive);
     return list;
   }, [tills, search, branchFilter, statusFilter]);
 
@@ -99,7 +101,9 @@ export function TillsConfig({ companyId }: TillsConfigProps) {
               <SelectValue placeholder={t("company.tills.filterByBranch")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("company.tills.allBranches")}</SelectItem>
+              <SelectItem value="all">
+                {t("company.tills.allBranches")}
+              </SelectItem>
               {companyBranches.map((b) => (
                 <SelectItem key={b.id} value={String(b.id)}>
                   {b.name}
@@ -112,9 +116,15 @@ export function TillsConfig({ companyId }: TillsConfigProps) {
               <SelectValue placeholder={t("company.tills.filterByStatus")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("company.tills.allStatuses")}</SelectItem>
-              <SelectItem value="ACTIVE">{t("company.tills.active")}</SelectItem>
-              <SelectItem value="INACTIVE">{t("company.tills.inactive")}</SelectItem>
+              <SelectItem value="all">
+                {t("company.tills.allStatuses")}
+              </SelectItem>
+              <SelectItem value="ACTIVE">
+                {t("company.tills.active")}
+              </SelectItem>
+              <SelectItem value="INACTIVE">
+                {t("company.tills.inactive")}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -126,7 +136,9 @@ export function TillsConfig({ companyId }: TillsConfigProps) {
       {filteredTills.length === 0 ? (
         <Card>
           <CardContent className="flex min-h-[200px] items-center justify-center py-10">
-            <p className="text-muted-foreground">{t("company.tills.noTills")}</p>
+            <p className="text-muted-foreground">
+              {t("company.tills.noTills")}
+            </p>
           </CardContent>
         </Card>
       ) : (

@@ -2,9 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsArray,
   IsInt,
   IsOptional,
   IsString,
+  ArrayUnique,
   MaxLength,
   Min,
   MinLength,
@@ -37,4 +39,15 @@ export class CreateTillDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'IDs de los métodos de pago habilitados para la caja',
+    type: [Number],
+  })
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  paymentMethodIds?: number[];
 }

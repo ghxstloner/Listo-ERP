@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { CashSessionStatus, InventoryMovementType, Prisma } from '@prisma/client';
+import {
+  CashSessionStatus,
+  InventoryMovementType,
+  Prisma,
+} from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,8 +26,14 @@ export class SalesService {
       const [cashSession, customer, seller, paymentMethod, products] =
         await Promise.all([
           tx.cashSession.findFirst({
-            where: { companyId, openedByUserId: userId, status: CashSessionStatus.OPEN },
-            select: { id: true, branchId: true },
+            where: {
+              companyId,
+              openedByUserId: userId,
+              status: CashSessionStatus.OPEN,
+              expiresAt: { gt: new Date() },
+              deviceKey: dto.deviceKey,
+            },
+            select: { id: true, branchId: true, tillId: true },
             orderBy: { openedAt: 'desc' },
           }),
           tx.customer.findFirst({
@@ -35,7 +45,9 @@ export class SalesService {
               id: dto.sellerId,
               companyId,
               isActive: true,
-              sellerUsers: { some: { userId, companyId, user: { isActive: true } } },
+              sellerUsers: {
+                some: { userId, companyId, user: { isActive: true } },
+              },
             },
             select: { id: true },
           }),
@@ -45,14 +57,34 @@ export class SalesService {
           }),
           tx.product.findMany({
             where: { id: { in: productIds }, companyId, isActive: true },
-            select: { id: true, salePrice: true, taxRate: true, costPrice: true },
+            select: {
+              id: true,
+              salePrice: true,
+              taxRate: true,
+              costPrice: true,
+            },
           }),
         ]);
 
-      if (!cashSession) throw I18nException.badRequest('sales.errors.cash_session_required');
-      if (!customer) throw I18nException.badRequest('sales.errors.customer_not_found');
-      if (!seller) throw I18nException.badRequest('sales.errors.seller_not_found');
-      if (!paymentMethod) throw I18nException.badRequest('sales.errors.payment_method_not_found');
+      if (!cashSession)
+        throw I18nException.badRequest('sales.errors.cash_session_required');
+      if (!customer)
+        throw I18nException.badRequest('sales.errors.customer_not_found');
+      if (!seller)
+        throw I18nException.badRequest('sales.errors.seller_not_found');
+      if (!paymentMethod)
+        throw I18nException.badRequest('sales.errors.payment_method_not_found');
+      const tillPaymentMethod = await tx.tillPaymentMethod.findUnique({
+        where: {
+          tillId_paymentMethodId: {
+            tillId: cashSession.tillId,
+            paymentMethodId: paymentMethod.id,
+          },
+        },
+        select: { tillId: true },
+      });
+      if (!tillPaymentMethod)
+        throw I18nException.badRequest('sales.errors.payment_method_not_found');
       if (products.length !== productIds.length) {
         throw I18nException.badRequest('sales.errors.product_not_found');
       }
@@ -69,12 +101,16 @@ export class SalesService {
         throw I18nException.badRequest('sales.errors.warehouse_not_found');
       }
 
-      const productsById = new Map(products.map((product) => [product.id, product]));
+      const productsById = new Map(
+        products.map((product) => [product.id, product]),
+      );
       const lineItems = dto.items.map((item) => {
         const product = productsById.get(item.productId)!;
         const quantity = new Prisma.Decimal(item.quantity);
         const taxRate = product.taxRate ?? new Prisma.Decimal(0);
-        const effectiveTaxRate = taxRate.greaterThan(1) ? taxRate.dividedBy(100) : taxRate;
+        const effectiveTaxRate = taxRate.greaterThan(1)
+          ? taxRate.dividedBy(100)
+          : taxRate;
         const baseAmount = product.salePrice.mul(quantity);
         const taxAmount = baseAmount.mul(effectiveTaxRate);
         return {
@@ -87,13 +123,21 @@ export class SalesService {
           unitCost: product.costPrice ?? new Prisma.Decimal(0),
         };
       });
-      const subtotal = lineItems.reduce((sum, item) => sum.plus(item.unitPrice.mul(item.quantity)), new Prisma.Decimal(0));
-      const taxAmount = lineItems.reduce((sum, item) => sum.plus(item.taxAmount), new Prisma.Decimal(0));
+      const subtotal = lineItems.reduce(
+        (sum, item) => sum.plus(item.unitPrice.mul(item.quantity)),
+        new Prisma.Decimal(0),
+      );
+      const taxAmount = lineItems.reduce(
+        (sum, item) => sum.plus(item.taxAmount),
+        new Prisma.Decimal(0),
+      );
 
       const balances = await tx.inventoryBalance.findMany({
         where: {
           companyId,
-          warehouseId: { in: warehouseBranches.map((item) => item.warehouseId) },
+          warehouseId: {
+            in: warehouseBranches.map((item) => item.warehouseId),
+          },
           productId: { in: productIds },
         },
         select: { warehouseId: true, productId: true, quantity: true },
@@ -102,10 +146,18 @@ export class SalesService {
       for (const balance of balances) {
         availableByProduct.set(
           balance.productId,
-          (availableByProduct.get(balance.productId) ?? new Prisma.Decimal(0)).plus(balance.quantity),
+          (
+            availableByProduct.get(balance.productId) ?? new Prisma.Decimal(0)
+          ).plus(balance.quantity),
         );
       }
-      if (lineItems.some((item) => (availableByProduct.get(item.productId) ?? new Prisma.Decimal(0)).lessThan(item.quantity))) {
+      if (
+        lineItems.some((item) =>
+          (
+            availableByProduct.get(item.productId) ?? new Prisma.Decimal(0)
+          ).lessThan(item.quantity),
+        )
+      ) {
         throw I18nException.badRequest('sales.errors.insufficient_stock');
       }
 
@@ -128,25 +180,39 @@ export class SalesService {
         include: { items: true },
       });
 
-      const saleItemsByProduct = new Map(sale.items.map((item) => [item.productId, item]));
+      const saleItemsByProduct = new Map(
+        sale.items.map((item) => [item.productId, item]),
+      );
       const balanceByWarehouseProduct = new Map(
-        balances.map((balance) => [`${balance.warehouseId}:${balance.productId}`, balance.quantity]),
+        balances.map((balance) => [
+          `${balance.warehouseId}:${balance.productId}`,
+          balance.quantity,
+        ]),
       );
       for (const item of lineItems) {
         let remaining = item.quantity;
         for (const { warehouseId } of warehouseBranches) {
           if (remaining.isZero()) break;
           const key = `${warehouseId}:${item.productId}`;
-          const available = balanceByWarehouseProduct.get(key) ?? new Prisma.Decimal(0);
+          const available =
+            balanceByWarehouseProduct.get(key) ?? new Prisma.Decimal(0);
           if (available.isZero()) continue;
           const quantity = Prisma.Decimal.min(available, remaining);
           const updated = await tx.inventoryBalance.updateMany({
-            where: { companyId, warehouseId, productId: item.productId, quantity: { gte: quantity } },
+            where: {
+              companyId,
+              warehouseId,
+              productId: item.productId,
+              quantity: { gte: quantity },
+            },
             data: { quantity: { decrement: quantity } },
           });
-          if (updated.count !== 1) throw I18nException.badRequest('sales.errors.insufficient_stock');
+          if (updated.count !== 1)
+            throw I18nException.badRequest('sales.errors.insufficient_stock');
           const balance = await tx.inventoryBalance.findUniqueOrThrow({
-            where: { warehouseId_productId: { warehouseId, productId: item.productId } },
+            where: {
+              warehouseId_productId: { warehouseId, productId: item.productId },
+            },
             select: { quantity: true },
           });
           await tx.inventoryMovement.create({
@@ -167,7 +233,10 @@ export class SalesService {
         }
       }
 
-      return tx.sale.findUniqueOrThrow({ where: { id: sale.id }, select: this.selectSale() });
+      return tx.sale.findUniqueOrThrow({
+        where: { id: sale.id },
+        select: this.selectSale(),
+      });
     });
 
     await this.audit.logCreate(userId, companyId, 'sales', 'Venta', sale.id);
@@ -207,7 +276,20 @@ export class SalesService {
     };
   }
 
-  private serializeSale<T extends { subtotal: Prisma.Decimal; taxAmount: Prisma.Decimal; total: Prisma.Decimal; items: Array<{ quantity: Prisma.Decimal; unitPrice: Prisma.Decimal; taxRate: Prisma.Decimal; taxAmount: Prisma.Decimal; lineTotal: Prisma.Decimal }> }>(sale: T) {
+  private serializeSale<
+    T extends {
+      subtotal: Prisma.Decimal;
+      taxAmount: Prisma.Decimal;
+      total: Prisma.Decimal;
+      items: Array<{
+        quantity: Prisma.Decimal;
+        unitPrice: Prisma.Decimal;
+        taxRate: Prisma.Decimal;
+        taxAmount: Prisma.Decimal;
+        lineTotal: Prisma.Decimal;
+      }>;
+    },
+  >(sale: T) {
     return {
       ...sale,
       subtotal: Number(sale.subtotal),

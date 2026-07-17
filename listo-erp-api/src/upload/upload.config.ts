@@ -11,7 +11,7 @@ const nanoid = customAlphabet(
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
-export type UploadSubfolder = 'companies' | 'products';
+export type UploadSubfolder = 'companies' | 'payment-methods' | 'products';
 
 export interface MulterUploadFile {
   fieldname: string;

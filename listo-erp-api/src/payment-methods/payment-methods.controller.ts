@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,9 +8,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiHeader,
   ApiOperation,
   ApiTags,
@@ -21,6 +27,11 @@ import {
   CurrentUserPayload,
 } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
+import {
+  getMulterOptions,
+  MulterUploadFile,
+  toRelativePath,
+} from '../upload/upload.config';
 import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { PaymentMethodsService } from './payment-methods.service';
@@ -80,6 +91,32 @@ export class PaymentMethodsController {
       updatePaymentMethodDto,
       companyId,
       user.id,
+    );
+  }
+
+  @Post(':id/image')
+  @Roles(Role.ADMIN)
+  @UseInterceptors(FileInterceptor('file', getMulterOptions('payment-methods')))
+  @ApiOperation({ summary: 'Subir imagen del método de pago' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  async uploadImage(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentCompanyId() companyId: number,
+    @UploadedFile() file: MulterUploadFile | undefined,
+  ) {
+    if (!file?.filename) {
+      throw new BadRequestException('Debe enviar un archivo de imagen');
+    }
+    return this.paymentMethodsService.updateImage(
+      id,
+      companyId,
+      toRelativePath('payment-methods', file.filename),
     );
   }
 

@@ -3,7 +3,9 @@
     "not_found": "Caja no encontrada",
     "code_empty": "El código de caja no puede estar vacío",
     "code_exists": "Ya existe una caja con ese código en esta sucursal. El código debe ser único.",
-    "branch_not_found": "La sucursal no existe o no pertenece a la empresa"
+    "branch_not_found": "La sucursal no existe o no pertenece a la empresa",
+    "pos_code_invalid": "El código de acceso POS no es válido",
+    "payment_method_not_found": "Uno o más métodos de pago no existen o no pertenecen a la empresa"
   },
   "success": {
     "created": "Caja creada exitosamente",

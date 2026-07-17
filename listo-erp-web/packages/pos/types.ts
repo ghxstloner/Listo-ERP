@@ -9,12 +9,14 @@ export interface PaymentMethod {
   id: number;
   name: string;
   code: string;
+  image: string | null;
   requiresReference: boolean;
   isActive: boolean;
   companyId: number;
 }
 
 export interface CreateSaleRequest {
+  deviceKey: string;
   customerId: number;
   sellerId: number;
   paymentMethodId: number;

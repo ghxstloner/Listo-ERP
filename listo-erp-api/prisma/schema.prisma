@@ -216,17 +216,31 @@ model till {
   isActive     Boolean       @default(true)
   companyId    Int
   branchId     Int
+  posAccessCodeHash String?
+  posAccessCodeType TillPosAssociationType?
+  posAssociationType TillPosAssociationType?
+  posAssociatedIp String?
+  posAssociatedSessionId String?
+  posAssociationExpiresAt DateTime?
   branch       branch        @relation(fields: [branchId], references: [id])
   company      Company       @relation(fields: [companyId], references: [id])
   cashSessions CashSession[]
+  paymentMethods TillPaymentMethod[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@unique([branchId, tillCode])
+  @@index([companyId, posAssociationType])
+}
+
+enum TillPosAssociationType {
+  IP
+  USER_SESSION
 }
 
 enum CashSessionStatus {
   OPEN
+  EXPIRED
   CLOSED
 }
 
@@ -235,10 +249,12 @@ model CashSession {
   companyId             Int
   branchId              Int
   tillId                Int
+  deviceKey             String
   openedByUserId        Int
   closedByUserId        Int?
   status                CashSessionStatus @default(OPEN)
   openedAt              DateTime          @default(now())
+  expiresAt             DateTime
   closedAt              DateTime?
   openingAmount         Decimal           @db.Decimal(18, 4)
   expectedClosingAmount Decimal?          @db.Decimal(18, 4)
@@ -261,6 +277,7 @@ model CashSession {
   @@index([tillId])
   @@index([openedByUserId])
   @@index([openedAt])
+  @@index([deviceKey])
 }
 
 model Currency {
@@ -299,14 +316,27 @@ model PaymentMethod {
   name              String
   code              String
   requiresReference Boolean  @default(false)
+  image             String?
   isActive          Boolean  @default(true)
   companyId         Int
   company           Company  @relation(fields: [companyId], references: [id])
   sales             Sale[]
+  tills             TillPaymentMethod[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   @@unique([companyId, code])
+}
+
+model TillPaymentMethod {
+  tillId          Int
+  paymentMethodId Int
+  till            till          @relation(fields: [tillId], references: [id], onDelete: Cascade)
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+
+  @@id([tillId, paymentMethodId])
+  @@index([paymentMethodId])
 }
 
 model Department {

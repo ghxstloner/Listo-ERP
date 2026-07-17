@@ -20,15 +20,20 @@ export function TillCard({ till }: TillCardProps) {
         <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
           <div className="space-y-1">
             <p className="font-semibold leading-none">{till.tillName}</p>
-            <p className="text-muted-foreground text-sm font-mono">{till.tillCode}</p>
+            <p className="text-muted-foreground text-sm font-mono">
+              {till.tillCode}
+            </p>
           </div>
           <span
-            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${till.isActive
+            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              till.isActive
                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 : "bg-muted text-muted-foreground"
-              }`}
+            }`}
           >
-            {till.isActive ? t("company.tills.active") : t("company.tills.inactive")}
+            {till.isActive
+              ? t("company.tills.active")
+              : t("company.tills.inactive")}
           </span>
         </CardHeader>
         <CardContent>

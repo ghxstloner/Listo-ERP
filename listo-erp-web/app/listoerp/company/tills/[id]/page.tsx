@@ -7,6 +7,8 @@ import { useTranslation } from "@/hooks/use-translation";
 import { decodeId } from "@/lib/hash-id";
 import { useGetTill } from "@/packages/till/api";
 import { TillConfigForm } from "@/packages/till/components/till-config-form";
+import { TillPaymentMethods } from "@/packages/till/components/till-payment-methods";
+import { TillPosAccess } from "@/packages/till/components/till-pos-access";
 import { ArrowLeft, Spinner } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -22,7 +24,9 @@ export default function TillConfigPage() {
   if (hash === undefined || tillId === null) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">{t("company.tills.tillNotFound")}</p>
+        <p className="text-muted-foreground">
+          {t("company.tills.tillNotFound")}
+        </p>
         <Button variant="outline" asChild>
           <Link href="/listoerp/company/tills">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -47,7 +51,8 @@ export default function TillConfigPage() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-destructive">
-          {t("common.error")}: {(error as Error)?.message ?? t("company.tills.tillNotFound")}
+          {t("common.error")}:{" "}
+          {(error as Error)?.message ?? t("company.tills.tillNotFound")}
         </p>
         <Button variant="outline" asChild>
           <Link href="/listoerp/company/tills">
@@ -64,17 +69,29 @@ export default function TillConfigPage() {
       <Tabs defaultValue="general" className="w-full">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/listoerp/company/tills" className="text-muted-foreground hover:text-foreground">
+            <Link
+              href="/listoerp/company/tills"
+              className="text-muted-foreground hover:text-foreground"
+            >
               <ArrowLeft className="mr-1 h-4 w-4" />
               {t("company.tills.title")}
             </Link>
           </Button>
           <TabsList>
-            <TabsTrigger value="general">{t("company.generalConfiguration")}</TabsTrigger>
+            <TabsTrigger value="general">
+              {t("company.generalConfiguration")}
+            </TabsTrigger>
+            <TabsTrigger value="payment-methods">Métodos de pago</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="general" className="mt-2 w-full">
           <TillConfigForm key={till.id} till={till} tillId={tillId} />
+          <div className="mt-4">
+            <TillPosAccess till={till} />
+          </div>
+        </TabsContent>
+        <TabsContent value="payment-methods" className="mt-2 w-full">
+          <TillPaymentMethods till={till} />
         </TabsContent>
       </Tabs>
     </div>

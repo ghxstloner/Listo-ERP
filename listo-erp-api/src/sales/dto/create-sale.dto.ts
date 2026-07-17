@@ -4,6 +4,8 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsString,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -21,6 +23,10 @@ class CreateSaleItemDto {
 }
 
 export class CreateSaleDto {
+  @IsString()
+  @MaxLength(100)
+  deviceKey: string;
+
   @Type(() => Number)
   @IsInt()
   @Min(1)

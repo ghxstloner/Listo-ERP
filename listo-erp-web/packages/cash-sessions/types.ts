@@ -1,4 +1,4 @@
-export type CashSessionStatus = "OPEN" | "CLOSED";
+export type CashSessionStatus = "OPEN" | "EXPIRED" | "CLOSED";
 
 export interface CashSessionParty {
   id: number;
@@ -10,6 +10,7 @@ export interface CashSessionTill {
   id: number;
   tillCode: string;
   tillName: string;
+  branch?: CashSessionBranch;
 }
 
 export interface CashSessionBranch {
@@ -23,10 +24,12 @@ export interface CashSession {
   companyId: number;
   branchId: number;
   tillId: number;
+  deviceKey: string;
   openedByUserId: number;
   closedByUserId: number | null;
   status: CashSessionStatus;
   openedAt: string;
+  expiresAt: string;
   closedAt: string | null;
   openingAmount: string;
   expectedClosingAmount: string | null;
@@ -44,6 +47,7 @@ export interface CashSession {
 
 export interface OpenCashSessionRequest {
   tillId: number;
+  deviceKey: string;
   openingAmount: number;
   openingNote?: string;
 }

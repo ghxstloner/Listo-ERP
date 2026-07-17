@@ -15,6 +15,11 @@ export class OpenCashSessionDto {
   @IsInt()
   tillId: number;
 
+  @ApiProperty({ example: '6e2f7df3-0d31-4903-a013-d430d6307d2e' })
+  @IsString()
+  @MaxLength(100)
+  deviceKey: string;
+
   @ApiProperty({ example: 100 })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })

@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,10 +18,17 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentCompanyId } from '../auth/decorators/current-user.decorator';
+import { Request } from 'express';
+import {
+  CurrentCompanyId,
+  CurrentUser,
+  CurrentUserPayload,
+} from '../auth/decorators/current-user.decorator';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateTillDto } from './dto/create-till.dto';
 import { UpdateTillDto } from './dto/update-till.dto';
+import { GeneratePosCodeDto } from './dto/generate-pos-code.dto';
 import { TillsService } from './tills.service';
 
 @ApiTags('tills')
@@ -64,6 +72,21 @@ export class TillsController {
     return this.tillsService.findAll(companyId, branchIdNum);
   }
 
+  @Get('pos-access')
+  @RequirePermissions('sales.pos', 'sales.cash-closures')
+  @ApiOperation({ summary: 'Obtener la caja habilitada para el POS actual' })
+  posAccess(
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
+  ) {
+    return this.tillsService.findPosAccess(
+      companyId,
+      user,
+      this.getIp(request),
+    );
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener una caja por ID' })
   async findOne(
@@ -71,6 +94,25 @@ export class TillsController {
     @CurrentCompanyId() companyId: number,
   ) {
     return this.tillsService.findOne(id, companyId);
+  }
+
+  @Post(':id/pos-association')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Generar código de asociación POS para una caja' })
+  associatePosAccess(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: GeneratePosCodeDto,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
+  ) {
+    return this.tillsService.associatePosAccess(
+      id,
+      dto,
+      companyId,
+      user,
+      this.getIp(request),
+    );
   }
 
   @Patch(':id')
@@ -92,5 +134,9 @@ export class TillsController {
     @CurrentCompanyId() companyId: number,
   ) {
     return this.tillsService.remove(id, companyId);
+  }
+
+  private getIp(request: Request) {
+    return request.ip.replace(/^::ffff:/, '');
   }
 }

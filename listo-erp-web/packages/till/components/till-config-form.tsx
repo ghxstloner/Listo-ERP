@@ -44,7 +44,10 @@ export function TillConfigForm({ till, tillId }: TillConfigFormProps) {
   }, [updateError, t]);
 
   const handleCodeChange = (value: string) => {
-    const upper = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, CODE_LENGTH);
+    const upper = value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, CODE_LENGTH);
     setCode(upper);
   };
 
@@ -127,13 +130,18 @@ export function TillConfigForm({ till, tillId }: TillConfigFormProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ACTIVE">{t("company.tills.active")}</SelectItem>
-                <SelectItem value="INACTIVE">{t("company.tills.inactive")}</SelectItem>
+                <SelectItem value="ACTIVE">
+                  {t("company.tills.active")}
+                </SelectItem>
+                <SelectItem value="INACTIVE">
+                  {t("company.tills.inactive")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2 text-sm text-muted-foreground">
-            {t("company.tills.branch")}: {till.branch?.name ?? "-"} ({till.branch?.branchCode ?? "-"})
+            {t("company.tills.branch")}: {till.branch?.name ?? "-"} (
+            {till.branch?.branchCode ?? "-"})
           </div>
         </div>
         <div className="flex justify-end pt-6 mt-6 border-t">

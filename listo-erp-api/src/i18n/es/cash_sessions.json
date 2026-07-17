@@ -3,7 +3,9 @@
     "not_found": "Sesión de caja no encontrada",
     "till_not_found": "La caja no existe, está inactiva o no pertenece a la empresa",
     "already_open": "Ya existe una caja abierta para esta caja física o para este usuario",
-    "not_open": "La sesión de caja no está abierta"
+    "not_open": "La sesión de caja no puede cerrarse",
+    "expired_session_requires_closing": "Debes cerrar la sesión de caja vencida antes de abrir una nueva",
+    "till_not_associated": "La caja no está asociada a este acceso POS"
   },
   "success": {
     "opened": "Caja abierta exitosamente",

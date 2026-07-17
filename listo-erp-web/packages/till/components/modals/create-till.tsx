@@ -23,6 +23,7 @@ import { showToast } from "@/components/ui/sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import { encodeId } from "@/lib/hash-id";
 import { useGetBranchesByCompany } from "@/packages/branch/api";
+import { useGetPaymentMethods } from "@/packages/payment-methods/api";
 import { useCreateTill } from "@/packages/till/api";
 import type { CreateTillRequest } from "@/packages/till/types";
 import { Plus } from "@phosphor-icons/react";
@@ -45,8 +46,10 @@ export function CreateTill({ companyId }: CreateTillProps) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [branchId, setBranchId] = useState<string>("");
-  const [branches, isLoadingBranches, branchError] = useGetBranchesByCompany(companyId);
+  const [branches, isLoadingBranches, branchError] =
+    useGetBranchesByCompany(companyId);
   const [createTill, isCreating, createError] = useCreateTill();
+  const [paymentMethods, isLoadingPaymentMethods] = useGetPaymentMethods();
 
   useEffect(() => {
     if (branchError) {
@@ -67,7 +70,10 @@ export function CreateTill({ companyId }: CreateTillProps) {
   }, [createError, t]);
 
   const handleCodeChange = (value: string) => {
-    const upper = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, CODE_LENGTH);
+    const upper = value
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, CODE_LENGTH);
     setCode(upper);
   };
 
@@ -118,6 +124,9 @@ export function CreateTill({ companyId }: CreateTillProps) {
       tillCode: code,
       branchId: bid,
       isActive: true,
+      paymentMethodIds: (paymentMethods ?? [])
+        .filter((method) => method.isActive)
+        .map((method) => method.id),
     };
 
     createTill(request, (data) => {
@@ -131,7 +140,8 @@ export function CreateTill({ companyId }: CreateTillProps) {
     });
   };
 
-  const companyBranches = branches?.filter((b) => b.companyId === companyId) ?? branches ?? [];
+  const companyBranches =
+    branches?.filter((b) => b.companyId === companyId) ?? branches ?? [];
 
   return (
     <>
@@ -143,7 +153,9 @@ export function CreateTill({ companyId }: CreateTillProps) {
         <DialogContent className="max-w-lg p-0">
           <DialogHeader className="p-4 pb-0">
             <DialogTitle>{t("company.tills.addNewTill")}</DialogTitle>
-            <DialogDescription>{t("company.tills.addTillDescription")}</DialogDescription>
+            <DialogDescription>
+              {t("company.tills.addTillDescription")}
+            </DialogDescription>
           </DialogHeader>
           <Separator />
           <div className="space-y-4 p-4 py-0">
@@ -192,7 +204,11 @@ export function CreateTill({ companyId }: CreateTillProps) {
             </div>
           </div>
           <DialogFooter className="p-4">
-            <Button variant="outline" onClick={handleClose} disabled={isCreating}>
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isCreating}
+            >
               {t("common.cancel")}
             </Button>
             <Button
@@ -200,9 +216,10 @@ export function CreateTill({ companyId }: CreateTillProps) {
               disabled={
                 isCreating ||
                 !name.trim() ||
-                !CODE_REGEX.test(code) ||
-                !branchId ||
-                isLoadingBranches
+                 !CODE_REGEX.test(code) ||
+                 !branchId ||
+                isLoadingBranches ||
+                isLoadingPaymentMethods
               }
             >
               {isCreating ? t("common.saving") : t("common.create")}

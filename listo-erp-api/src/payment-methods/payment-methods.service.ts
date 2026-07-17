@@ -3,6 +3,7 @@ import { I18nException } from '../common/exceptions/i18n-exception';
 import { isUniqueConstraintError } from '../common/utils/prisma-errors';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { removeUploadedFile } from '../upload/upload.config';
 import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
 import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 
@@ -133,8 +134,12 @@ export class PaymentMethodsService {
   }
 
   async remove(id: number, companyId: number, userId: number) {
-    await this.findOne(id, companyId);
+    const paymentMethod = await this.findOne(id, companyId);
     await this.prisma.paymentMethod.delete({ where: { id } });
+
+    if (paymentMethod.image) {
+      await removeUploadedFile('payment-methods', paymentMethod.image);
+    }
 
     await this.auditService.logDelete(
       userId,
@@ -147,12 +152,31 @@ export class PaymentMethodsService {
     return { message: 'payment_methods.success.deleted' };
   }
 
+  async updateImage(id: number, companyId: number, relativePath: string) {
+    const currentPaymentMethod = await this.findOne(id, companyId);
+    const paymentMethod = await this.prisma.paymentMethod.update({
+      where: { id },
+      data: { image: relativePath },
+      select: this.selectBase(),
+    });
+
+    if (
+      currentPaymentMethod.image &&
+      currentPaymentMethod.image !== relativePath
+    ) {
+      await removeUploadedFile('payment-methods', currentPaymentMethod.image);
+    }
+
+    return paymentMethod;
+  }
+
   private selectBase() {
     return {
       id: true,
       name: true,
       code: true,
       requiresReference: true,
+      image: true,
       isActive: true,
       companyId: true,
       createdAt: true,

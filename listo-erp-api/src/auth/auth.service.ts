@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { AuditService } from '../audit/audit.service';
 import { MailService } from '../mail/mail.service';
@@ -70,6 +71,7 @@ export class AuthService {
     const payload = {
       sub: result.id,
       email: result.email,
+      jti: randomUUID(),
     };
 
     const token = this.jwtService.sign(payload);
@@ -140,7 +142,9 @@ export class AuthService {
           select: {
             role: {
               select: {
-                permissions: { select: { permission: { select: { code: true } } } },
+                permissions: {
+                  select: { permission: { select: { code: true } } },
+                },
               },
             },
           },
@@ -155,9 +159,15 @@ export class AuthService {
         name: cu.company.name,
         primaryColor: cu.company.primaryColor,
         secondaryColor: cu.company.secondaryColor,
-        permissions: [...new Set(cu.roles.flatMap((assignment) =>
-          assignment.role.permissions.map(({ permission }) => permission.code),
-        ))],
+        permissions: [
+          ...new Set(
+            cu.roles.flatMap((assignment) =>
+              assignment.role.permissions.map(
+                ({ permission }) => permission.code,
+              ),
+            ),
+          ),
+        ],
       }));
 
     if (activeCompanies.length === 0) {
@@ -171,6 +181,7 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
+      jti: randomUUID(),
     };
 
     const token = this.jwtService.sign(payload);

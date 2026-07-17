@@ -15,6 +15,8 @@ interface CashSessionFilters {
 
 @Injectable()
 export class CashSessionsService {
+  private static readonly SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
@@ -41,13 +43,32 @@ export class CashSessionsService {
       throw I18nException.badRequest('cash_sessions.errors.till_not_found');
     }
 
+    await this.expireUserSessions(companyId, userId);
+    const expiredSession = await this.prisma.cashSession.findFirst({
+      where: {
+        companyId,
+        openedByUserId: userId,
+        status: CashSessionStatus.EXPIRED,
+      },
+      select: { id: true },
+    });
+    if (expiredSession) {
+      throw I18nException.badRequest(
+        'cash_sessions.errors.expired_session_requires_closing',
+      );
+    }
+
     try {
       const session = await this.prisma.cashSession.create({
         data: {
           companyId,
           branchId: till.branchId,
           tillId: till.id,
+          deviceKey: dto.deviceKey,
           openedByUserId: userId,
+          expiresAt: new Date(
+            Date.now() + CashSessionsService.SESSION_DURATION_MS,
+          ),
           openingAmount: new Prisma.Decimal(dto.openingAmount),
           openingNote: dto.openingNote?.trim() || undefined,
         },
@@ -91,7 +112,10 @@ export class CashSessionsService {
       throw I18nException.notFound('cash_sessions.errors.not_found');
     }
 
-    if (current.status !== CashSessionStatus.OPEN) {
+    if (
+      current.status !== CashSessionStatus.OPEN &&
+      current.status !== CashSessionStatus.EXPIRED
+    ) {
       throw I18nException.badRequest('cash_sessions.errors.not_open');
     }
 
@@ -125,14 +149,42 @@ export class CashSessionsService {
   }
 
   async findCurrent(companyId: number, userId: number) {
+    await this.expireUserSessions(companyId, userId);
+
     return this.prisma.cashSession.findFirst({
       where: {
         companyId,
         openedByUserId: userId,
-        status: CashSessionStatus.OPEN,
+        status: { in: [CashSessionStatus.OPEN, CashSessionStatus.EXPIRED] },
       },
       select: this.selectBase(),
       orderBy: { openedAt: 'desc' },
+    });
+  }
+
+  private async expireUserSessions(companyId: number, userId: number) {
+    await this.prisma.cashSession.updateMany({
+      where: {
+        companyId,
+        openedByUserId: userId,
+        status: CashSessionStatus.OPEN,
+        expiresAt: { lte: new Date() },
+      },
+      data: { status: CashSessionStatus.EXPIRED },
+    });
+  }
+
+  async findAvailableTills(companyId: number) {
+    return this.prisma.till.findMany({
+      where: { companyId, isActive: true, branch: { isActive: true } },
+      select: {
+        id: true,
+        tillCode: true,
+        tillName: true,
+        branchId: true,
+        branch: { select: { id: true, name: true, branchCode: true } },
+      },
+      orderBy: [{ branch: { name: 'asc' } }, { tillName: 'asc' }],
     });
   }
 
@@ -141,6 +193,7 @@ export class CashSessionsService {
 
     if (
       filters.status === CashSessionStatus.OPEN ||
+      filters.status === CashSessionStatus.EXPIRED ||
       filters.status === CashSessionStatus.CLOSED
     ) {
       where.status = filters.status;
@@ -174,10 +227,12 @@ export class CashSessionsService {
       companyId: true,
       branchId: true,
       tillId: true,
+       deviceKey: true,
       openedByUserId: true,
       closedByUserId: true,
       status: true,
       openedAt: true,
+      expiresAt: true,
       closedAt: true,
       openingAmount: true,
       expectedClosingAmount: true,

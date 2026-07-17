@@ -8,6 +8,8 @@ import { Role } from '@prisma/client';
 export interface CurrentUserPayload {
   id: number;
   email: string;
+  sessionId: string;
+  sessionExpiresAt: Date;
 }
 
 export interface CompanyUserPayload {

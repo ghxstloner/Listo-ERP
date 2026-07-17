@@ -3,7 +3,8 @@
     "not_found": "未找到收银机",
     "code_empty": "收银机代码不能为空",
     "code_exists": "此分支机构中已存在具有该代码的收银机。代码必须是唯一的。",
-    "branch_not_found": "分支机构不存在或不属于该公司"
+    "branch_not_found": "分支机构不存在或不属于该公司",
+    "payment_method_not_found": "一个或多个支付方式不存在或不属于该公司"
   },
   "success": {
     "created": "收银机创建成功",

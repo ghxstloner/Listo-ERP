@@ -3,7 +3,9 @@
     "not_found": "Cash session not found",
     "till_not_found": "Till does not exist, is inactive, or does not belong to the company",
     "already_open": "There is already an open session for this till or user",
-    "not_open": "Cash session is not open"
+    "not_open": "Cash session cannot be closed",
+    "expired_session_requires_closing": "You must close the expired cash session before opening a new one",
+    "till_not_associated": "The till is not associated with this POS access"
   },
   "success": {
     "opened": "Cash session opened successfully",

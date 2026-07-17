@@ -1,11 +1,14 @@
 import { AuditService } from '../audit/audit.service';
 import { Injectable } from '@nestjs/common';
+import { TillPosAssociationType } from '@prisma/client';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { customAlphabet } from 'nanoid';
 import { isUniqueConstraintError } from '../common/utils/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTillDto } from './dto/create-till.dto';
 import { UpdateTillDto } from './dto/update-till.dto';
+import { GeneratePosCodeDto } from './dto/generate-pos-code.dto';
 
 @Injectable()
 export class TillsService {
@@ -53,11 +56,103 @@ export class TillsService {
     return branch;
   }
 
+  private async ensurePaymentMethodsBelongToCompany(
+    paymentMethodIds: number[],
+    companyId: number,
+  ) {
+    const uniqueIds = [...new Set(paymentMethodIds)];
+    const paymentMethods = await this.prisma.paymentMethod.findMany({
+      where: { id: { in: uniqueIds }, companyId },
+      select: { id: true },
+    });
+    if (paymentMethods.length !== uniqueIds.length) {
+      throw I18nException.badRequest('tills.errors.payment_method_not_found');
+    }
+  }
+
+  async associatePosAccess(
+    id: number,
+    dto: GeneratePosCodeDto,
+    companyId: number,
+    user: CurrentUserPayload,
+    ip: string,
+  ) {
+    await this.findOne(id, companyId);
+    const isIp = dto.type === TillPosAssociationType.IP;
+    const till = await this.prisma.till.update({
+      where: { id },
+      data: {
+        posAccessCodeHash: null,
+        posAccessCodeType: null,
+        posAssociationType: dto.type,
+        posAssociatedIp: isIp ? ip : null,
+        posAssociatedSessionId: isIp ? null : user.sessionId,
+        posAssociationExpiresAt: isIp ? null : user.sessionExpiresAt,
+      },
+      select: this.selectBase(),
+    });
+    return { message: 'tills.success.pos_access_associated', data: till };
+  }
+
+  async findPosAccess(companyId: number, user: CurrentUserPayload, ip: string) {
+    const till = await this.prisma.till.findFirst({
+      where: {
+        companyId,
+        isActive: true,
+        OR: [
+          {
+            posAssociationType: TillPosAssociationType.IP,
+            posAssociatedIp: ip,
+          },
+          {
+            posAssociationType: TillPosAssociationType.USER_SESSION,
+            posAssociatedSessionId: user.sessionId,
+            posAssociationExpiresAt: { gt: new Date() },
+          },
+        ],
+      },
+      select: this.selectBase(),
+    });
+    return till;
+  }
+
+  private selectBase() {
+    return {
+      id: true,
+      tillCode: true,
+      tillName: true,
+      isActive: true,
+      companyId: true,
+      branchId: true,
+      posAssociationType: true,
+      paymentMethods: {
+        select: { paymentMethod: { select: this.paymentMethodSelect() } },
+      },
+      branch: { select: { id: true, name: true, branchCode: true } },
+      createdAt: true,
+      updatedAt: true,
+    };
+  }
+
+  private paymentMethodSelect() {
+    return {
+      id: true,
+      name: true,
+      code: true,
+      image: true,
+      requiresReference: true,
+      isActive: true,
+      companyId: true,
+    };
+  }
+
   async create(createTillDto: CreateTillDto, companyId: number) {
     await this.ensureBranchBelongsToCompany(createTillDto.branchId, companyId);
+    const { paymentMethodIds = [], ...tillData } = createTillDto;
+    await this.ensurePaymentMethodsBelongToCompany(paymentMethodIds, companyId);
 
-    const rawTillCode = createTillDto.tillCode?.trim();
-    if (createTillDto.tillCode != null && rawTillCode === '') {
+    const rawTillCode = tillData.tillCode?.trim();
+    if (tillData.tillCode != null && rawTillCode === '') {
       throw I18nException.badRequest('tills.errors.code_empty');
     }
     let tillCode = rawTillCode || undefined;
@@ -66,7 +161,7 @@ export class TillsService {
       const existing = await this.prisma.till.findUnique({
         where: {
           branchId_tillCode: {
-            branchId: createTillDto.branchId,
+            branchId: tillData.branchId,
             tillCode,
           },
         },
@@ -75,17 +170,22 @@ export class TillsService {
         throw I18nException.badRequest('tills.errors.code_exists');
       }
     } else {
-      tillCode = await this.generateUniqueTillCode(createTillDto.branchId);
+      tillCode = await this.generateUniqueTillCode(tillData.branchId);
     }
 
     try {
       const till = await this.prisma.till.create({
         data: {
-          tillName: createTillDto.tillName,
+          tillName: tillData.tillName,
           tillCode,
-          branchId: createTillDto.branchId,
+          branchId: tillData.branchId,
           companyId,
-          isActive: createTillDto.isActive ?? true,
+          isActive: tillData.isActive ?? true,
+          paymentMethods: {
+            create: paymentMethodIds.map((paymentMethodId) => ({
+              paymentMethodId,
+            })),
+          },
         },
         select: {
           id: true,
@@ -94,6 +194,9 @@ export class TillsService {
           isActive: true,
           companyId: true,
           branchId: true,
+          paymentMethods: {
+            select: { paymentMethod: { select: this.paymentMethodSelect() } },
+          },
           branch: {
             select: {
               id: true,
@@ -132,6 +235,10 @@ export class TillsService {
         isActive: true,
         companyId: true,
         branchId: true,
+        posAssociationType: true,
+        paymentMethods: {
+          select: { paymentMethod: { select: this.paymentMethodSelect() } },
+        },
         branch: {
           select: {
             id: true,
@@ -162,6 +269,10 @@ export class TillsService {
         isActive: true,
         companyId: true,
         branchId: true,
+        posAssociationType: true,
+        paymentMethods: {
+          select: { paymentMethod: { select: this.paymentMethodSelect() } },
+        },
         branch: {
           select: {
             id: true,
@@ -185,6 +296,7 @@ export class TillsService {
 
   async update(id: number, updateTillDto: UpdateTillDto, companyId: number) {
     const current = await this.findOne(id, companyId);
+    const { paymentMethodIds, ...rawData } = updateTillDto;
 
     if (updateTillDto.branchId != null) {
       await this.ensureBranchBelongsToCompany(
@@ -193,7 +305,21 @@ export class TillsService {
       );
     }
 
-    const data: UpdateTillDto = { ...updateTillDto };
+    if (paymentMethodIds !== undefined) {
+      await this.ensurePaymentMethodsBelongToCompany(paymentMethodIds, companyId);
+    }
+
+    const data = {
+      ...rawData,
+      ...(paymentMethodIds !== undefined && {
+        paymentMethods: {
+          deleteMany: {},
+          create: paymentMethodIds.map((paymentMethodId) => ({
+            paymentMethodId,
+          })),
+        },
+      }),
+    };
 
     if (updateTillDto.tillCode != null) {
       const tillCode = updateTillDto.tillCode.trim();
@@ -225,6 +351,9 @@ export class TillsService {
           isActive: true,
           companyId: true,
           branchId: true,
+          paymentMethods: {
+            select: { paymentMethod: { select: this.paymentMethodSelect() } },
+          },
           branch: {
             select: {
               id: true,
