@@ -1,28 +1,28 @@
-import type { HttpClientConfig, HttpError, RequestConfig } from './types';
+import type { HttpClientConfig, HttpError, RequestConfig } from "./types";
 
-const AUTH_TOKEN_KEY = 'auth-token';
-const SELECTED_COMPANY_KEY = 'selected-company';
-const USER_INFO_KEY = 'user-info';
-const PERMISSIONS_KEY = 'company-permissions';
+const AUTH_TOKEN_KEY = "auth-token";
+const SELECTED_COMPANY_KEY = "selected-company";
+const USER_INFO_KEY = "user-info";
+const PERMISSIONS_KEY = "company-permissions";
 
 function setCookie(name: string, value: string, days = 7): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === "undefined") return;
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
 }
 
 function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
-    return decodeURIComponent(parts.pop()!.split(';').shift()!);
+    return decodeURIComponent(parts.pop()!.split(";").shift()!);
   }
   return null;
 }
 
 function deleteCookie(name: string): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === "undefined") return;
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
 }
 
@@ -33,7 +33,7 @@ class HttpClient {
   constructor(config: HttpClientConfig) {
     this.baseUrl = config.baseUrl;
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...config.defaultHeaders,
     };
   }
@@ -62,7 +62,9 @@ class HttpClient {
     return getCookie(SELECTED_COMPANY_KEY);
   }
 
-  setUserInfo(userInfo: { id: number; email: string; name: string } | null): void {
+  setUserInfo(
+    userInfo: { id: number; email: string; name: string } | null,
+  ): void {
     if (userInfo) {
       setCookie(USER_INFO_KEY, JSON.stringify(userInfo));
     } else {
@@ -80,7 +82,10 @@ class HttpClient {
     }
   }
 
-  private buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined>): string {
+  private buildUrl(
+    endpoint: string,
+    params?: Record<string, string | number | boolean | undefined>,
+  ): string {
     const normalizedBase = this.baseUrl.endsWith("/")
       ? this.baseUrl
       : `${this.baseUrl}/`;
@@ -89,7 +94,7 @@ class HttpClient {
       : endpoint;
 
     const url = new URL(normalizedEndpoint, normalizedBase);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -97,27 +102,30 @@ class HttpClient {
         }
       });
     }
-    
+
     return url.toString();
   }
 
-
   private getLocale(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('app-locale');
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("app-locale");
   }
 
-  private buildHeaders(config?: RequestConfig, requiresAuth = true, omitContentType = false): Headers {
+  private buildHeaders(
+    config?: RequestConfig,
+    requiresAuth = true,
+    omitContentType = false,
+  ): Headers {
     const headers = new Headers(this.defaultHeaders);
     if (omitContentType) {
-      headers.delete('Content-Type');
+      headers.delete("Content-Type");
     }
 
     const locale = this.getLocale();
     if (locale) {
-      headers.set('Accept-Language', locale);
+      headers.set("Accept-Language", locale);
     }
-  
+
     if (config?.headers) {
       const customHeaders = config.headers as Record<string, string>;
       Object.entries(customHeaders).forEach(([key, value]) => {
@@ -128,15 +136,15 @@ class HttpClient {
     if (requiresAuth) {
       const token = this.getToken();
       const companyId = this.getCompanyId();
-      
+
       if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
       if (companyId) {
-        headers.set('X-Company-Id', companyId);
+        headers.set("X-Company-Id", companyId);
       }
     }
-    
+
     return headers;
   }
 
@@ -144,7 +152,7 @@ class HttpClient {
     method: string,
     headers: Headers,
     config?: RequestConfig,
-    body?: string | FormData | null
+    body?: string | FormData | null,
   ): RequestInit {
     const options: RequestInit = {
       method,
@@ -176,30 +184,36 @@ class HttpClient {
     if (!value) return [];
     try {
       const permissions = JSON.parse(value);
-      return Array.isArray(permissions) ? permissions.filter((permission): permission is string => typeof permission === 'string') : [];
+      return Array.isArray(permissions)
+        ? permissions.filter(
+            (permission): permission is string =>
+              typeof permission === "string",
+          )
+        : [];
     } catch {
       return [];
     }
   }
 
   private extractErrorMessage(value: unknown, fallback: string): string {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       try {
         const parsed = JSON.parse(value) as unknown;
         if (parsed !== value) {
           return this.extractErrorMessage(parsed, fallback);
         }
-      } catch {
-      }
+      } catch {}
 
       return value || fallback;
     }
 
     if (Array.isArray(value)) {
-      return value.map((item) => this.extractErrorMessage(item, fallback)).join(', ');
+      return value
+        .map((item) => this.extractErrorMessage(item, fallback))
+        .join(", ");
     }
 
-    if (value && typeof value === 'object') {
+    if (value && typeof value === "object") {
       const message = (value as { message?: unknown }).message;
       if (message !== undefined) {
         return this.extractErrorMessage(message, fallback);
@@ -218,10 +232,12 @@ class HttpClient {
 
       try {
         const errorBody = await response.json();
-        error.message = this.extractErrorMessage(errorBody, response.statusText);
+        error.message = this.extractErrorMessage(
+          errorBody,
+          response.statusText,
+        );
         error.errors = errorBody.errors;
-      } catch {
-      }
+      } catch {}
 
       throw error;
     }
@@ -230,26 +246,54 @@ class HttpClient {
       return undefined as T;
     }
 
-    return response.json();
+    const body = await response.text();
+    if (!body) return undefined as T;
+    return JSON.parse(body) as T;
   }
 
-  async get<T>(endpoint: string, config?: RequestConfig & { requiresAuth?: boolean }): Promise<T> {
+  async get<T>(
+    endpoint: string,
+    config?: RequestConfig & { requiresAuth?: boolean },
+  ): Promise<T> {
     const { params, requiresAuth = true } = config || {};
     const url = this.buildUrl(endpoint, params);
     const headers = this.buildHeaders(config, requiresAuth);
-    const options = this.buildFetchOptions('GET', headers, config);
-    
+    const options = this.buildFetchOptions("GET", headers, config);
+
     const response = await fetch(url, options);
     return this.handleResponse<T>(response);
   }
 
-  async post<T>(endpoint: string, config?: RequestConfig & { requiresAuth?: boolean }): Promise<T> {
+  async getBlob(
+    endpoint: string,
+    config?: RequestConfig & { requiresAuth?: boolean },
+  ): Promise<Blob> {
+    const { params, requiresAuth = true } = config || {};
+    const url = this.buildUrl(endpoint, params);
+    const headers = this.buildHeaders(config, requiresAuth);
+    const options = this.buildFetchOptions("GET", headers, config);
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      await this.handleResponse<never>(response);
+    }
+    return response.blob();
+  }
+
+  async post<T>(
+    endpoint: string,
+    config?: RequestConfig & { requiresAuth?: boolean },
+  ): Promise<T> {
     const { body, params, requiresAuth = true } = config || {};
     const url = this.buildUrl(endpoint, params);
     const headers = this.buildHeaders(config, requiresAuth);
     const serializedBody = body !== undefined ? JSON.stringify(body) : null;
-    const options = this.buildFetchOptions('POST', headers, config, serializedBody);
-    
+    const options = this.buildFetchOptions(
+      "POST",
+      headers,
+      config,
+      serializedBody,
+    );
+
     const response = await fetch(url, options);
     return this.handleResponse<T>(response);
   }
@@ -257,49 +301,67 @@ class HttpClient {
   async postFormData<T>(
     endpoint: string,
     formData: FormData,
-    config?: RequestConfig & { requiresAuth?: boolean }
+    config?: RequestConfig & { requiresAuth?: boolean },
   ): Promise<T> {
     const { params, requiresAuth = true } = config || {};
     const url = this.buildUrl(endpoint, params);
     const headers = this.buildHeaders(config, requiresAuth, true);
-    const options = this.buildFetchOptions('POST', headers, config, formData);
-    
+    const options = this.buildFetchOptions("POST", headers, config, formData);
+
     const response = await fetch(url, options);
     return this.handleResponse<T>(response);
   }
 
-  async put<T>(endpoint: string, config?: RequestConfig & { requiresAuth?: boolean }): Promise<T> {
+  async put<T>(
+    endpoint: string,
+    config?: RequestConfig & { requiresAuth?: boolean },
+  ): Promise<T> {
     const { body, params, requiresAuth = true } = config || {};
     const url = this.buildUrl(endpoint, params);
     const headers = this.buildHeaders(config, requiresAuth);
     const serializedBody = body !== undefined ? JSON.stringify(body) : null;
-    const options = this.buildFetchOptions('PUT', headers, config, serializedBody);
-    
+    const options = this.buildFetchOptions(
+      "PUT",
+      headers,
+      config,
+      serializedBody,
+    );
+
     const response = await fetch(url, options);
     return this.handleResponse<T>(response);
   }
 
-  async patch<T>(endpoint: string, config?: RequestConfig & { requiresAuth?: boolean }): Promise<T> {
+  async patch<T>(
+    endpoint: string,
+    config?: RequestConfig & { requiresAuth?: boolean },
+  ): Promise<T> {
     const { body, params, requiresAuth = true } = config || {};
     const url = this.buildUrl(endpoint, params);
     const headers = this.buildHeaders(config, requiresAuth);
     const serializedBody = body !== undefined ? JSON.stringify(body) : null;
-    const options = this.buildFetchOptions('PATCH', headers, config, serializedBody);
-    
+    const options = this.buildFetchOptions(
+      "PATCH",
+      headers,
+      config,
+      serializedBody,
+    );
+
     const response = await fetch(url, options);
     return this.handleResponse<T>(response);
   }
 
-  async delete<T>(endpoint: string, config?: RequestConfig & { requiresAuth?: boolean }): Promise<T> {
+  async delete<T>(
+    endpoint: string,
+    config?: RequestConfig & { requiresAuth?: boolean },
+  ): Promise<T> {
     const { params, requiresAuth = true } = config || {};
     const url = this.buildUrl(endpoint, params);
     const headers = this.buildHeaders(config, requiresAuth);
-    const options = this.buildFetchOptions('DELETE', headers, config);
-    
+    const options = this.buildFetchOptions("DELETE", headers, config);
+
     const response = await fetch(url, options);
     return this.handleResponse<T>(response);
   }
 }
 
 export { HttpClient };
-

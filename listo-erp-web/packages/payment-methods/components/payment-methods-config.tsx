@@ -18,6 +18,7 @@ import type { PaymentMethod, PaymentMethodRequest, PaymentMethodResponse } from 
 const initialForm: PaymentMethodRequest = {
   name: "",
   code: "",
+  dianCode: "",
   requiresReference: false,
   isActive: true,
 };
@@ -73,6 +74,7 @@ export function PaymentMethodsConfig() {
     setForm({
       name: method.name,
       code: method.code,
+      dianCode: method.dianCode ?? "",
       requiresReference: method.requiresReference,
       isActive: method.isActive,
     });
@@ -83,7 +85,7 @@ export function PaymentMethodsConfig() {
       showToast({ type: "error", message: "El nombre y código son obligatorios." });
       return;
     }
-    save.mutate({ ...form, name: form.name.trim(), code: form.code.trim().toUpperCase() });
+    save.mutate({ ...form, name: form.name.trim(), code: form.code.trim().toUpperCase(), dianCode: form.dianCode?.trim().toUpperCase() || null });
   };
   const selectImage = (id: number) => {
     setImageMethodId(id);
@@ -104,20 +106,20 @@ export function PaymentMethodsConfig() {
       </CardHeader>
       <CardContent>
         <div className="rounded-lg border"><Table>
-          <TableHeader className="bg-muted/40"><TableRow><TableHead className="w-16">Imagen</TableHead><TableHead>Nombre</TableHead><TableHead>Código</TableHead><TableHead>Referencia</TableHead><TableHead>Estado</TableHead><TableHead className="w-28 text-right">Acciones</TableHead></TableRow></TableHeader>
+          <TableHeader className="bg-muted/40"><TableRow><TableHead className="w-16">Imagen</TableHead><TableHead>Nombre</TableHead><TableHead>Código interno</TableHead><TableHead>Código DIAN</TableHead><TableHead>Referencia</TableHead><TableHead>Estado</TableHead><TableHead className="w-28 text-right">Acciones</TableHead></TableRow></TableHeader>
           <TableBody>{(paymentMethods ?? []).map((method) => <TableRow key={method.id}>
             <TableCell>{method.image ? <img src={getPaymentMethodImageUrl(method.image)} alt="" className="h-9 w-9 rounded object-contain" /> : <div className="flex h-9 w-9 items-center justify-center rounded bg-muted text-xs font-semibold">{method.code.slice(0, 2)}</div>}</TableCell>
-            <TableCell className="font-medium">{method.name}</TableCell><TableCell className="font-mono text-xs">{method.code}</TableCell><TableCell>{method.requiresReference ? "Sí" : "No"}</TableCell>
+            <TableCell className="font-medium">{method.name}</TableCell><TableCell className="font-mono text-xs">{method.code}</TableCell><TableCell className="font-mono text-xs">{method.dianCode ?? "-"}</TableCell><TableCell>{method.requiresReference ? "Sí" : "No"}</TableCell>
             <TableCell><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${method.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>{method.isActive ? "Activo" : "Inactivo"}</span></TableCell>
             <TableCell><div className="flex justify-end"><Button variant="ghost" size="icon" onClick={() => selectImage(method.id)} aria-label={`Cambiar imagen de ${method.name}`}><Camera className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => openEdit(method)} aria-label={`Editar ${method.name}`}><PencilSimple className="h-4 w-4" /></Button><Button variant="ghost" size="icon" disabled={remove.isPending} onClick={() => { if (window.confirm(`¿Eliminar ${method.name}?`)) remove.mutate(method.id); }} aria-label={`Eliminar ${method.name}`}><Trash className="h-4 w-4" /></Button></div></TableCell>
-          </TableRow>)}{paymentMethods?.length === 0 && <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No hay métodos de pago configurados.</TableCell></TableRow>}</TableBody>
+          </TableRow>)}{paymentMethods?.length === 0 && <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No hay métodos de pago configurados.</TableCell></TableRow>}</TableBody>
         </Table></div>
         <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(event) => handleImage(event.target.files?.[0])} />
       </CardContent>
     </Card>
     <Dialog open={isDialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditing(null); setForm(initialForm); } }}>
       <DialogContent><DialogHeader><DialogTitle>{editing ? "Editar método de pago" : "Nuevo método de pago"}</DialogTitle></DialogHeader>
-        <div className="space-y-4"><div className="space-y-2"><Label htmlFor="payment-method-name">Nombre</Label><Input id="payment-method-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="payment-method-code">Código</Label><Input id="payment-method-code" value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })} /></div><div className="flex items-center justify-between rounded-lg border p-3"><span>Requiere referencia</span><Switch checked={form.requiresReference} onCheckedChange={(requiresReference) => setForm({ ...form, requiresReference })} /></div><div className="flex items-center justify-between rounded-lg border p-3"><span>Activo</span><Switch checked={form.isActive} onCheckedChange={(isActive) => setForm({ ...form, isActive })} /></div></div>
+        <div className="space-y-4"><div className="space-y-2"><Label htmlFor="payment-method-name">Nombre</Label><Input id="payment-method-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></div><div className="space-y-2"><Label htmlFor="payment-method-code">Código interno</Label><Input id="payment-method-code" value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value.toUpperCase() })} /></div><div className="space-y-2"><Label htmlFor="payment-method-dian-code">Código DIAN</Label><Input id="payment-method-dian-code" value={form.dianCode ?? ""} onChange={(event) => setForm({ ...form, dianCode: event.target.value.toUpperCase() })} placeholder="10" /><p className="text-xs text-muted-foreground">Se utiliza para facturación electrónica en Colombia.</p></div><div className="flex items-center justify-between rounded-lg border p-3"><span>Requiere referencia</span><Switch checked={form.requiresReference} onCheckedChange={(requiresReference) => setForm({ ...form, requiresReference })} /></div><div className="flex items-center justify-between rounded-lg border p-3"><span>Activo</span><Switch checked={form.isActive} onCheckedChange={(isActive) => setForm({ ...form, isActive })} /></div></div>
         <DialogFooter><Button variant="outline" onClick={() => { setDialogOpen(false); setEditing(null); setForm(initialForm); }}>Cancelar</Button><Button onClick={submit} disabled={save.isPending}>{save.isPending ? "Guardando..." : "Guardar"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>

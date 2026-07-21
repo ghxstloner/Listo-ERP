@@ -112,7 +112,9 @@ function buildColumns({
         <div className="min-w-0">
           <div className="truncate font-medium">{row.original.name}</div>
           <div className="text-muted-foreground truncate text-sm">
-            {[row.original.taxDocumentType, row.original.taxId].filter(Boolean).join(" ") || "-"}
+            {row.original.isFinalConsumer
+              ? "Consumidor Final"
+              : [row.original.taxDocumentType, row.original.taxId].filter(Boolean).join(" ") || "-"}
           </div>
         </div>
       ),

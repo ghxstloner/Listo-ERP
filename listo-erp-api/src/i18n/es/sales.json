@@ -7,7 +7,11 @@
     "payment_method_not_found": "El método de pago seleccionado no está disponible.",
     "product_not_found": "Uno o más productos no están disponibles.",
     "warehouse_not_found": "La sucursal de la caja no tiene almacenes activos asociados.",
-    "insufficient_stock": "No hay existencias suficientes en los almacenes de la sucursal."
+    "insufficient_stock": "No hay existencias suficientes en los almacenes de la sucursal.",
+    "product_dian_code_required": "Todos los productos deben tener un código DIAN para registrar ventas en Colombia.",
+    "payment_reference_required": "El método de pago seleccionado requiere una referencia.",
+    "payment_method_dian_code_required": "El método de pago seleccionado debe tener un código DIAN para registrar ventas en Colombia.",
+    "customer_fiscal_data_required": "El cliente seleccionado debe tener datos fiscales completos o estar marcado como Consumidor Final."
   },
   "success": {
     "created": "Venta registrada correctamente."

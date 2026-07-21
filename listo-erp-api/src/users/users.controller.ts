@@ -64,11 +64,7 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @CurrentCompanyId() companyId: number,
   ) {
-    return this.usersService.update(
-      id,
-      updateUserDto,
-      companyId,
-    );
+    return this.usersService.update(id, updateUserDto, companyId);
   }
 
   @Delete(':id')

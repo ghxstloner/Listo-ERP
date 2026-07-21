@@ -12,6 +12,8 @@ export interface Company {
   email1: string;
   email2: string;
   countryId: number;
+  defaultCustomerId: number | null;
+  defaultSellerId: number | null;
   taxDocumentType: string;
   taxDocumentNumber: string;
   taxCheckDigit: string;
@@ -22,7 +24,7 @@ export interface Company {
 
 export interface UpdateCompanyResponse {
   message: string;
-  company: Company;
+  data: Company;
 }
 
 export interface HierarchyConfig {

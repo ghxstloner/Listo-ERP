@@ -29,6 +29,7 @@ export const pt: Dictionary = {
     login: "Entrar",
     logout: "Sair",
     email: "E-mail",
+    identifier: "E-mail ou nome de usuário",
     password: "Senha",
     rememberMe: "Lembrar-me",
     forgotPassword: "Esqueceu sua senha?",
@@ -36,6 +37,7 @@ export const pt: Dictionary = {
     loginDescription:
       "Digite suas credenciais para acessar seu painel empresarial",
     emailPlaceholder: "nome@empresa.com",
+    identifierPlaceholder: "nome@empresa.com ou usuário",
     loginError: "Erro ao fazer login",
     loginSuccess: "Login realizado com sucesso",
     selectCompany: "Selecione uma empresa",
@@ -75,6 +77,7 @@ export const pt: Dictionary = {
     validation: {
       emailRequired: "O e-mail é obrigatório",
       emailInvalid: "Digite um e-mail válido",
+      identifierRequired: "O e-mail ou nome de usuário é obrigatório",
       passwordRequired: "A senha é obrigatória",
       passwordMinLength: "A senha deve ter pelo menos 6 caracteres",
       codeRequired: "O código é obrigatório",
@@ -412,6 +415,31 @@ export const pt: Dictionary = {
       },
     },
     warehousesConfiguration: "Configuração de Armazéns",
+    electronicInvoicing: {
+      title: "Faturamento eletrônico",
+      colombia: "Colômbia",
+      description:
+        "Configure a conexão TheFactory para emitir faturas eletrônicas na Colômbia.",
+      environment: "Ambiente",
+      demo: "Demonstração",
+      production: "Produção",
+      numberingRange: "Faixa de numeração",
+      numberingRangeHint: "Formato: prefixo-início. Exemplo: DEMO-1.",
+      nextConsecutive: "Próximo consecutivo",
+      credentials: "Credenciais TheFactory",
+      credentialsHint:
+        "As credenciais são criptografadas e nunca exibidas após serem salvas.",
+      credentialsConfigured: "Credenciais configuradas",
+      credentialsRequired:
+        "Informe as credenciais para concluir a configuração inicial.",
+      credentialsPairRequired:
+        "Informe Token Empresa e Token Contraseña juntos.",
+      tokenEmpresa: "Token da empresa",
+      tokenPassword: "Token de senha",
+      invalidNumbering:
+        "Informe uma faixa válida e um consecutivo igual ou superior ao início da faixa.",
+      saved: "Configuração de faturamento eletrônico salva com sucesso.",
+    },
     hierarchyConfiguration: "Configuração de Níveis",
     hierarchy: {
       title: "Configuração de Nomes de Hierarquia",

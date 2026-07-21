@@ -4,11 +4,7 @@ import { showToast } from "@/components/ui/sonner";
 export interface ProductFormData {
   sku: string;
   name: string;
-  description: string;
   salePrice: string;
-  costPrice: string;
-  taxRate: string;
-  unit: string;
   departmentId: number | null;
 }
 
@@ -17,7 +13,8 @@ export function useProductValidation() {
 
   const validateProduct = (
     data: ProductFormData,
-    onError: (message: string) => void = (msg) => showToast({ type: "error", message: msg })
+    onError: (message: string) => void = (msg) =>
+      showToast({ type: "error", message: msg }),
   ): boolean => {
     const { sku, name, salePrice, departmentId } = data;
 
@@ -31,7 +28,11 @@ export function useProductValidation() {
       return false;
     }
 
-    if (!salePrice.trim() || isNaN(parseFloat(salePrice)) || parseFloat(salePrice) <= 0) {
+    if (
+      !salePrice.trim() ||
+      isNaN(parseFloat(salePrice)) ||
+      parseFloat(salePrice) <= 0
+    ) {
       onError(t("inventory.products.validation.salePriceRequired"));
       return false;
     }
@@ -49,12 +50,9 @@ export function useProductValidation() {
     name: string,
     salePrice: string,
     departmentId: number | null,
-    onError?: (message: string) => void
+    onError?: (message: string) => void,
   ): boolean => {
-    return validateProduct(
-      { sku, name, description: "", salePrice, costPrice: "", taxRate: "", unit: "", departmentId },
-      onError
-    );
+    return validateProduct({ sku, name, salePrice, departmentId }, onError);
   };
 
   return {
@@ -70,7 +68,7 @@ export function useIsFormValid() {
     sku: string,
     name: string,
     salePrice: string,
-    departmentId: number | null
+    departmentId: number | null,
   ): boolean => {
     // Silent validation without showing errors
     return validateProductFields(sku, name, salePrice, departmentId, () => {});

@@ -70,7 +70,9 @@ export class InventoryService {
             data: { quantity: { decrement: quantity.abs() } },
           });
           if (updated.count === 0)
-            throw I18nException.badRequest('inventory.errors.insufficient_stock');
+            throw I18nException.badRequest(
+              'inventory.errors.insufficient_stock',
+            );
           const balance = await tx.inventoryBalance.findUniqueOrThrow({
             where: {
               warehouseId_productId: {

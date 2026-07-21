@@ -2,10 +2,9 @@ import { z } from 'zod';
 
 export function createLoginSchema(t: (key: string) => string) {
   return z.object({
-    email: z
+    identifier: z
       .string()
-      .min(1, t("auth.validation.emailRequired"))
-      .email(t("auth.validation.emailInvalid")),
+      .min(1, t("auth.validation.identifierRequired")),
     password: z
       .string()
       .min(1, t("auth.validation.passwordRequired"))
@@ -14,10 +13,9 @@ export function createLoginSchema(t: (key: string) => string) {
 }
 
 export const loginSchema = z.object({
-  email: z
+  identifier: z
     .string()
-    .min(1, 'El correo es requerido')
-    .email('Ingresa un correo válido'),
+    .min(1, 'El correo electrónico o nombre de usuario es requerido'),
   password: z
     .string()
     .min(1, 'La contraseña es requerida')

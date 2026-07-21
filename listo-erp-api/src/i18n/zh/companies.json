@@ -1,6 +1,9 @@
 {
   "errors": {
-    "not_found": "未找到公司"
+    "not_found": "未找到公司",
+    "tax_country_required": "配置税务识别类型前请选择国家。",
+    "invalid_tax_document_type": "该识别类型不属于所选国家。",
+    "tax_check_digit_required": "所选识别类型需要校验位。"
   },
   "success": {
     "created": "公司创建成功",

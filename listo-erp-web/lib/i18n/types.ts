@@ -28,12 +28,14 @@ export interface Dictionary {
     login: string;
     logout: string;
     email: string;
+    identifier: string;
     password: string;
     rememberMe: string;
     forgotPassword: string;
     welcomeBack: string;
     loginDescription: string;
     emailPlaceholder: string;
+    identifierPlaceholder: string;
     loginError: string;
     loginSuccess: string;
     selectCompany: string;
@@ -69,6 +71,7 @@ export interface Dictionary {
     validation: {
       emailRequired: string;
       emailInvalid: string;
+      identifierRequired: string;
       passwordRequired: string;
       passwordMinLength: string;
       codeRequired: string;
@@ -396,6 +399,26 @@ export interface Dictionary {
       };
     };
     warehousesConfiguration: string;
+    electronicInvoicing: {
+      title: string;
+      colombia: string;
+      description: string;
+      environment: string;
+      demo: string;
+      production: string;
+      numberingRange: string;
+      numberingRangeHint: string;
+      nextConsecutive: string;
+      credentials: string;
+      credentialsHint: string;
+      credentialsConfigured: string;
+      credentialsRequired: string;
+      credentialsPairRequired: string;
+      tokenEmpresa: string;
+      tokenPassword: string;
+      invalidNumbering: string;
+      saved: string;
+    };
     hierarchyConfiguration: string;
     hierarchy: {
       title: string;

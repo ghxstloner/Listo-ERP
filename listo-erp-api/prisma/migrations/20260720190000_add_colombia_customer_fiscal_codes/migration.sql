@@ -1,0 +1,2 @@
+ALTER TABLE "Customer" ADD COLUMN "fiscalCityCode" TEXT;
+ALTER TABLE "Customer" ADD COLUMN "fiscalTaxCodes" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

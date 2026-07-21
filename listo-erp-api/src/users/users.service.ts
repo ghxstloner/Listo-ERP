@@ -45,12 +45,18 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto, companyId: number) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: createUserDto.email },
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: createUserDto.email }, { name: createUserDto.name }],
+      },
     });
 
     if (existingUser) {
-      throw I18nException.badRequest('users.errors.email_already_registered');
+      throw I18nException.badRequest(
+        existingUser.email === createUserDto.email
+          ? 'users.errors.email_already_registered'
+          : 'users.errors.name_already_registered',
+      );
     }
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const userCode = await this.generateUniqueUserCode();
@@ -74,7 +80,10 @@ export class UsersService {
         },
       });
 
-      const roleIds = await this.validRoleIds(createUserDto.roleIds ?? [], companyId);
+      const roleIds = await this.validRoleIds(
+        createUserDto.roleIds ?? [],
+        companyId,
+      );
       const companyUser = await tx.companyUser.create({
         data: {
           userId: user.id,
@@ -152,11 +161,7 @@ export class UsersService {
     };
   }
 
-  async update(
-    id: number,
-    updateUserDto: UpdateUserDto,
-    companyId: number,
-  ) {
+  async update(id: number, updateUserDto: UpdateUserDto, companyId: number) {
     const userInfo = await this.findOne(id, companyId);
 
     if (updateUserDto.email && updateUserDto.email !== userInfo.email) {
@@ -166,6 +171,16 @@ export class UsersService {
 
       if (existingUser) {
         throw I18nException.badRequest('users.errors.email_already_registered');
+      }
+    }
+
+    if (updateUserDto.name && updateUserDto.name !== userInfo.name) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { name: updateUserDto.name },
+      });
+
+      if (existingUser) {
+        throw I18nException.badRequest('users.errors.name_already_registered');
       }
     }
 
@@ -197,8 +212,15 @@ export class UsersService {
           where: {
             companyId_userId: { companyId, userId: id },
           },
-          data: { roles: { deleteMany: {}, create: validRoleIds.map((roleId) => ({ roleId })) } },
-          select: { roles: { select: { role: { select: { id: true, name: true } } } } },
+          data: {
+            roles: {
+              deleteMany: {},
+              create: validRoleIds.map((roleId) => ({ roleId })),
+            },
+          },
+          select: {
+            roles: { select: { role: { select: { id: true, name: true } } } },
+          },
         });
         roles = updatedCompanyUser.roles.map(({ role }) => role);
       }

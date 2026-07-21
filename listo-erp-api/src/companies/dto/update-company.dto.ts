@@ -87,4 +87,12 @@ export class UpdateCompanyDto {
   @IsInt()
   @IsOptional()
   defaultCurrencyId?: number;
+
+  @IsInt()
+  @IsOptional()
+  defaultCustomerId?: number | null;
+
+  @IsInt()
+  @IsOptional()
+  defaultSellerId?: number | null;
 }

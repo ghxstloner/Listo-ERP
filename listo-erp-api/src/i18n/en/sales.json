@@ -7,7 +7,11 @@
     "payment_method_not_found": "The selected payment method is not available.",
     "product_not_found": "One or more products are not available.",
     "warehouse_not_found": "The cash session branch has no associated active warehouses.",
-    "insufficient_stock": "There is not enough stock in the branch warehouses."
+    "insufficient_stock": "There is not enough stock in the branch warehouses.",
+    "product_dian_code_required": "All products must have a DIAN code to register sales in Colombia.",
+    "payment_reference_required": "The selected payment method requires a reference.",
+    "payment_method_dian_code_required": "The selected payment method must have a DIAN code to register sales in Colombia.",
+    "customer_fiscal_data_required": "The selected customer must have complete fiscal data or be marked as a Final Consumer."
   },
   "success": {
     "created": "Sale registered successfully."

@@ -2,6 +2,7 @@
   "errors": {
     "not_found_in_company": "User not found in this company",
     "email_already_registered": "Email is already registered",
+    "name_already_registered": "Username is already registered",
     "admin_only_role_change": "Only administrators can change roles"
   },
   "success": {

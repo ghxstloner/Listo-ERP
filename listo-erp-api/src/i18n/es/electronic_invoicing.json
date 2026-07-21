@@ -1,0 +1,20 @@
+{
+  "success": {
+    "configuration_saved": "La configuración de facturación electrónica se guardó correctamente"
+  },
+  "errors": {
+    "credentials_pair_required": "Debes proporcionar Token Empresa y Token Contraseña juntos",
+    "initial_configuration_required": "Debes completar la configuración inicial de facturación electrónica",
+    "next_consecutive_required": "Debes indicar el próximo consecutivo al cambiar el rango de numeración",
+    "invalid_numbering": "El rango de numeración o el próximo consecutivo no son válidos",
+    "configuration_required": "Debes configurar la facturación electrónica de Colombia antes de registrar ventas.",
+    "provider_url_required": "La URL debe corresponder al ambiente oficial de TheFactory seleccionado.",
+    "company_tax_id_required": "La empresa debe tener configurado su NIT para validar la numeración con TheFactory.",
+    "provider_numbering_not_found": "TheFactory no devolvió numeraciones para el NIT y las credenciales configuradas en este ambiente. Respuesta: {reason}",
+    "provider_numbering_request_failed": "TheFactory rechazó la consulta de numeraciones (código {code}): {reason}",
+    "integration_numbering_required": "No existe un rango activo de Servicio de Integración que coincida con el ambiente, prefijo, modalidad y consecutivo configurados.",
+    "numbering_validation_required": "La numeración debe validarse nuevamente con TheFactory antes de emitir facturas.",
+    "invoice_not_found": "La factura electrónica de esta venta no existe.",
+    "artifact_not_available": "El archivo fiscal solo está disponible después de la aceptación DIAN."
+  }
+}

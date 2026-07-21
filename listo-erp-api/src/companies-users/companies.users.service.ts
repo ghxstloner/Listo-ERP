@@ -89,7 +89,10 @@ export class CompaniesUsersService {
       });
     }
 
-    const roleIds = await this.validRoleIds(createCompanyUserDto.roleIds ?? [], createCompanyUserDto.companyId);
+    const roleIds = await this.validRoleIds(
+      createCompanyUserDto.roleIds ?? [],
+      createCompanyUserDto.companyId,
+    );
     const companyUser = await this.prisma.companyUser.create({
       data: {
         userId: createCompanyUserDto.userId,
@@ -111,18 +114,32 @@ export class CompaniesUsersService {
     };
   }
 
-  async update(id: number, companyId: number, updateCompanyUserDto: UpdateCompanyUserDto) {
+  async update(
+    id: number,
+    companyId: number,
+    updateCompanyUserDto: UpdateCompanyUserDto,
+  ) {
     const membership = await this.prisma.companyUser.findFirst({
       where: { id, companyId },
       select: { id: true },
     });
     if (!membership) {
-      throw I18nException.notFound('common.errors.not_found', { entity: 'user in company' });
+      throw I18nException.notFound('common.errors.not_found', {
+        entity: 'user in company',
+      });
     }
-    const roleIds = await this.validRoleIds(updateCompanyUserDto.roleIds, companyId);
+    const roleIds = await this.validRoleIds(
+      updateCompanyUserDto.roleIds,
+      companyId,
+    );
     const companyUser = await this.prisma.companyUser.update({
       where: { id },
-      data: { roles: { deleteMany: {}, create: roleIds.map((roleId) => ({ roleId })) } },
+      data: {
+        roles: {
+          deleteMany: {},
+          create: roleIds.map((roleId) => ({ roleId })),
+        },
+      },
       select: {
         id: true,
         userId: true,
@@ -143,7 +160,9 @@ export class CompaniesUsersService {
       where: { id, companyId },
     });
     if (result.count === 0) {
-      throw I18nException.notFound('common.errors.not_found', { entity: 'user in company' });
+      throw I18nException.notFound('common.errors.not_found', {
+        entity: 'user in company',
+      });
     }
     return { message: 'users.success.removed_from_company' };
   }

@@ -227,7 +227,7 @@ export class CashSessionsService {
       companyId: true,
       branchId: true,
       tillId: true,
-       deviceKey: true,
+      deviceKey: true,
       openedByUserId: true,
       closedByUserId: true,
       status: true,

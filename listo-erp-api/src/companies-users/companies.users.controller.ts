@@ -58,7 +58,10 @@ export class CompaniesUsersController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener un usuario de una empresa' })
-  async findOne(@Param('id', ParseIntPipe) id: number, @CurrentCompanyId() companyId: number) {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentCompanyId() companyId: number,
+  ) {
     return this.companiesUsersService.findOne(id, companyId);
   }
 
@@ -83,13 +86,20 @@ export class CompaniesUsersController {
     @Body() updateCompanyUserDto: UpdateCompanyUserDto,
     @CurrentCompanyId() companyId: number,
   ) {
-    return this.companiesUsersService.update(id, companyId, updateCompanyUserDto);
+    return this.companiesUsersService.update(
+      id,
+      companyId,
+      updateCompanyUserDto,
+    );
   }
 
   @Delete(':id')
   @RequirePermissions('administration.general')
   @ApiOperation({ summary: 'Eliminar un usuario de una empresa' })
-  async delete(@Param('id', ParseIntPipe) id: number, @CurrentCompanyId() companyId: number) {
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentCompanyId() companyId: number,
+  ) {
     return this.companiesUsersService.delete(id, companyId);
   }
 }

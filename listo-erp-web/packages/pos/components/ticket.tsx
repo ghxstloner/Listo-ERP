@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Customer } from "@/packages/customers/types";
 import type { Seller } from "@/packages/sellers/types";
 import type { CartItem, PaymentMethod } from "../types";
@@ -16,6 +18,7 @@ interface TicketProps {
   sellers: Seller[];
   paymentMethod: PaymentMethod | null;
   paymentMethods: PaymentMethod[];
+  paymentReference: string;
   subtotal: number;
   tax: number;
   total: number;
@@ -25,6 +28,7 @@ interface TicketProps {
   onCustomerChange: (id: string) => void;
   onSellerChange: (id: string) => void;
   onPaymentMethodChange: (id: string) => void;
+  onPaymentReferenceChange: (value: string) => void;
   onQuantityChange: (productId: number, quantity: number) => void;
   onCharge: () => void;
 }
@@ -49,9 +53,21 @@ export function Ticket(props: TicketProps) {
               <TicketItem key={item.product.id} item={item} availableStock={props.stockByProduct.get(item.product.id) ?? 0} onQuantityChange={props.onQuantityChange} />
             ))}
           </div>
-          <TicketSummary subtotal={props.subtotal} tax={props.tax} total={props.total} />
-          <PaymentMethodSelector paymentMethod={props.paymentMethod} paymentMethods={props.paymentMethods} onChange={props.onPaymentMethodChange} />
-          <TicketCheckout total={props.total} loading={props.charging} disabled={!props.canCharge || !props.customer || !props.seller || !props.paymentMethod || props.cart.length === 0} onCharge={props.onCharge} />
+           <TicketSummary subtotal={props.subtotal} tax={props.tax} total={props.total} />
+           <PaymentMethodSelector paymentMethod={props.paymentMethod} paymentMethods={props.paymentMethods} onChange={props.onPaymentMethodChange} />
+           {props.paymentMethod?.requiresReference && (
+             <div className="shrink-0 space-y-2">
+               <Label htmlFor="paymentReference">Referencia de pago</Label>
+               <Input
+                 id="paymentReference"
+                 value={props.paymentReference}
+                 onChange={(event) => props.onPaymentReferenceChange(event.target.value)}
+                 placeholder="Número de transacción o autorización"
+                 maxLength={100}
+               />
+             </div>
+           )}
+           <TicketCheckout total={props.total} loading={props.charging} disabled={!props.canCharge || !props.customer || !props.seller || !props.paymentMethod || (props.paymentMethod.requiresReference && !props.paymentReference.trim()) || props.cart.length === 0} onCharge={props.onCharge} />
         </CardContent>
       </Card>
     </aside>

@@ -8,7 +8,12 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateHierarchyConfigDto } from './dto/update-hierarchy-config.dto';
 
 const DEFAULT_PAYMENT_METHODS = [
-  { name: 'Efectivo', code: 'CASH', requiresReference: false },
+  {
+    name: 'Efectivo',
+    code: 'CASH',
+    dianCode: '10',
+    requiresReference: false,
+  },
   { name: 'Tarjeta', code: 'CARD', requiresReference: true },
   { name: 'Transferencia', code: 'TRANSFER', requiresReference: true },
 ];
@@ -23,6 +28,7 @@ export class CompaniesService {
   ) {}
 
   async create(createCompanyDto: CreateCompanyDto, userId: number) {
+    await this.validateTaxDocument(createCompanyDto);
     const result = await this.prisma.$transaction(async (tx) => {
       const company = await tx.company.create({
         data: {
@@ -59,6 +65,8 @@ export class CompaniesService {
           email1: true,
           email2: true,
           countryId: true,
+          defaultCustomerId: true,
+          defaultSellerId: true,
           taxDocumentType: true,
           taxDocumentNumber: true,
           taxCheckDigit: true,
@@ -73,13 +81,18 @@ export class CompaniesService {
         },
       });
 
-      const permissions = await tx.permission.findMany({ select: { id: true } });
+      const permissions = await tx.permission.findMany({
+        select: { id: true },
+      });
       const ownerRole = await tx.companyRole.create({
         data: {
           companyId: company.id,
           name: 'Administrador',
-          description: 'Acceso inicial completo; puede reemplazarse por roles personalizados.',
-          permissions: { create: permissions.map(({ id }) => ({ permissionId: id })) },
+          description:
+            'Acceso inicial completo; puede reemplazarse por roles personalizados.',
+          permissions: {
+            create: permissions.map(({ id }) => ({ permissionId: id })),
+          },
         },
       });
       await tx.companyUserRole.create({
@@ -141,6 +154,8 @@ export class CompaniesService {
         email1: true,
         email2: true,
         countryId: true,
+        defaultCustomerId: true,
+        defaultSellerId: true,
         taxDocumentType: true,
         taxDocumentNumber: true,
         taxCheckDigit: true,
@@ -172,12 +187,52 @@ export class CompaniesService {
       throw I18nException.notFound('companies.errors.not_found');
     }
 
+    await this.validateTaxDocument({
+      countryId: updateCompanyDto.countryId ?? company.countryId ?? undefined,
+      taxDocumentType:
+        updateCompanyDto.taxDocumentType ??
+        company.taxDocumentType ??
+        undefined,
+      taxDocumentNumber:
+        updateCompanyDto.taxDocumentNumber ??
+        company.taxDocumentNumber ??
+        undefined,
+      taxCheckDigit:
+        updateCompanyDto.taxCheckDigit ?? company.taxCheckDigit ?? undefined,
+    });
+
     if (updateCompanyDto.defaultCurrencyId != null) {
       const currency = await this.prisma.currency.findUnique({
         where: { id: updateCompanyDto.defaultCurrencyId },
       });
       if (!currency) {
         throw I18nException.badRequest('currencies.errors.not_found');
+      }
+    }
+    if (updateCompanyDto.defaultCustomerId != null) {
+      const customer = await this.prisma.customer.findFirst({
+        where: {
+          id: updateCompanyDto.defaultCustomerId,
+          companyId: id,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      if (!customer) {
+        throw I18nException.badRequest('customers.errors.not_found');
+      }
+    }
+    if (updateCompanyDto.defaultSellerId != null) {
+      const seller = await this.prisma.seller.findFirst({
+        where: {
+          id: updateCompanyDto.defaultSellerId,
+          companyId: id,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      if (!seller) {
+        throw I18nException.badRequest('sellers.errors.not_found');
       }
     }
 
@@ -199,6 +254,8 @@ export class CompaniesService {
         email1: true,
         email2: true,
         countryId: true,
+        defaultCustomerId: true,
+        defaultSellerId: true,
         taxDocumentType: true,
         taxDocumentNumber: true,
         taxCheckDigit: true,
@@ -347,5 +404,45 @@ export class CompaniesService {
       message: 'companies.success.hierarchy_config_updated',
       data: config,
     };
+  }
+
+  private async validateTaxDocument(input: {
+    countryId?: number;
+    taxDocumentType?: string;
+    taxDocumentNumber?: string;
+    taxCheckDigit?: string;
+  }) {
+    if (!input.taxDocumentType) return;
+    if (!input.countryId) {
+      throw I18nException.badRequest('companies.errors.tax_country_required');
+    }
+
+    const country = await this.prisma.country.findUnique({
+      where: { id: input.countryId },
+      select: { taxDocumentTypes: true },
+    });
+    const documentTypes = Array.isArray(country?.taxDocumentTypes)
+      ? (country.taxDocumentTypes as Array<{
+          code?: unknown;
+          hasCheckDigit?: unknown;
+        }>)
+      : [];
+    const documentType = documentTypes.find(
+      (type) => type.code === input.taxDocumentType,
+    );
+    if (!documentType) {
+      throw I18nException.badRequest(
+        'companies.errors.invalid_tax_document_type',
+      );
+    }
+    if (
+      documentType.hasCheckDigit === true &&
+      input.taxDocumentNumber?.trim() &&
+      !input.taxCheckDigit?.trim()
+    ) {
+      throw I18nException.badRequest(
+        'companies.errors.tax_check_digit_required',
+      );
+    }
   }
 }

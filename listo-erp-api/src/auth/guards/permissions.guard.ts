@@ -37,21 +37,22 @@ export class PermissionsGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const skipsCompanyCheck = this.reflector.getAllAndOverride<boolean>(SKIP_COMPANY_CHECK_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const skipsCompanyCheck = this.reflector.getAllAndOverride<boolean>(
+      SKIP_COMPANY_CHECK_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
     if (isPublic || skipsCompanyCheck) return true;
-    const explicit = this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const explicit = this.reflector.getAllAndOverride<string[]>(
+      PERMISSIONS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     const resource = request.baseUrl?.split('/').filter(Boolean).pop();
-    let required = explicit ?? (resource ? ROUTE_PERMISSIONS[resource] : undefined);
+    let required =
+      explicit ?? (resource ? ROUTE_PERMISSIONS[resource] : undefined);
 
     // POS users may read products to build their ticket, but cannot modify the catalog.
     if (resource === 'products' && request.method === 'GET') {

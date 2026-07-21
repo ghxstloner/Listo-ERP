@@ -31,7 +31,7 @@ import { SelectCompany } from './select-company';
 type Step = 'credentials' | 'select-company';
 
 interface FieldErrors {
-  email?: string;
+  identifier?: string;
   password?: string;
 }
 
@@ -43,7 +43,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
   const t = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState<Step>('credentials');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -60,7 +60,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
 
   const handleLogin = () => {
     const schema = createLoginSchema(t);
-    const result = schema.safeParse({ email, password });
+    const result = schema.safeParse({ identifier, password });
 
     if (!result.success) {
       const errors: FieldErrors = {};
@@ -81,7 +81,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
     }
 
     setFieldErrors({});
-    login({ email, password }, (response) => {
+    login({ identifier, password }, (response) => {
       setApiToken(response.access_token);
       setApiUserInfo(response.user);
 
@@ -137,14 +137,14 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
         <CardContent>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
+              <FieldLabel htmlFor="identifier">{t("auth.identifier")}</FieldLabel>
               <Input
-                id="email"
-                type="email"
-                placeholder={t("auth.emailPlaceholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-invalid={!!fieldErrors.email}
+                id="identifier"
+                autoComplete="username"
+                placeholder={t("auth.identifierPlaceholder")}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                aria-invalid={!!fieldErrors.identifier}
               />
             </Field>
             <Field>

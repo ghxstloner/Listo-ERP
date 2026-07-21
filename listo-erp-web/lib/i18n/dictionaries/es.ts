@@ -29,6 +29,7 @@ export const es: Dictionary = {
     login: "Iniciar sesión",
     logout: "Cerrar sesión",
     email: "Correo electrónico",
+    identifier: "Correo electrónico o nombre de usuario",
     password: "Contraseña",
     rememberMe: "Recordarme",
     forgotPassword: "¿Olvidaste tu contraseña?",
@@ -36,6 +37,7 @@ export const es: Dictionary = {
     loginDescription:
       "Ingrese sus credenciales para acceder a su panel empresarial",
     emailPlaceholder: "nombre@empresa.com",
+    identifierPlaceholder: "nombre@empresa.com o usuario",
     loginError: "Error al iniciar sesión",
     loginSuccess: "Inicio de sesión exitoso",
     selectCompany: "Selecciona una empresa",
@@ -76,6 +78,7 @@ export const es: Dictionary = {
     validation: {
       emailRequired: "El correo es requerido",
       emailInvalid: "Ingresa un correo válido",
+      identifierRequired: "El correo electrónico o nombre de usuario es requerido",
       passwordRequired: "La contraseña es requerida",
       passwordMinLength: "La contraseña debe tener al menos 6 caracteres",
       codeRequired: "El código es requerido",
@@ -414,6 +417,31 @@ export const es: Dictionary = {
       },
     },
     warehousesConfiguration: "Configuración de Almacenes",
+    electronicInvoicing: {
+      title: "Facturación electrónica",
+      colombia: "Colombia",
+      description:
+        "Configura la conexión de TheFactory para emitir facturas electrónicas en Colombia.",
+      environment: "Ambiente",
+      demo: "Demo",
+      production: "Producción",
+      numberingRange: "Rango de numeración",
+      numberingRangeHint: "Formato: prefijo-inicio. Ejemplo: DEMO-1.",
+      nextConsecutive: "Próximo consecutivo",
+      credentials: "Credenciales TheFactory",
+      credentialsHint:
+        "Las credenciales se cifran y nunca se muestran después de guardarlas.",
+      credentialsConfigured: "Credenciales configuradas",
+      credentialsRequired:
+        "Debes ingresar las credenciales para completar la configuración inicial.",
+      credentialsPairRequired:
+        "Ingresa Token Empresa y Token Contraseña juntos.",
+      tokenEmpresa: "Token Empresa",
+      tokenPassword: "Token Contraseña",
+      invalidNumbering:
+        "Ingresa un rango válido y un consecutivo igual o superior al inicio del rango.",
+      saved: "Configuración de facturación electrónica guardada correctamente.",
+    },
     hierarchyConfiguration: "Configuración de Niveles",
     hierarchy: {
       title: "Configuración de Nombres de Jerarquía",

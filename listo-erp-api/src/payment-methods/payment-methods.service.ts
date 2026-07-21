@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { isUniqueConstraintError } from '../common/utils/prisma-errors';
 import { AuditService } from '../audit/audit.service';
@@ -20,6 +21,7 @@ export class PaymentMethodsService {
     userId: number,
   ) {
     const code = createPaymentMethodDto.code.trim().toUpperCase();
+    const dianCode = this.normalizeDianCode(createPaymentMethodDto.dianCode);
     if (code === '') {
       throw I18nException.badRequest('common.errors.code_empty');
     }
@@ -34,6 +36,7 @@ export class PaymentMethodsService {
         data: {
           name: createPaymentMethodDto.name,
           code,
+          dianCode,
           requiresReference: createPaymentMethodDto.requiresReference ?? false,
           isActive: createPaymentMethodDto.isActive ?? true,
           companyId,
@@ -88,7 +91,9 @@ export class PaymentMethodsService {
     userId: number,
   ) {
     await this.findOne(id, companyId);
-    const data: UpdatePaymentMethodDto = { ...updatePaymentMethodDto };
+    const data: Prisma.PaymentMethodUpdateInput = {
+      ...updatePaymentMethodDto,
+    };
     if (updatePaymentMethodDto.code != null) {
       const code = updatePaymentMethodDto.code.trim().toUpperCase();
       if (code === '') {
@@ -105,6 +110,9 @@ export class PaymentMethodsService {
         throw I18nException.badRequest('payment_methods.errors.code_exists');
       }
       data.code = code;
+    }
+    if (updatePaymentMethodDto.dianCode !== undefined) {
+      data.dianCode = this.normalizeDianCode(updatePaymentMethodDto.dianCode);
     }
     try {
       const paymentMethod = await this.prisma.paymentMethod.update({
@@ -175,6 +183,7 @@ export class PaymentMethodsService {
       id: true,
       name: true,
       code: true,
+      dianCode: true,
       requiresReference: true,
       image: true,
       isActive: true,
@@ -182,5 +191,10 @@ export class PaymentMethodsService {
       createdAt: true,
       updatedAt: true,
     };
+  }
+
+  private normalizeDianCode(dianCode: string | null | undefined) {
+    const normalized = dianCode?.trim().toUpperCase();
+    return normalized || null;
   }
 }

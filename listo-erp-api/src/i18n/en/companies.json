@@ -1,6 +1,9 @@
 {
   "errors": {
-    "not_found": "Company not found"
+    "not_found": "Company not found",
+    "tax_country_required": "Select a country before configuring the tax identification type.",
+    "invalid_tax_document_type": "The identification type does not belong to the selected country.",
+    "tax_check_digit_required": "The selected identification type requires a check digit."
   },
   "success": {
     "created": "Company created successfully",

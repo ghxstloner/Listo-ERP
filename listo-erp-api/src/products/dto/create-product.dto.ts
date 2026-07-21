@@ -25,24 +25,11 @@ export class CreateProductDto {
   @MaxLength(255)
   name: string;
 
-  @ApiPropertyOptional({ description: 'Descripción del producto' })
-  @IsString()
-  @IsOptional()
-  @MaxLength(2000)
-  description?: string;
-
   @ApiProperty({ description: 'Precio de venta' })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0)
   salePrice: number;
-
-  @ApiPropertyOptional({ description: 'Precio de costo' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  costPrice?: number;
 
   @ApiPropertyOptional({
     description: 'Tasa de impuesto como fracción: 0.12 equivale a 12%',
@@ -88,12 +75,13 @@ export class CreateProductDto {
   subcategoryId?: number;
 
   @ApiPropertyOptional({
-    description: 'Unidad de medida (texto libre: und, kg, doc, etc.)',
+    description: 'Código de unidad de medida DIAN. Se usa ZZ si no se informa.',
+    example: 'UND',
   })
   @IsString()
   @IsOptional()
   @MaxLength(20)
-  unit?: string;
+  dianCode?: string | null;
 
   @ApiPropertyOptional({ description: 'Producto activo', default: true })
   @IsBoolean()

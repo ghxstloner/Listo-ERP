@@ -29,12 +29,14 @@ export const en: Dictionary = {
     login: "Sign in",
     logout: "Sign out",
     email: "Email",
+    identifier: "Email or username",
     password: "Password",
     rememberMe: "Remember me",
     forgotPassword: "Forgot your password?",
     welcomeBack: "Welcome back",
     loginDescription: "Enter your credentials to access your business panel",
     emailPlaceholder: "name@company.com",
+    identifierPlaceholder: "name@company.com or username",
     loginError: "Login error",
     loginSuccess: "Login successful",
     selectCompany: "Select a company",
@@ -74,6 +76,7 @@ export const en: Dictionary = {
     validation: {
       emailRequired: "Email is required",
       emailInvalid: "Enter a valid email",
+      identifierRequired: "Email or username is required",
       passwordRequired: "Password is required",
       passwordMinLength: "Password must be at least 6 characters",
       codeRequired: "Code is required",
@@ -406,6 +409,31 @@ export const en: Dictionary = {
       },
     },
     warehousesConfiguration: "Warehouses Configuration",
+    electronicInvoicing: {
+      title: "Electronic invoicing",
+      colombia: "Colombia",
+      description:
+        "Configure the TheFactory connection to issue electronic invoices in Colombia.",
+      environment: "Environment",
+      demo: "Demo",
+      production: "Production",
+      numberingRange: "Numbering range",
+      numberingRangeHint: "Format: prefix-start. Example: DEMO-1.",
+      nextConsecutive: "Next consecutive number",
+      credentials: "TheFactory credentials",
+      credentialsHint:
+        "Credentials are encrypted and never displayed after saving.",
+      credentialsConfigured: "Credentials configured",
+      credentialsRequired:
+        "Enter credentials to complete the initial configuration.",
+      credentialsPairRequired:
+        "Enter Token Empresa and Token Contraseña together.",
+      tokenEmpresa: "Company token",
+      tokenPassword: "Password token",
+      invalidNumbering:
+        "Enter a valid range and a consecutive number at or after the range start.",
+      saved: "Electronic invoicing configuration saved successfully.",
+    },
     hierarchyConfiguration: "Hierarchy Configuration",
     hierarchy: {
       title: "Hierarchy Names Configuration",

@@ -1,5 +1,6 @@
 import { showToast } from "@/components/ui/sonner";
-import { getApiUserInfo } from "@config";
+import { getApiCompanyId, getApiUserInfo } from "@config";
+import { useGetCompany } from "@/packages/company/api";
 import { useGetCustomers } from "@/packages/customers/api";
 import type { Customer } from "@/packages/customers/types";
 import { useGetDepartments } from "@/packages/department/api";
@@ -17,7 +18,7 @@ import type { Seller } from "@/packages/sellers/types";
 import { useEffect, useRef, useState } from "react";
 import { useCreateSale } from "../api";
 import { getPosDeviceKey } from "../device-key";
-import type { CartItem, PaymentMethod } from "../types";
+import type { CartItem, PaymentMethod, Sale } from "../types";
 import { getTaxRate } from "../utils";
 
 export function usePointOfSale() {
@@ -32,6 +33,8 @@ export function usePointOfSale() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(
     null,
   );
+  const [paymentReference, setPaymentReference] = useState("");
+  const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [page, setPage] = useState(1);
   const [catalogSize, setCatalogSize] = useState({ width: 0, height: 0 });
   const [deviceKey] = useState<string | null>(() => {
@@ -42,6 +45,7 @@ export function usePointOfSale() {
   const noCustomerToastShown = useRef(false);
   const noSellerToastShown = useRef(false);
   const loggedUser = getApiUserInfo();
+  const companyId = Number(getApiCompanyId());
 
   const [productsResponse, productsLoading] = useGetProducts({
     departmentId,
@@ -61,6 +65,7 @@ export function usePointOfSale() {
     cashSession?.branchId,
   );
   const [createSale, creatingSale, createSaleError] = useCreateSale();
+  const [company, companyLoading] = useGetCompany(companyId);
 
   const products = (
     Array.isArray(productsResponse)
@@ -107,6 +112,7 @@ export function usePointOfSale() {
     cashSessionLoading ||
     posTillLoading ||
     inventoryLoading ||
+    companyLoading ||
     !deviceKey;
 
   useEffect(() => {
@@ -131,14 +137,12 @@ export function usePointOfSale() {
     }
   }, [sellers.length, sellersLoading]);
 
-  const selectedCustomer =
-    customer && customers.some((item) => item.id === customer.id)
-      ? customer
-      : (customers[0] ?? null);
-  const selectedSeller =
-    seller && sellers.some((item) => item.id === seller.id)
-      ? seller
-      : (sellers[0] ?? null);
+  const selectedCustomer = customer && customers.some((item) => item.id === customer.id)
+    ? customer
+    : (customers.find((item) => item.id === company?.defaultCustomerId) ?? null);
+  const selectedSeller = seller && sellers.some((item) => item.id === seller.id)
+    ? seller
+    : (sellers.find((item) => item.id === company?.defaultSellerId) ?? null);
   const selectedPaymentMethod =
     paymentMethod && paymentMethods.some((item) => item.id === paymentMethod.id)
       ? paymentMethod
@@ -277,6 +281,13 @@ export function usePointOfSale() {
       });
       return;
     }
+    if (selectedPaymentMethod.requiresReference && !paymentReference.trim()) {
+      showToast({
+        type: "error",
+        message: "El método de pago seleccionado requiere una referencia.",
+      });
+      return;
+    }
     if (cart.length === 0) {
       showToast({
         type: "error",
@@ -297,13 +308,16 @@ export function usePointOfSale() {
         customerId: selectedCustomer.id,
         sellerId: selectedSeller.id,
         paymentMethodId: selectedPaymentMethod.id,
+        paymentReference: paymentReference.trim() || undefined,
         items: cart.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
         })),
       },
-      () => {
+      (response) => {
         setCart([]);
+        setPaymentReference("");
+        setCompletedSale(response.data);
         queryClient.invalidateQueries({
           queryKey: ["inventory", "branches", cashSession.branchId, "balances"],
         });
@@ -331,6 +345,7 @@ export function usePointOfSale() {
     charge,
     currentPage,
     creatingSale,
+    completedSale,
     customers,
     categories,
     categoryId,
@@ -339,6 +354,7 @@ export function usePointOfSale() {
     loading,
     pageProducts,
     paymentMethods,
+    paymentReference,
     posTill,
     rows,
     search,
@@ -350,6 +366,8 @@ export function usePointOfSale() {
     setDepartmentId,
     setPage,
     setPaymentMethod,
+    setPaymentReference,
+    setCompletedSale,
     setSearch,
     setSeller,
     setSubcategoryId,

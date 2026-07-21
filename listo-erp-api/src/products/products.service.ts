@@ -41,28 +41,26 @@ export class ProductsService {
       }
     }
     if (categoryId != null) {
-      const subId = subdepartmentId;
-      if (subId == null) {
+      if (subdepartmentId == null) {
         throw I18nException.badRequest(
           'products.errors.subdepartment_required',
         );
       }
-      const cat = await this.prisma.category.findFirst({
-        where: { id: categoryId, subdepartmentId: subId },
+      const category = await this.prisma.category.findFirst({
+        where: { id: categoryId, subdepartmentId },
       });
-      if (!cat) {
+      if (!category) {
         throw I18nException.badRequest('products.errors.category_not_found');
       }
     }
     if (subcategoryId != null) {
-      const catId = categoryId;
-      if (catId == null) {
+      if (categoryId == null) {
         throw I18nException.badRequest('products.errors.category_required');
       }
-      const subcat = await this.prisma.subcategory.findFirst({
-        where: { id: subcategoryId, categoryId: catId },
+      const subcategory = await this.prisma.subcategory.findFirst({
+        where: { id: subcategoryId, categoryId },
       });
-      if (!subcat) {
+      if (!subcategory) {
         throw I18nException.badRequest('products.errors.subcategory_not_found');
       }
     }
@@ -74,6 +72,7 @@ export class ProductsService {
     userId: number,
   ) {
     const sku = createProductDto.sku.trim();
+    const dianCode = this.normalizeDianCode(createProductDto.dianCode);
     if (sku === '') {
       throw I18nException.badRequest('products.errors.sku_empty');
     }
@@ -95,12 +94,9 @@ export class ProductsService {
         data: {
           sku,
           name: createProductDto.name,
-          description: createProductDto.description,
+          description: null,
           salePrice: new Prisma.Decimal(createProductDto.salePrice),
-          costPrice:
-            createProductDto.costPrice != null
-              ? new Prisma.Decimal(createProductDto.costPrice)
-              : null,
+          costPrice: null,
           taxRate:
             createProductDto.taxRate != null
               ? new Prisma.Decimal(createProductDto.taxRate)
@@ -109,7 +105,8 @@ export class ProductsService {
           subdepartmentId: createProductDto.subdepartmentId ?? null,
           categoryId: createProductDto.categoryId ?? null,
           subcategoryId: createProductDto.subcategoryId ?? null,
-          unit: createProductDto.unit ?? null,
+          unit: null,
+          dianCode,
           isActive: createProductDto.isActive ?? true,
           companyId,
         },
@@ -177,11 +174,17 @@ export class ProductsService {
     const current = await this.findOne(id, companyId);
     const departmentId = updateProductDto.departmentId ?? current.departmentId;
     const subdepartmentId =
-      updateProductDto.subdepartmentId ?? current.subdepartmentId ?? undefined;
+      updateProductDto.subdepartmentId === undefined
+        ? (current.subdepartmentId ?? undefined)
+        : (updateProductDto.subdepartmentId ?? undefined);
     const categoryId =
-      updateProductDto.categoryId ?? current.categoryId ?? undefined;
+      updateProductDto.categoryId === undefined
+        ? (current.categoryId ?? undefined)
+        : (updateProductDto.categoryId ?? undefined);
     const subcategoryId =
-      updateProductDto.subcategoryId ?? current.subcategoryId ?? undefined;
+      updateProductDto.subcategoryId === undefined
+        ? (current.subcategoryId ?? undefined)
+        : (updateProductDto.subcategoryId ?? undefined);
     await this.validateHierarchy(
       companyId,
       departmentId,
@@ -206,17 +209,14 @@ export class ProductsService {
     if (updateProductDto.salePrice != null) {
       data.salePrice = new Prisma.Decimal(updateProductDto.salePrice);
     }
-    if (updateProductDto.costPrice !== undefined) {
-      data.costPrice =
-        updateProductDto.costPrice != null
-          ? new Prisma.Decimal(updateProductDto.costPrice)
-          : null;
-    }
     if (updateProductDto.taxRate !== undefined) {
       data.taxRate =
         updateProductDto.taxRate != null
           ? new Prisma.Decimal(updateProductDto.taxRate)
           : null;
+    }
+    if (updateProductDto.dianCode !== undefined) {
+      data.dianCode = this.normalizeDianCode(updateProductDto.dianCode);
     }
     try {
       const product = await this.prisma.product.update({
@@ -289,6 +289,7 @@ export class ProductsService {
       costPrice: true,
       taxRate: true,
       unit: true,
+      dianCode: true,
       image: true,
       isActive: true,
       companyId: true,
@@ -332,5 +333,10 @@ export class ProductsService {
       costPrice: product.costPrice != null ? Number(product.costPrice) : null,
       taxRate: product.taxRate != null ? Number(product.taxRate) : null,
     };
+  }
+
+  private normalizeDianCode(dianCode: string | null | undefined) {
+    const normalized = dianCode?.trim().toUpperCase();
+    return normalized || 'ZZ';
   }
 }

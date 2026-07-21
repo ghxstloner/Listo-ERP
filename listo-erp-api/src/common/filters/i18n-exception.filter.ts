@@ -274,7 +274,9 @@ export class I18nExceptionFilter implements ExceptionFilter {
       };
     }
 
-    const forbiddenPropertyMatch = message.match(/^property (.+) should not exist$/);
+    const forbiddenPropertyMatch = message.match(
+      /^property (.+) should not exist$/,
+    );
     if (forbiddenPropertyMatch) {
       return {
         key: 'common.validation.forbidden_property',

@@ -20,7 +20,11 @@ import { decodeId } from "@/lib/hash-id";
 import { usePageTitle } from "@/lib/page-title-context";
 import { useGetCategories } from "@/packages/category/api";
 import { useGetDepartments } from "@/packages/department/api";
-import { getProductImageUrl, useUpdateProduct, useUploadProductImage } from "@/packages/product/api";
+import {
+  getProductImageUrl,
+  useUpdateProduct,
+  useUploadProductImage,
+} from "@/packages/product/api";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
 import type { Product, UpdateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
@@ -30,23 +34,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useApiQuery } from "@config";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState, type ChangeEvent } from "react";
-
-interface ProductDetailPageProps {
-  params: Promise<{
-    productId: string;
-  }>;
-}
 
 interface FormState {
   sku: string;
   name: string;
-  description: string;
   salePrice: string;
-  costPrice: string;
   taxRate: string;
-  unit: string;
+  dianCode: string;
+  usesUnit: boolean;
   isActive: boolean;
   departmentId: number | null;
   subdepartmentId: number | null;
@@ -55,214 +51,139 @@ interface FormState {
   imagePreview: string | null;
 }
 
-export default function ProductDetailPage({ params }: ProductDetailPageProps) {
+const toForm = (product: Product): FormState => ({
+  sku: product.sku,
+  name: product.name,
+  salePrice: String(product.salePrice),
+  taxRate: product.taxRate != null ? String(product.taxRate * 100) : "",
+  dianCode: product.dianCode === "ZZ" ? "" : (product.dianCode ?? ""),
+  usesUnit: Boolean(product.dianCode && product.dianCode !== "ZZ"),
+  isActive: product.isActive,
+  departmentId: product.departmentId,
+  subdepartmentId: product.subdepartmentId,
+  categoryId: product.categoryId,
+  subcategoryId: product.subcategoryId,
+  imagePreview: getProductImageUrl(product.image) || null,
+});
+
+export default function ProductDetailPage({
+  params,
+}: {
+  params: Promise<{ productId: string }>;
+}) {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
-  const router = useRouter();
   const { productId } = use(params);
-
-  const decodedProductId = decodeId(productId);
-  const [product, isLoading, error] = useApiQuery<Product>(
-    ["products", decodedProductId ?? "invalid"],
-    `products/${decodedProductId ?? 0}`,
+  const id = decodeId(productId);
+  const [product, loading, error] = useApiQuery<Product>(
+    ["products", id ?? "invalid"],
+    `products/${id ?? 0}`,
     undefined,
-    { enabled: decodedProductId !== null }
+    { enabled: id !== null },
   );
-
   useEffect(() => {
-    if (product?.name) {
-      setTitle(product.name);
-    }
+    if (product?.name) setTitle(product.name);
   }, [product?.name, setTitle]);
-
-  useEffect(() => {
-    if (decodedProductId === null) {
-      router.replace("/listoerp/inventory/products");
-    }
-  }, [decodedProductId, router]);
-
-  if (decodedProductId === null) {
+  if (loading || id === null)
     return (
       <PageLoading
         text={t("common.loading")}
         icon={<Spinner size={32} />}
-        spin={true}
+        spin
       />
     );
-  }
-
-  if (isLoading) {
-    return (
-      <PageLoading
-        text={t("common.loading")}
-        icon={<Spinner size={32} />}
-        spin={true}
-      />
-    );
-  }
-
-  if (error || !product) {
+  if (error || !product)
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <p className="text-destructive">
-          {t("common.error")}: {(error as Error)?.message || t("inventory.products.notFound")}
+          {t("common.error")}:{" "}
+          {(error as Error)?.message || t("inventory.products.notFound")}
         </p>
       </div>
     );
-  }
-
-  return <ProductDetailInner key={product.id} product={product} productId={decodedProductId} />;
+  return <Editor key={product.id} product={product} productId={id} />;
 }
 
-function emptyFormState(): FormState {
-  return {
-    sku: "",
-    name: "",
-    description: "",
-    salePrice: "",
-    costPrice: "",
-    taxRate: "0",
-    unit: "und",
-    isActive: true,
-    departmentId: null,
-    subdepartmentId: null,
-    categoryId: null,
-    subcategoryId: null,
-    imagePreview: null,
-  };
-}
-
-function productToFormState(product: Product): FormState {
-  return {
-    sku: product.sku,
-    name: product.name,
-    description: product.description ?? "",
-    salePrice: product.salePrice.toString(),
-    costPrice: product.costPrice?.toString() ?? "",
-    taxRate: product.taxRate != null ? (product.taxRate * 100).toString() : "",
-    unit: product.unit ?? "",
-    isActive: product.isActive,
-    departmentId: product.departmentId,
-    subdepartmentId: product.subdepartmentId,
-    categoryId: product.categoryId,
-    subcategoryId: product.subcategoryId,
-    imagePreview: getProductImageUrl(product.image) || null,
-  };
-}
-
-function ProductDetailInner({ product, productId }: { product: Product; productId: number }) {
+function Editor({
+  product,
+  productId,
+}: {
+  product: Product;
+  productId: number;
+}) {
   const t = useTranslation();
   const queryClient = useQueryClient();
   const { validateProductFields } = useProductValidation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [updateProduct, isUpdating, updateError] = useUpdateProduct(productId);
-  const [uploadImage, isUploadingImage] = useUploadProductImage(productId);
-
-  const [formState, setFormState] = useState<FormState>(() =>
-    product ? productToFormState(product) : emptyFormState()
-  );
-
+  const [form, setForm] = useState(() => toForm(product));
+  const [update, updating, updateError] = useUpdateProduct(productId);
+  const [uploadImage, uploadingImage] = useUploadProductImage(productId);
   const [departmentsResponse] = useGetDepartments();
-  const [subdepartmentsResponse] = useGetSubDepartments(formState.departmentId ?? undefined);
-  const [categoriesResponse] = useGetCategories(formState.subdepartmentId ?? undefined);
-  const [subcategoriesResponse] = useGetSubCategories(formState.categoryId ?? undefined);
-
+  const [subdepartmentsResponse] = useGetSubDepartments(
+    form.departmentId ?? undefined,
+  );
+  const [categoriesResponse] = useGetCategories(
+    form.subdepartmentId ?? undefined,
+  );
+  const [subcategoriesResponse] = useGetSubCategories(
+    form.categoryId ?? undefined,
+  );
   const departments = departmentsResponse?.data ?? [];
   const subdepartments = subdepartmentsResponse?.data ?? [];
   const categories = categoriesResponse?.data ?? [];
   const subcategories = subcategoriesResponse?.data ?? [];
-
   useEffect(() => {
-    if (updateError) {
+    if (updateError)
       showToast({
         type: "error",
-        message: (updateError as Error).message || t("common.error"),
+        message: updateError.message || t("common.error"),
       });
-    }
   }, [updateError, t]);
-
-  const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
-    setFormState(prev => {
-      const next: FormState = { ...prev, [field]: value };
-
-      if (field === "departmentId") {
+  const field = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      if (key === "departmentId") {
         next.subdepartmentId = null;
         next.categoryId = null;
         next.subcategoryId = null;
       }
-
-      if (field === "subdepartmentId") {
+      if (key === "subdepartmentId") {
         next.categoryId = null;
         next.subcategoryId = null;
       }
-
-      if (field === "categoryId") {
-        next.subcategoryId = null;
-      }
-
+      if (key === "categoryId") next.subcategoryId = null;
       return next;
     });
-  };
-
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
+  const save = () => {
+    if (
+      !validateProductFields(
+        form.sku,
+        form.name,
+        form.salePrice,
+        form.departmentId,
+      )
+    )
+      return;
+    if (form.usesUnit && !form.dianCode.trim()) {
       showToast({
         type: "error",
-        message: t("common.error"),
+        message: "El código de unidad DIAN es obligatorio.",
       });
       return;
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showToast({
-        type: "error",
-        message: t("common.error"),
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      updateField("imagePreview", event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    uploadImage(file, () => {
-      queryClient.invalidateQueries({ queryKey: ["products", productId] });
-      showToast({
-        type: "success",
-        message: t("inventory.products.imageUpdatedSuccessfully"),
-      });
-    });
-  };
-
-  const handleSave = () => {
-    const { sku, name, salePrice, departmentId } = formState;
-
-    if (!validateProductFields(sku, name, salePrice, departmentId)) {
-      return;
-    }
-
     const request: UpdateProductRequest = {
-      sku: sku.trim(),
-      name: name.trim(),
-      description: formState.description.trim() || undefined,
-      salePrice: parseFloat(salePrice),
-      costPrice: formState.costPrice ? parseFloat(formState.costPrice) : undefined,
-      taxRate: formState.taxRate ? parseFloat(formState.taxRate) / 100 : undefined,
-      departmentId: departmentId!,
-      subdepartmentId: formState.subdepartmentId ?? undefined,
-      categoryId: formState.categoryId ?? undefined,
-      subcategoryId: formState.subcategoryId ?? undefined,
-      unit: formState.unit || "und",
-      isActive: formState.isActive,
+      sku: form.sku.trim(),
+      name: form.name.trim(),
+      salePrice: Number(form.salePrice),
+      taxRate: form.taxRate ? Number(form.taxRate) / 100 : undefined,
+      departmentId: form.departmentId!,
+      subdepartmentId: form.subdepartmentId,
+      categoryId: form.categoryId,
+      subcategoryId: form.subcategoryId,
+      dianCode: form.usesUnit ? form.dianCode.trim().toUpperCase() : "ZZ",
+      isActive: form.isActive,
     };
-
-    updateProduct(request, () => {
+    update(request, () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["products", productId] });
       showToast({
@@ -271,7 +192,43 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
       });
     });
   };
-
+  const image = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024)
+      return;
+    const reader = new FileReader();
+    reader.onload = (load) =>
+      field("imagePreview", load.target?.result as string);
+    reader.readAsDataURL(file);
+    uploadImage(file, () =>
+      queryClient.invalidateQueries({ queryKey: ["products", productId] }),
+    );
+  };
+  const selector = (
+    id: string,
+    value: number | null,
+    items: Array<{ id: number; name: string }>,
+    placeholder: string,
+    onValueChange: (value: number) => void,
+    disabled = false,
+  ) => (
+    <Select
+      value={value?.toString() || ""}
+      onValueChange={(value) => onValueChange(Number(value))}
+      disabled={disabled}
+    >
+      <SelectTrigger id={id} className="w-full">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.id} value={item.id.toString()}>
+            {item.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
   return (
     <div className="w-full p-4 space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -284,235 +241,189 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
             {t("inventory.products.backToProducts")}
           </Link>
         </Button>
-        <Button onClick={handleSave} disabled={isUpdating}>
-          {isUpdating ? t("common.saving") : t("common.save")}
+        <Button onClick={save} disabled={updating}>
+          {updating ? t("common.saving") : t("common.save")}
         </Button>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div className="min-w-0 space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("inventory.products.basicInformation")}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="sku">
-                      {t("inventory.products.sku")} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="sku"
-                      value={formState.sku}
-                      onChange={(e) => updateField('sku', e.target.value)}
-                      placeholder={t("inventory.products.skuPlaceholder")}
-                      disabled={isUpdating}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="name">
-                      {t("inventory.products.name")} <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="name"
-                      value={formState.name}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      placeholder={t("inventory.products.namePlaceholder")}
-                      disabled={isUpdating}
-                    />
-                  </div>
-                  <div className="sm:col-span-2 space-y-2">
-                    <Label htmlFor="description">{t("inventory.products.description")}</Label>
-                    <Input
-                      id="description"
-                      value={formState.description}
-                      onChange={(e) => updateField('description', e.target.value)}
-                      placeholder={t("inventory.products.descriptionPlaceholder")}
-                      disabled={isUpdating}
-                    />
-                  </div>
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {t("inventory.products.basicInformation")}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sku">
+                    {t("inventory.products.sku")}{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="sku"
+                    value={form.sku}
+                    onChange={(event) => field("sku", event.target.value)}
+                    disabled={updating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">
+                    {t("inventory.products.name")}{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(event) => field("name", event.target.value)}
+                    disabled={updating}
+                  />
                 </div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("inventory.products.pricingInformation")}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {t("inventory.products.pricingInformation")}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="salePrice">
+                    {t("inventory.products.salePrice")}{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="salePrice"
+                    type="number"
+                    value={form.salePrice}
+                    onChange={(event) => field("salePrice", event.target.value)}
+                    disabled={updating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="taxRate">
+                    {t("inventory.products.taxRate")}
+                  </Label>
+                  <Input
+                    id="taxRate"
+                    type="number"
+                    value={form.taxRate}
+                    onChange={(event) => field("taxRate", event.target.value)}
+                    disabled={updating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="uses-unit">Usa unidad de medida</Label>
+                  <Switch
+                    id="uses-unit"
+                    checked={form.usesUnit}
+                    onCheckedChange={(value) => field("usesUnit", value)}
+                    disabled={updating}
+                  />
+                </div>
+                {form.usesUnit && (
                   <div className="space-y-2">
-                    <Label htmlFor="salePrice">
-                      {t("inventory.products.salePrice")} <span className="text-destructive">*</span>
-                    </Label>
+                    <Label htmlFor="dianCode">Código de unidad DIAN</Label>
                     <Input
-                      id="salePrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formState.salePrice}
-                      onChange={(e) => updateField('salePrice', e.target.value)}
-                      placeholder={t("inventory.products.salePricePlaceholder")}
-                      disabled={isUpdating}
+                      id="dianCode"
+                      value={form.dianCode}
+                      onChange={(event) =>
+                        field("dianCode", event.target.value.toUpperCase())
+                      }
+                      maxLength={3}
+                      disabled={updating}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="costPrice">{t("inventory.products.costPrice")}</Label>
-                    <Input
-                      id="costPrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formState.costPrice}
-                      onChange={(e) => updateField('costPrice', e.target.value)}
-                      placeholder={t("inventory.products.costPricePlaceholder")}
-                      disabled={isUpdating}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="taxRate">{t("inventory.products.taxRate")}</Label>
-                    <Input
-                      id="taxRate"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={formState.taxRate}
-                      onChange={(e) => updateField('taxRate', e.target.value)}
-                      placeholder={t("inventory.products.taxRatePlaceholder")}
-                      disabled={isUpdating}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="unit">{t("inventory.products.unit")}</Label>
-                    <Input
-                      id="unit"
-                      value={formState.unit}
-                      onChange={(e) => updateField('unit', e.target.value)}
-                      placeholder={t("inventory.products.unitPlaceholder")}
-                      disabled={isUpdating}
-                    />
-                  </div>
+                )}
+              </div>
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {t("inventory.products.hierarchyInformation")}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>
+                    {" "}
+                    {t("inventory.products.department")}{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  {selector(
+                    "department",
+                    form.departmentId,
+                    departments,
+                    t("inventory.products.selectDepartment"),
+                    (value) => field("departmentId", value),
+                    updating,
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("inventory.products.subdepartment")}</Label>
+                  {selector(
+                    "subdepartment",
+                    form.subdepartmentId,
+                    subdepartments,
+                    t("inventory.products.selectSubdepartment"),
+                    (value) => field("subdepartmentId", value),
+                    updating || !form.departmentId || !subdepartments.length,
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("inventory.products.category")}</Label>
+                  {selector(
+                    "category",
+                    form.categoryId,
+                    categories,
+                    t("inventory.products.selectCategory"),
+                    (value) => field("categoryId", value),
+                    updating || !form.subdepartmentId || !categories.length,
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("inventory.products.subcategory")}</Label>
+                  {selector(
+                    "subcategory",
+                    form.subcategoryId,
+                    subcategories,
+                    t("inventory.products.selectSubcategory"),
+                    (value) => field("subcategoryId", value),
+                    updating || !form.categoryId || !subcategories.length,
+                  )}
                 </div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  {t("inventory.products.hierarchyInformation")}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="department">
-                      {t("inventory.products.department")} <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={formState.departmentId?.toString() || ""}
-                      onValueChange={(value) => updateField('departmentId', Number(value))}
-                      disabled={isUpdating}
-                    >
-                      <SelectTrigger id="department" className="w-full">
-                        <SelectValue placeholder={t("inventory.products.selectDepartment")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id.toString()}>
-                            {dept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subdepartment">{t("inventory.products.subdepartment")}</Label>
-                    <Select
-                      value={formState.subdepartmentId?.toString() || ""}
-                      onValueChange={(value) => updateField('subdepartmentId', Number(value))}
-                      disabled={isUpdating || !formState.departmentId || subdepartments.length === 0}
-                    >
-                      <SelectTrigger id="subdepartment" className="w-full">
-                        <SelectValue placeholder={t("inventory.products.selectSubdepartment")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subdepartments.map((subdept) => (
-                          <SelectItem key={subdept.id} value={subdept.id.toString()}>
-                            {subdept.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">{t("inventory.products.category")}</Label>
-                    <Select
-                      value={formState.categoryId?.toString() || ""}
-                      onValueChange={(value) => updateField('categoryId', Number(value))}
-                      disabled={isUpdating || !formState.subdepartmentId || categories.length === 0}
-                    >
-                      <SelectTrigger id="category" className="w-full">
-                        <SelectValue placeholder={t("inventory.products.selectCategory")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subcategory">{t("inventory.products.subcategory")}</Label>
-                    <Select
-                      value={formState.subcategoryId?.toString() || ""}
-                      onValueChange={(value) => updateField('subcategoryId', Number(value))}
-                      disabled={isUpdating || !formState.categoryId || subcategories.length === 0}
-                    >
-                      <SelectTrigger id="subcategory" className="w-full">
-                        <SelectValue placeholder={t("inventory.products.selectSubcategory")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subcategories.map((subcat) => (
-                          <SelectItem key={subcat.id} value={subcat.id.toString()}>
-                            {subcat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">{t("inventory.products.status")}</span>
-                <Switch
-                  id="status"
-                  checked={formState.isActive}
-                  onCheckedChange={(checked) => updateField("isActive", checked)}
-                  disabled={isUpdating}
-                />
-                <Label htmlFor="status" className="cursor-pointer">
-                  {formState.isActive ? t("inventory.products.active") : t("inventory.products.inactive")}
-                </Label>
-              </div>
+            </div>
+            <Separator />
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {t("inventory.products.status")}
+              </span>
+              <Switch
+                id="status"
+                checked={form.isActive}
+                onCheckedChange={(value) => field("isActive", value)}
+                disabled={updating}
+              />
+              <Label htmlFor="status" className="cursor-pointer">
+                {form.isActive
+                  ? t("inventory.products.active")
+                  : t("inventory.products.inactive")}
+              </Label>
+            </div>
           </div>
-
           <div className="space-y-3 border-t pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6">
-            <h3 className="text-sm font-medium text-muted-foreground">{t("inventory.products.image")}</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">
+              {t("inventory.products.image")}
+            </h3>
             <div
-              className="relative flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:border-muted-foreground/50"
+              className="relative flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50"
               onClick={() => fileInputRef.current?.click()}
             >
-              {formState.imagePreview ? (
+              {form.imagePreview ? (
                 <Image
-                  src={formState.imagePreview}
-                  alt={formState.name}
+                  src={form.imagePreview}
+                  alt={form.name}
                   fill
                   sizes="(max-width: 1280px) 100vw, 280px"
                   className="object-cover"
@@ -526,34 +437,30 @@ function ProductDetailInner({ product, productId }: { product: Product; productI
                   </p>
                 </div>
               )}
-
-              {isUploadingImage && (
+              {uploadingImage && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80">
                   <Spinner className="h-8 w-8 animate-spin" />
                 </div>
               )}
-
               <div className="absolute right-2 bottom-2">
                 <Button
                   size="sm"
                   variant="secondary"
                   className="shadow-lg"
-                  disabled={isUploadingImage}
+                  disabled={uploadingImage}
                 >
                   <Upload className="mr-1 h-4 w-4" />
-                  {formState.imagePreview ? t("inventory.products.changeImage") : t("inventory.products.uploadImage")}
+                  {t("inventory.products.uploadImage")}
                 </Button>
               </div>
             </div>
-
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={handleImageUpload}
+              onChange={image}
             />
-
             <p className="text-center text-xs text-muted-foreground">
               {t("inventory.products.imageFormats")}
             </p>

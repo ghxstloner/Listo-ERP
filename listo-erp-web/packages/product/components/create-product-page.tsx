@@ -11,9 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/hooks/use-translation";
+import { encodeId } from "@/lib/hash-id";
 import { useGetCategories } from "@/packages/category/api";
 import { useGetDepartments } from "@/packages/department/api";
 import { uploadProductImage, useCreateProduct } from "@/packages/product/api";
@@ -21,26 +23,23 @@ import { useProductValidation } from "@/packages/product/hooks/use-product-valid
 import type { CreateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft, Camera, Spinner, Upload } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { encodeId } from "@/lib/hash-id";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 export function CreateProductPage() {
   const t = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { validateProductFields } = useProductValidation();
-
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [salePrice, setSalePrice] = useState("");
-  const [costPrice, setCostPrice] = useState("");
   const [taxRate, setTaxRate] = useState("");
-  const [unit, setUnit] = useState("und");
+  const [usesUnit, setUsesUnit] = useState(false);
+  const [dianCode, setDianCode] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [departmentId, setDepartmentId] = useState<number | null>(null);
   const [subdepartmentId, setSubdepartmentId] = useState<number | null>(null);
@@ -48,175 +47,179 @@ export function CreateProductPage() {
   const [subcategoryId, setSubcategoryId] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [createProduct, isCreating, createError] = useCreateProduct();
+  const [create, creating, createError] = useCreateProduct();
   const [departmentsResponse] = useGetDepartments();
-  const [subdepartmentsResponse] = useGetSubDepartments(departmentId ?? undefined);
+  const [subdepartmentsResponse] = useGetSubDepartments(
+    departmentId ?? undefined,
+  );
   const [categoriesResponse] = useGetCategories(subdepartmentId ?? undefined);
   const [subcategoriesResponse] = useGetSubCategories(categoryId ?? undefined);
-
   const departments = departmentsResponse?.data ?? [];
   const subdepartments = subdepartmentsResponse?.data ?? [];
   const categories = categoriesResponse?.data ?? [];
   const subcategories = subcategoriesResponse?.data ?? [];
-
   useEffect(() => {
-    if (createError) {
+    if (createError)
       showToast({
         type: "error",
-        message: (createError as Error).message || t("common.error"),
+        message: createError.message || t("common.error"),
       });
-    }
   }, [createError, t]);
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const image = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
-      showToast({ type: "error", message: t("common.error") });
+    if (!file || !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024)
       return;
-    }
-
     setImageFile(file);
     const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result as string);
+    reader.onload = (load) => setImagePreview(load.target?.result as string);
     reader.readAsDataURL(file);
   };
-
-  const handleCreateProduct = () => {
-    if (!validateProductFields(sku, name, salePrice, departmentId)) {
-      return;
-    }
-
-    const request: CreateProductRequest = {
-      sku: sku.trim(),
-      name: name.trim(),
-      description: description.trim() || undefined,
-      salePrice: parseFloat(salePrice),
-      costPrice: costPrice ? parseFloat(costPrice) : undefined,
-      taxRate: taxRate ? parseFloat(taxRate) / 100 : undefined,
-      departmentId: departmentId!,
-      subdepartmentId: subdepartmentId ?? undefined,
-      categoryId: categoryId ?? undefined,
-      subcategoryId: subcategoryId ?? undefined,
-      unit: unit.trim() || undefined,
-      isActive,
-    };
-
-    createProduct(request, async (response) => {
-      if (imageFile) {
-        setIsUploadingImage(true);
-        try {
-          await uploadProductImage(response.data.id, imageFile);
-        } catch (error) {
-          showToast({
-            type: "error",
-            message: error instanceof Error ? error.message : t("common.error"),
-          });
-        } finally {
-          setIsUploadingImage(false);
-        }
-      }
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      showToast({ type: "success", message: t("inventory.products.productAdded") });
-      router.push(`/listoerp/inventory/products/${encodeId(response.data.id)}`);
-    });
-  };
-
-  const handleDepartmentChange = (value: string) => {
-    setDepartmentId(Number(value));
+  const changeDepartment = (value: number) => {
+    setDepartmentId(value);
     setSubdepartmentId(null);
     setCategoryId(null);
     setSubcategoryId(null);
   };
-
-  const handleSubdepartmentChange = (value: string) => {
-    setSubdepartmentId(Number(value));
+  const changeSubdepartment = (value: number) => {
+    setSubdepartmentId(value);
     setCategoryId(null);
     setSubcategoryId(null);
   };
-
-  const handleCategoryChange = (value: string) => {
-    setCategoryId(Number(value));
-    setSubcategoryId(null);
+  const createProduct = () => {
+    if (!validateProductFields(sku, name, salePrice, departmentId)) return;
+    if (usesUnit && !dianCode.trim()) {
+      showToast({
+        type: "error",
+        message: "El código de unidad DIAN es obligatorio.",
+      });
+      return;
+    }
+    const request: CreateProductRequest = {
+      sku: sku.trim(),
+      name: name.trim(),
+      salePrice: Number(salePrice),
+      taxRate: taxRate ? Number(taxRate) / 100 : undefined,
+      departmentId: departmentId!,
+      subdepartmentId,
+      categoryId,
+      subcategoryId,
+      dianCode: usesUnit ? dianCode.trim().toUpperCase() : "ZZ",
+      isActive,
+    };
+    create(request, async (response) => {
+      if (imageFile) {
+        setUploadingImage(true);
+        try {
+          await uploadProductImage(response.data.id, imageFile);
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      router.push(`/listoerp/inventory/products/${encodeId(response.data.id)}`);
+    });
   };
-
-  const formValid =
+  const select = (
+    id: string,
+    value: number | null,
+    items: Array<{ id: number; name: string }>,
+    placeholder: string,
+    onChange: (value: number) => void,
+    disabled = false,
+  ) => (
+    <Select
+      value={value?.toString() || ""}
+      onValueChange={(value) => onChange(Number(value))}
+      disabled={disabled}
+    >
+      <SelectTrigger id={id} className="w-full">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((item) => (
+          <SelectItem key={item.id} value={item.id.toString()}>
+            {item.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+  const valid =
     !!sku.trim() &&
     !!name.trim() &&
     !!salePrice.trim() &&
     Number(salePrice) > 0 &&
     !!departmentId;
-
   return (
-    <div className="w-full space-y-4 p-4">
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/listoerp/inventory/products" className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          {t("inventory.products.backToProducts")}
-        </Link>
-      </Button>
+    <div className="w-full p-4 space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link
+            href="/listoerp/inventory/products"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            {t("inventory.products.backToProducts")}
+          </Link>
+        </Button>
+        <Button
+          onClick={createProduct}
+          disabled={creating || uploadingImage || !valid}
+        >
+          {creating || uploadingImage ? t("common.saving") : t("common.create")}
+        </Button>
+      </div>
       <Card>
         <CardHeader>
-          <CardTitle>{t("inventory.products.addNewProduct")}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t("inventory.products.addProductDescription")}</p>
+          <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-
-          <div className="space-y-3 px-4">
+        <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="min-w-0 space-y-6">
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t("inventory.products.basicInformation")}
               </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sku">
-                    {t("inventory.products.sku")} <span className="text-destructive">*</span>
+                    {t("inventory.products.sku")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="sku"
                     value={sku}
-                    onChange={(e) => setSku(e.target.value)}
+                    onChange={(event) => setSku(event.target.value)}
                     placeholder={t("inventory.products.skuPlaceholder")}
-                    disabled={isCreating}
+                    disabled={creating}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="name">
-                    {t("inventory.products.name")} <span className="text-destructive">*</span>
+                    {t("inventory.products.name")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(event) => setName(event.target.value)}
                     placeholder={t("inventory.products.namePlaceholder")}
-                    disabled={isCreating}
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">{t("inventory.products.description")}</Label>
-                  <Input
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t("inventory.products.descriptionPlaceholder")}
-                    disabled={isCreating}
+                    disabled={creating}
                   />
                 </div>
               </div>
             </div>
-
+            <Separator />
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t("inventory.products.pricingInformation")}
               </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div className="space-y-2 md:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="salePrice">
-                    {t("inventory.products.salePrice")} <span className="text-destructive">*</span>
+                    {t("inventory.products.salePrice")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="salePrice"
@@ -224,26 +227,14 @@ export function CreateProductPage() {
                     step="0.01"
                     min="0"
                     value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value)}
-                    placeholder={t("inventory.products.salePricePlaceholder")}
-                    disabled={isCreating}
+                    onChange={(event) => setSalePrice(event.target.value)}
+                    disabled={creating}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="costPrice">{t("inventory.products.costPrice")}</Label>
-                  <Input
-                    id="costPrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value)}
-                    placeholder={t("inventory.products.costPricePlaceholder")}
-                    disabled={isCreating}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="taxRate">{t("inventory.products.taxRate")}</Label>
+                  <Label htmlFor="taxRate">
+                    {t("inventory.products.taxRate")}
+                  </Label>
                   <Input
                     id="taxRate"
                     type="number"
@@ -251,167 +242,160 @@ export function CreateProductPage() {
                     min="0"
                     max="100"
                     value={taxRate}
-                    onChange={(e) => setTaxRate(e.target.value)}
-                    placeholder={t("inventory.products.taxRatePlaceholder")}
-                    disabled={isCreating}
+                    onChange={(event) => setTaxRate(event.target.value)}
+                    disabled={creating}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="usesUnit">Usa unidad de medida</Label>
+                  <Switch
+                    id="usesUnit"
+                    checked={usesUnit}
+                    onCheckedChange={setUsesUnit}
+                    disabled={creating}
+                  />
+                </div>
+                {usesUnit && (
+                  <div className="space-y-2">
+                    <Label htmlFor="dianCode">Código de unidad DIAN</Label>
+                    <Input
+                      id="dianCode"
+                      value={dianCode}
+                      onChange={(event) =>
+                        setDianCode(event.target.value.toUpperCase())
+                      }
+                      maxLength={3}
+                      disabled={creating}
+                    />
+                  </div>
+                )}
               </div>
             </div>
-
+            <Separator />
             <div className="space-y-4">
-              <h3 className="text-sm font-medium">
+              <h3 className="text-sm font-medium text-muted-foreground">
                 {t("inventory.products.hierarchyInformation")}
               </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="department">
-                    {t("inventory.products.department")} <span className="text-destructive">*</span>
+                  <Label>
+                    {t("inventory.products.department")}{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
-                  <Select
-                    value={departmentId?.toString() || ""}
-                    onValueChange={handleDepartmentChange}
-                    disabled={isCreating}
-                  >
-                    <SelectTrigger id="department" className="w-full">
-                      <SelectValue placeholder={t("inventory.products.selectDepartment")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id.toString()}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {select(
+                    "department",
+                    departmentId,
+                    departments,
+                    t("inventory.products.selectDepartment"),
+                    changeDepartment,
+                    creating,
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subdepartment">{t("inventory.products.subdepartment")}</Label>
-                  <Select
-                    value={subdepartmentId?.toString() || ""}
-                    onValueChange={handleSubdepartmentChange}
-                    disabled={isCreating || !departmentId || subdepartments.length === 0}
-                  >
-                    <SelectTrigger id="subdepartment" className="w-full">
-                      <SelectValue placeholder={t("inventory.products.selectSubdepartment")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subdepartments.map((subdept) => (
-                        <SelectItem key={subdept.id} value={subdept.id.toString()}>
-                          {subdept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{t("inventory.products.subdepartment")}</Label>
+                  {select(
+                    "subdepartment",
+                    subdepartmentId,
+                    subdepartments,
+                    t("inventory.products.selectSubdepartment"),
+                    changeSubdepartment,
+                    creating || !departmentId || !subdepartments.length,
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">{t("inventory.products.category")}</Label>
-                  <Select
-                    value={categoryId?.toString() || ""}
-                    onValueChange={handleCategoryChange}
-                    disabled={isCreating || !subdepartmentId || categories.length === 0}
-                  >
-                    <SelectTrigger id="category" className="w-full">
-                      <SelectValue placeholder={t("inventory.products.selectCategory")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id.toString()}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{t("inventory.products.category")}</Label>
+                  {select(
+                    "category",
+                    categoryId,
+                    categories,
+                    t("inventory.products.selectCategory"),
+                    (value) => {
+                      setCategoryId(value);
+                      setSubcategoryId(null);
+                    },
+                    creating || !subdepartmentId || !categories.length,
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="subcategory">{t("inventory.products.subcategory")}</Label>
-                  <Select
-                    value={subcategoryId?.toString() || ""}
-                    onValueChange={(value) => setSubcategoryId(Number(value))}
-                    disabled={isCreating || !categoryId || subcategories.length === 0}
-                  >
-                    <SelectTrigger id="subcategory" className="w-full">
-                      <SelectValue placeholder={t("inventory.products.selectSubcategory")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subcategories.map((subcat) => (
-                        <SelectItem key={subcat.id} value={subcat.id.toString()}>
-                          {subcat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{t("inventory.products.subcategory")}</Label>
+                  {select(
+                    "subcategory",
+                    subcategoryId,
+                    subcategories,
+                    t("inventory.products.selectSubcategory"),
+                    setSubcategoryId,
+                    creating || !categoryId || !subcategories.length,
+                  )}
                 </div>
               </div>
             </div>
-
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium">
-                {t("inventory.products.additionalInformation")}
-              </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="unit">{t("inventory.products.unit")}</Label>
-                  <Input
-                    id="unit"
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    placeholder={t("inventory.products.unitPlaceholder")}
-                    disabled={isCreating}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">{t("inventory.products.status")}</Label>
-                  <div className="flex h-9 items-center gap-3">
-                    <Switch
-                      id="status"
-                      checked={isActive}
-                      onCheckedChange={setIsActive}
-                      disabled={isCreating}
-                    />
-                    <span className="text-sm">
-                      {isActive ? t("inventory.products.active") : t("inventory.products.inactive")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t("inventory.products.image")}</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageChange}
+            <Separator />
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {t("inventory.products.status")}
+              </span>
+              <Switch
+                id="status"
+                checked={isActive}
+                onCheckedChange={setIsActive}
+                disabled={creating}
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isCreating || isUploadingImage}
-                className="flex w-full items-center gap-3 rounded-md border border-dashed p-3 text-left hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {imagePreview ? (
-                  <img src={imagePreview} alt={name || "Producto"} className="size-16 rounded object-cover" />
-                ) : (
-                  <div className="flex size-16 items-center justify-center rounded bg-muted text-muted-foreground">+</div>
-                )}
-                <span className="text-sm text-muted-foreground">
-                  {imageFile ? imageFile.name : t("inventory.products.uploadImage")}
-                </span>
-              </button>
-              <p className="text-xs text-muted-foreground">{t("inventory.products.imageFormats")}</p>
+              <Label htmlFor="status" className="cursor-pointer">
+                {isActive
+                  ? t("inventory.products.active")
+                  : t("inventory.products.inactive")}
+              </Label>
             </div>
           </div>
-
-          <div className="flex justify-end gap-2 border-t pt-4">
-            <Button variant="outline" asChild disabled={isCreating || isUploadingImage}>
-              <Link href="/listoerp/inventory/products">{t("common.cancel")}</Link>
-            </Button>
-            <Button onClick={handleCreateProduct} disabled={isCreating || isUploadingImage || !formValid}>
-              {isCreating || isUploadingImage ? t("common.saving") : t("common.create")}
-            </Button>
+          <div className="space-y-3 border-t pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              {t("inventory.products.image")}
+            </h3>
+            <div
+              className="relative flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {imagePreview ? (
+                <img
+                  src={imagePreview}
+                  alt={name || "Producto"}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="p-4 text-center">
+                  <Camera className="mx-auto mb-2 h-12 w-12 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    {t("inventory.products.uploadImage")}
+                  </p>
+                </div>
+              )}
+              {uploadingImage && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Spinner className="h-8 w-8 animate-spin" />
+                </div>
+              )}
+              <div className="absolute right-2 bottom-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="shadow-lg"
+                  disabled={uploadingImage}
+                >
+                  <Upload className="mr-1 h-4 w-4" />
+                  {t("inventory.products.uploadImage")}
+                </Button>
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={image}
+            />
+            <p className="text-center text-xs text-muted-foreground">
+              {t("inventory.products.imageFormats")}
+            </p>
           </div>
         </CardContent>
       </Card>

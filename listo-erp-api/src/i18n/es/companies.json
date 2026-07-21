@@ -1,6 +1,9 @@
 {
   "errors": {
-    "not_found": "Empresa no encontrada"
+    "not_found": "Empresa no encontrada",
+    "tax_country_required": "Selecciona un país antes de configurar el tipo de identificación fiscal.",
+    "invalid_tax_document_type": "El tipo de identificación no corresponde al país seleccionado.",
+    "tax_check_digit_required": "El tipo de identificación seleccionado requiere dígito de verificación."
   },
   "success": {
     "created": "Empresa creada correctamente",

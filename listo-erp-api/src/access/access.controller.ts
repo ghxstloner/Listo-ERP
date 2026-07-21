@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { CurrentCompanyId } from '../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
@@ -25,17 +34,27 @@ export class AccessController {
   }
 
   @Post('roles')
-  createRole(@CurrentCompanyId() companyId: number, @Body() dto: CreateCompanyRoleDto) {
+  createRole(
+    @CurrentCompanyId() companyId: number,
+    @Body() dto: CreateCompanyRoleDto,
+  ) {
     return this.access.createRole(companyId, dto);
   }
 
   @Patch('roles/:id')
-  updateRole(@Param('id', ParseIntPipe) id: number, @CurrentCompanyId() companyId: number, @Body() dto: UpdateCompanyRoleDto) {
+  updateRole(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentCompanyId() companyId: number,
+    @Body() dto: UpdateCompanyRoleDto,
+  ) {
     return this.access.updateRole(id, companyId, dto);
   }
 
   @Delete('roles/:id')
-  deleteRole(@Param('id', ParseIntPipe) id: number, @CurrentCompanyId() companyId: number) {
+  deleteRole(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentCompanyId() companyId: number,
+  ) {
     return this.access.deleteRole(id, companyId);
   }
 }

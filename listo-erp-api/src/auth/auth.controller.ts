@@ -1,4 +1,11 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
@@ -39,7 +46,9 @@ export class AuthController {
   }
 
   @Get('session')
-  @ApiOperation({ summary: 'Obtener los permisos vigentes de la empresa activa' })
+  @ApiOperation({
+    summary: 'Obtener los permisos vigentes de la empresa activa',
+  })
   async session(@CurrentCompanyUser() companyUser: CompanyUserPayload) {
     return { permissions: companyUser.permissions };
   }

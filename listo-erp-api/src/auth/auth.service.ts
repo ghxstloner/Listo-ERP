@@ -33,12 +33,18 @@ export class AuthService {
       throw I18nException.badRequest('auth.errors.company_inactive');
     }
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: registerDto.email },
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: registerDto.email }, { name: registerDto.name }],
+      },
     });
 
     if (existingUser) {
-      throw I18nException.badRequest('auth.errors.email_already_registered');
+      throw I18nException.badRequest(
+        existingUser.email === registerDto.email
+          ? 'auth.errors.email_already_registered'
+          : 'auth.errors.name_already_registered',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
@@ -92,13 +98,15 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: loginDto.identifier }, { name: loginDto.identifier }],
+      },
     });
 
     if (!user) {
       await this.auditService.logLoginFailure(
-        loginDto.email,
+        loginDto.identifier,
         'Usuario no encontrado',
       );
       throw I18nException.unauthorized('auth.errors.invalid_credentials');
@@ -111,7 +119,7 @@ export class AuthService {
 
     if (!isPasswordValid) {
       await this.auditService.logLoginFailure(
-        loginDto.email,
+        loginDto.identifier,
         'Contraseña incorrecta',
       );
       throw I18nException.unauthorized('auth.errors.invalid_credentials');
@@ -119,7 +127,7 @@ export class AuthService {
 
     if (!user.isActive) {
       await this.auditService.logLoginFailure(
-        loginDto.email,
+        loginDto.identifier,
         'Usuario desactivado',
       );
       throw I18nException.unauthorized('auth.errors.user_deactivated');
@@ -172,7 +180,7 @@ export class AuthService {
 
     if (activeCompanies.length === 0) {
       await this.auditService.logLoginFailure(
-        loginDto.email,
+        loginDto.identifier,
         'Sin empresas activas',
       );
       throw I18nException.unauthorized('auth.errors.no_active_companies');

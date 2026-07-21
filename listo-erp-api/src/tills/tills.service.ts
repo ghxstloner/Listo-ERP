@@ -139,6 +139,7 @@ export class TillsService {
       id: true,
       name: true,
       code: true,
+      dianCode: true,
       image: true,
       requiresReference: true,
       isActive: true,
@@ -306,7 +307,10 @@ export class TillsService {
     }
 
     if (paymentMethodIds !== undefined) {
-      await this.ensurePaymentMethodsBelongToCompany(paymentMethodIds, companyId);
+      await this.ensurePaymentMethodsBelongToCompany(
+        paymentMethodIds,
+        companyId,
+      );
     }
 
     const data = {

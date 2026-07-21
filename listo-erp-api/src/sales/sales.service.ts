@@ -5,15 +5,34 @@ import {
   Prisma,
 } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { ElectronicInvoicingService } from '../electronic-invoicing/electronic-invoicing.service';
+import { ElectronicInvoiceDispatcher } from '../electronic-invoicing/electronic-invoice-dispatcher.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
+
+const COLOMBIA_IDENTIFICATION_TYPES = new Set([
+  '11',
+  '12',
+  '13',
+  '21',
+  '22',
+  '31',
+  '41',
+  '42',
+  '47',
+  '48',
+  '50',
+  '91',
+]);
 
 @Injectable()
 export class SalesService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private electronicInvoicing: ElectronicInvoicingService,
+    private electronicInvoicingDispatcher: ElectronicInvoiceDispatcher,
   ) {}
 
   async create(dto: CreateSaleDto, companyId: number, userId: number) {
@@ -23,7 +42,7 @@ export class SalesService {
     }
 
     const sale = await this.prisma.$transaction(async (tx) => {
-      const [cashSession, customer, seller, paymentMethod, products] =
+      const [cashSession, customer, seller, paymentMethod, products, company] =
         await Promise.all([
           tx.cashSession.findFirst({
             where: {
@@ -38,7 +57,14 @@ export class SalesService {
           }),
           tx.customer.findFirst({
             where: { id: dto.customerId, companyId, isActive: true },
-            select: { id: true },
+            select: {
+              id: true,
+              isFinalConsumer: true,
+              taxDocumentType: true,
+              taxId: true,
+              fiscalPersonType: true,
+              taxCheckDigit: true,
+            },
           }),
           tx.seller.findFirst({
             where: {
@@ -53,7 +79,7 @@ export class SalesService {
           }),
           tx.paymentMethod.findFirst({
             where: { id: dto.paymentMethodId, companyId, isActive: true },
-            select: { id: true },
+            select: { id: true, dianCode: true, requiresReference: true },
           }),
           tx.product.findMany({
             where: { id: { in: productIds }, companyId, isActive: true },
@@ -62,7 +88,12 @@ export class SalesService {
               salePrice: true,
               taxRate: true,
               costPrice: true,
+              dianCode: true,
             },
+          }),
+          tx.company.findUnique({
+            where: { id: companyId },
+            select: { country: { select: { code: true } } },
           }),
         ]);
 
@@ -87,6 +118,32 @@ export class SalesService {
         throw I18nException.badRequest('sales.errors.payment_method_not_found');
       if (products.length !== productIds.length) {
         throw I18nException.badRequest('sales.errors.product_not_found');
+      }
+      const paymentReference = dto.paymentReference?.trim() || null;
+      if (paymentMethod.requiresReference && !paymentReference) {
+        throw I18nException.badRequest(
+          'sales.errors.payment_reference_required',
+        );
+      }
+      if (company?.country?.code === 'CO') {
+        if (!paymentMethod.dianCode) {
+          throw I18nException.badRequest(
+            'sales.errors.payment_method_dian_code_required',
+          );
+        }
+        if (products.some((product) => !product.dianCode)) {
+          throw I18nException.badRequest(
+            'sales.errors.product_dian_code_required',
+          );
+        }
+        if (
+          !customer.isFinalConsumer &&
+          !this.hasColombiaFiscalData(customer)
+        ) {
+          throw I18nException.badRequest(
+            'sales.errors.customer_fiscal_data_required',
+          );
+        }
       }
 
       const warehouseBranches = await tx.warehouseBranch.findMany({
@@ -169,6 +226,7 @@ export class SalesService {
           customerId: customer.id,
           sellerId: seller.id,
           paymentMethodId: paymentMethod.id,
+          paymentReference,
           createdByUserId: userId,
           subtotal,
           taxAmount,
@@ -179,6 +237,14 @@ export class SalesService {
         },
         include: { items: true },
       });
+
+      if (company?.country?.code === 'CO') {
+        await this.electronicInvoicing.createPendingInvoice(
+          tx,
+          sale.id,
+          companyId,
+        );
+      }
 
       const saleItemsByProduct = new Map(
         sale.items.map((item) => [item.productId, item]),
@@ -240,7 +306,24 @@ export class SalesService {
     });
 
     await this.audit.logCreate(userId, companyId, 'sales', 'Venta', sale.id);
-    return { message: 'sales.success.created', data: this.serializeSale(sale) };
+    const serializedSale = this.serializeSale(sale);
+    if (sale.electronicInvoice) {
+      try {
+        await this.electronicInvoicingDispatcher.dispatchPendingInvoice(
+          sale.electronicInvoice.id,
+        );
+      } catch {}
+      const invoice = await this.electronicInvoicing.getInvoiceForSale(
+        companyId,
+        sale.id,
+      );
+      serializedSale.electronicInvoice = {
+        id: invoice.id,
+        status: invoice.status,
+        consecutive: invoice.consecutive,
+      };
+    }
+    return { message: 'sales.success.created', data: serializedSale };
   }
 
   private selectSale() {
@@ -252,6 +335,7 @@ export class SalesService {
       customerId: true,
       sellerId: true,
       paymentMethodId: true,
+      paymentReference: true,
       createdByUserId: true,
       subtotal: true,
       taxAmount: true,
@@ -261,6 +345,9 @@ export class SalesService {
       customer: { select: { id: true, name: true, taxId: true } },
       seller: { select: { id: true, code: true, name: true } },
       paymentMethod: { select: { id: true, code: true, name: true } },
+      electronicInvoice: {
+        select: { id: true, status: true, consecutive: true },
+      },
       items: {
         select: {
           id: true,
@@ -304,5 +391,20 @@ export class SalesService {
         lineTotal: Number(item.lineTotal),
       })),
     };
+  }
+
+  private hasColombiaFiscalData(customer: {
+    taxDocumentType: string | null;
+    taxId: string | null;
+    fiscalPersonType: string | null;
+    taxCheckDigit: string | null;
+  }) {
+    return Boolean(
+      customer.taxDocumentType &&
+      COLOMBIA_IDENTIFICATION_TYPES.has(customer.taxDocumentType) &&
+      customer.taxId &&
+      customer.fiscalPersonType &&
+      (customer.taxDocumentType !== '31' || Boolean(customer.taxCheckDigit)),
+    );
   }
 }

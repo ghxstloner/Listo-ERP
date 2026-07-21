@@ -2,6 +2,7 @@
   "errors": {
     "not_found_in_company": "在公司中未找到用户",
     "email_already_registered": "电子邮件已注册",
+    "name_already_registered": "用户名已注册",
     "admin_only_role_change": "只有管理员可以更改角色"
   },
   "success": {

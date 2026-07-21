@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsEmail,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -11,7 +11,7 @@ import {
 import { i18nValidationMessage } from 'nestjs-i18n';
 
 export class CreateCustomerDto {
-  @ApiProperty({ description: 'Customer name' })
+  @ApiProperty({ description: 'Customer name or legal name' })
   @IsString({
     message: i18nValidationMessage('common.validation.invalid_string', {
       field: 'name',
@@ -37,100 +37,42 @@ export class CreateCustomerDto {
   name: string;
 
   @ApiPropertyOptional({ description: 'Tax document type' })
-  @IsString({
-    message: i18nValidationMessage('common.validation.invalid_string', {
-      field: 'taxDocumentType',
-    }),
-  })
+  @IsString()
   @IsOptional()
-  @MaxLength(50, {
-    message: i18nValidationMessage('common.validation.max_length', {
-      field: 'taxDocumentType',
-      max: 50,
-    }),
-  })
+  @MaxLength(50)
   taxDocumentType?: string;
 
-  @ApiPropertyOptional({ description: 'NIT, RUC, RIF, or tax identifier' })
-  @IsString({
-    message: i18nValidationMessage('common.validation.invalid_string', {
-      field: 'taxId',
-    }),
-  })
+  @ApiPropertyOptional({ description: 'Tax identifier' })
+  @IsString()
   @IsOptional()
-  @MaxLength(50, {
-    message: i18nValidationMessage('common.validation.max_length', {
-      field: 'taxId',
-      max: 50,
-    }),
-  })
+  @MaxLength(50)
   taxId?: string;
 
-  @ApiPropertyOptional({ description: 'Address' })
-  @IsString({
-    message: i18nValidationMessage('common.validation.invalid_string', {
-      field: 'address',
-    }),
+  @ApiPropertyOptional({
+    description: 'Indicates a final consumer',
+    default: false,
   })
+  @IsBoolean()
   @IsOptional()
-  @MaxLength(500, {
-    message: i18nValidationMessage('common.validation.max_length', {
-      field: 'address',
-      max: 500,
-    }),
-  })
-  address?: string;
+  isFinalConsumer?: boolean;
 
-  @ApiPropertyOptional({ description: 'Phone number' })
-  @IsString({
-    message: i18nValidationMessage('common.validation.invalid_string', {
-      field: 'phone',
-    }),
+  @ApiPropertyOptional({
+    description: 'DIAN person type: 1 legal, 2 natural',
+    enum: ['1', '2'],
   })
+  @IsString()
+  @IsIn(['1', '2'])
   @IsOptional()
-  @MaxLength(50, {
-    message: i18nValidationMessage('common.validation.max_length', {
-      field: 'phone',
-      max: 50,
-    }),
-  })
-  phone?: string;
+  fiscalPersonType?: string;
 
-  @ApiPropertyOptional({ description: 'Email address' })
-  @IsEmail(
-    {},
-    { message: i18nValidationMessage('common.validation.invalid_email') },
-  )
+  @ApiPropertyOptional({ description: 'NIT verification digit' })
+  @IsString()
   @IsOptional()
-  @MaxLength(255, {
-    message: i18nValidationMessage('common.validation.max_length', {
-      field: 'email',
-      max: 255,
-    }),
-  })
-  email?: string;
-
-  @ApiPropertyOptional({ description: 'Contact name' })
-  @IsString({
-    message: i18nValidationMessage('common.validation.invalid_string', {
-      field: 'contactName',
-    }),
-  })
-  @IsOptional()
-  @MaxLength(255, {
-    message: i18nValidationMessage('common.validation.max_length', {
-      field: 'contactName',
-      max: 255,
-    }),
-  })
-  contactName?: string;
+  @MaxLength(1)
+  taxCheckDigit?: string;
 
   @ApiPropertyOptional({ description: 'Active customer', default: true })
-  @IsBoolean({
-    message: i18nValidationMessage('common.validation.invalid_boolean', {
-      field: 'isActive',
-    }),
-  })
+  @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 }

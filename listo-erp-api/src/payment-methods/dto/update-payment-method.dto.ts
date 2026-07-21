@@ -24,6 +24,17 @@ export class UpdatePaymentMethodDto {
   @MaxLength(50)
   code?: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Código DIAN del medio de pago para facturación electrónica en Colombia',
+    nullable: true,
+  })
+  @IsString()
+  @IsOptional()
+  @MinLength(1)
+  @MaxLength(20)
+  dianCode?: string | null;
+
   @ApiPropertyOptional({ description: 'Si requiere referencia' })
   @IsBoolean()
   @IsOptional()

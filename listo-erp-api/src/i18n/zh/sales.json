@@ -7,7 +7,11 @@
     "payment_method_not_found": "所选支付方式不可用。",
     "product_not_found": "一个或多个商品不可用。",
     "warehouse_not_found": "收银分店没有关联的活跃仓库。",
-    "insufficient_stock": "分店仓库库存不足。"
+    "insufficient_stock": "分店仓库库存不足。",
+    "product_dian_code_required": "在哥伦比亚登记销售时，所有商品都必须具有 DIAN 代码。",
+    "payment_reference_required": "所选付款方式需要参考号。",
+    "payment_method_dian_code_required": "在哥伦比亚登记销售时，所选付款方式必须具有 DIAN 代码。",
+    "customer_fiscal_data_required": "所选客户必须具有完整的税务资料或标记为最终消费者。"
   },
   "success": {
     "created": "销售登记成功。"

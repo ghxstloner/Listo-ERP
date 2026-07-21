@@ -12,6 +12,7 @@ export interface Product {
   costPrice: number | null;
   taxRate: number | null;
   unit: string | null;
+  dianCode: string | null;
   image: string | null;
   isActive: boolean;
   companyId: number;
@@ -30,15 +31,13 @@ export interface Product {
 export interface CreateProductRequest {
   sku: string;
   name: string;
-  description?: string;
   salePrice: number;
-  costPrice?: number;
   taxRate?: number;
   departmentId: number;
-  subdepartmentId?: number;
-  categoryId?: number;
-  subcategoryId?: number;
-  unit?: string;
+  subdepartmentId?: number | null;
+  categoryId?: number | null;
+  subcategoryId?: number | null;
+  dianCode?: string | null;
   isActive?: boolean;
 }
 

@@ -1,4 +1,5 @@
-import { useApiMutation, useApiQuery } from "@config";
+import { api, useApiMutation, useApiQuery } from "@config";
+import { useQuery } from "@tanstack/react-query";
 import type {
   ApiMessageResponse,
   CashSession,
@@ -19,10 +20,14 @@ export const useGetCashSessions = (status?: CashSessionStatus | "all") => {
 };
 
 export const useGetCurrentCashSession = () => {
-  return useApiQuery<CashSession | null>(
-    ["cash-sessions", "current"],
-    "cash-sessions/current",
-  );
+  const query = useQuery<CashSession | null, Error>({
+    queryKey: ["cash-sessions", "current"],
+    // Nest sends an empty response when the current session is null.
+    queryFn: async () =>
+      (await api.get<CashSession | null>("cash-sessions/current")) ?? null,
+  });
+
+  return [query.data, query.isLoading, query.error, query] as const;
 };
 
 export const useGetAvailableCashSessionTills = () => {

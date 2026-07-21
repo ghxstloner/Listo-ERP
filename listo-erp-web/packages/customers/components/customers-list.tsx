@@ -1,14 +1,15 @@
 "use client";
 
 import { PageLoading } from "@/components/page-loading";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
 import { encodeId } from "@/lib/hash-id";
 import { useGetCustomers } from "@/packages/customers/api";
-import { Spinner } from "@phosphor-icons/react";
+import { Plus, Spinner } from "@phosphor-icons/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Customer } from "../types";
 import { ListCustomer } from "./list-customer";
-import { CreateCustomer } from "./modals/create-customer";
 
 export function CustomersList() {
   const t = useTranslation();
@@ -38,7 +39,7 @@ export function CustomersList() {
       <ListCustomer
         customers={customers ?? []}
         onEdit={handleEdit}
-        headerAction={<CreateCustomer />}
+        headerAction={<Button size="sm" asChild><Link href="/listoerp/ventas/clientes/nuevo"><Plus className="mr-2 size-4" />Nuevo cliente</Link></Button>}
       />
     </div>
   );

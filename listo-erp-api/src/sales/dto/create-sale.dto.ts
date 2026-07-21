@@ -4,6 +4,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   MaxLength,
   Min,
@@ -41,6 +42,11 @@ export class CreateSaleDto {
   @IsInt()
   @Min(1)
   paymentMethodId: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  paymentReference?: string;
 
   @IsArray()
   @IsNotEmpty()

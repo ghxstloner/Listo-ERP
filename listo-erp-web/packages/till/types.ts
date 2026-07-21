@@ -8,6 +8,7 @@ export interface PaymentMethod {
   id: number;
   name: string;
   code: string;
+  dianCode: string | null;
   image: string | null;
   requiresReference: boolean;
   isActive: boolean;

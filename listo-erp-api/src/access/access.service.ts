@@ -12,7 +12,9 @@ const roleSelect = {
   isActive: true,
   createdAt: true,
   updatedAt: true,
-  permissions: { select: { permission: { select: { code: true, name: true } } } },
+  permissions: {
+    select: { permission: { select: { code: true, name: true } } },
+  },
 } as const;
 
 @Injectable()
@@ -38,7 +40,9 @@ export class AccessService {
         companyId,
         name: dto.name.trim(),
         description: dto.description?.trim() || undefined,
-        permissions: { create: permissionIds.map((permissionId) => ({ permissionId })) },
+        permissions: {
+          create: permissionIds.map((permissionId) => ({ permissionId })),
+        },
       },
       select: roleSelect,
     });
@@ -75,8 +79,13 @@ export class AccessService {
   }
 
   private async roleForCompany(id: number, companyId: number) {
-    const role = await this.prisma.companyRole.findFirst({ where: { id, companyId } });
-    if (!role) throw I18nException.notFound('common.errors.not_found', { entity: 'role' });
+    const role = await this.prisma.companyRole.findFirst({
+      where: { id, companyId },
+    });
+    if (!role)
+      throw I18nException.notFound('common.errors.not_found', {
+        entity: 'role',
+      });
     return role;
   }
 

@@ -223,9 +223,9 @@ export class WarehouseBranchService {
     await this.prisma.warehouseBranch.delete({ where: { id } });
 
     await this.auditService.logDelete(
-        userId,
-        companyId,
-        'warehouseBranches',
+      userId,
+      companyId,
+      'warehouseBranches',
       'Warehouse-Branch Assignment',
       id,
     );

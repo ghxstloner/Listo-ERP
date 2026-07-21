@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslation } from "@/hooks/use-translation";
+import { useGetCustomers } from "@/packages/customers/api";
+import { useGetSellers } from "@/packages/sellers/api";
 import { Camera, Spinner } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { useGetCountries } from "../../country/api";
@@ -45,15 +47,23 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
   const [taxDocumentNumber, setTaxDocumentNumber] = useState(company.taxDocumentNumber || "");
   const [taxCheckDigit, setTaxCheckDigit] = useState(company.taxCheckDigit || "");
   const [fiscalName, setFiscalName] = useState(company.fiscalName || "");
+  const [defaultCustomerId, setDefaultCustomerId] = useState<number | null>(company.defaultCustomerId);
+  const [defaultSellerId, setDefaultSellerId] = useState<number | null>(company.defaultSellerId);
   const [uploadLogo, isUploadingLogo] = useUploadCompanyLogo(company.id);
+  const [customersResponse] = useGetCustomers();
+  const [sellersResponse] = useGetSellers();
   const selectedCountry = countries?.find((c) => c.id === countryId);
+  const selectedDocumentType = selectedCountry?.taxDocumentTypes.find(
+    (documentType) => documentType.code === taxDocumentType,
+  );
+  const customers = (customersResponse ?? []).filter((customer) => customer.isActive);
+  const sellers = (sellersResponse ?? []).filter((seller) => seller.isActive);
 
   const handleCountryChange = (value: string) => {
     const newCountryId = value ? Number(value) : null;
     setCountryId(newCountryId);
-    // Auto-seleccionar el único tipo de documento del país
     const country = countries?.find((c) => c.id === newCountryId);
-    if (country && country.taxDocumentTypes.length > 0) {
+    if (country?.taxDocumentTypes.length === 1) {
       setTaxDocumentType(country.taxDocumentTypes[0].code);
     } else {
       setTaxDocumentType("");
@@ -93,6 +103,8 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
         taxDocumentNumber,
         taxCheckDigit,
         fiscalName,
+        defaultCustomerId,
+        defaultSellerId,
       });
     }
   };
@@ -230,31 +242,66 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
                 {selectedCountry && selectedCountry.taxDocumentTypes.length > 0 && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="taxDocumentNumber" className="flex items-baseline gap-2">
-                        {selectedCountry.taxDocumentTypes[0].name}
-                        <span className="text-sm text-muted-foreground">
-                          ({selectedCountry.taxDocumentTypes[0].code})
-                        </span>
+                      <Label htmlFor="taxDocumentType">
+                        {t("company.selectTaxDocumentType")}
                       </Label>
-                      <Input
-                        id="taxDocumentNumber"
-                        value={taxDocumentNumber}
-                        onChange={(e) => setTaxDocumentNumber(e.target.value)}
-                        placeholder={`${t("company.taxDocumentNumberPlaceholder")} ${selectedCountry.taxDocumentTypes[0].name}`}
-                      />
+                      <Select
+                        value={taxDocumentType}
+                        onValueChange={(value) => {
+                          setTaxDocumentType(value);
+                          if (!selectedCountry.taxDocumentTypes.find((documentType) => documentType.code === value)?.hasCheckDigit) {
+                            setTaxCheckDigit("");
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="taxDocumentType" className="w-full">
+                          <SelectValue placeholder={t("company.selectTaxDocumentType")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedCountry.taxDocumentTypes.map((documentType) => (
+                            <SelectItem key={documentType.code} value={documentType.code}>
+                              {documentType.name} ({documentType.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {selectedCountry.taxDocumentTypes[0].hasCheckDigit && (
-                      <div className="space-y-2">
-                        <Label htmlFor="taxCheckDigit">{t("company.taxCheckDigit")}</Label>
-                        <Input
-                          id="taxCheckDigit"
-                          value={taxCheckDigit}
-                          onChange={(e) => setTaxCheckDigit(e.target.value)}
-                          placeholder={t("company.taxCheckDigitPlaceholder")}
-                          maxLength={1}
-                        />
-                      </div>
+                    {selectedDocumentType && (
+                      <>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="taxDocumentNumber"
+                            className="flex items-baseline gap-2"
+                          >
+                            {selectedDocumentType.name}
+                            <span className="text-sm text-muted-foreground">
+                              ({selectedDocumentType.code})
+                            </span>
+                          </Label>
+                          <Input
+                            id="taxDocumentNumber"
+                            value={taxDocumentNumber}
+                            onChange={(e) => setTaxDocumentNumber(e.target.value)}
+                            placeholder={`${t("company.taxDocumentNumberPlaceholder")} ${selectedDocumentType.name}`}
+                          />
+                        </div>
+
+                        {selectedDocumentType.hasCheckDigit && (
+                          <div className="space-y-2">
+                            <Label htmlFor="taxCheckDigit">
+                              {t("company.taxCheckDigit")}
+                            </Label>
+                            <Input
+                              id="taxCheckDigit"
+                              value={taxCheckDigit}
+                              onChange={(e) => setTaxCheckDigit(e.target.value)}
+                              placeholder={t("company.taxCheckDigitPlaceholder")}
+                              maxLength={1}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
@@ -307,6 +354,50 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
                     onChange={(e) => setEmail2(e.target.value)}
                     placeholder={t("company.email2Placeholder")}
                   />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-medium mb-4">Valores predeterminados POS</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="defaultCustomer">Cliente predeterminado</Label>
+                  <Select
+                    value={defaultCustomerId ? String(defaultCustomerId) : "none"}
+                    onValueChange={(value) => setDefaultCustomerId(value === "none" ? null : Number(value))}
+                  >
+                    <SelectTrigger id="defaultCustomer" className="w-full">
+                      <SelectValue placeholder="Sin cliente predeterminado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin cliente predeterminado</SelectItem>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={String(customer.id)}>
+                          {customer.name}{customer.isFinalConsumer ? " (Consumidor Final)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="defaultSeller">Vendedor predeterminado</Label>
+                  <Select
+                    value={defaultSellerId ? String(defaultSellerId) : "none"}
+                    onValueChange={(value) => setDefaultSellerId(value === "none" ? null : Number(value))}
+                  >
+                    <SelectTrigger id="defaultSeller" className="w-full">
+                      <SelectValue placeholder="Sin vendedor predeterminado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin vendedor predeterminado</SelectItem>
+                      {sellers.map((seller) => (
+                        <SelectItem key={seller.id} value={String(seller.id)}>
+                          {seller.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

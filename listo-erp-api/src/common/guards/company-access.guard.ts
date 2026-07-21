@@ -68,7 +68,9 @@ export class CompanyAccessGuard implements CanActivate {
           select: {
             role: {
               select: {
-                permissions: { select: { permission: { select: { code: true } } } },
+                permissions: {
+                  select: { permission: { select: { code: true } } },
+                },
               },
             },
           },
@@ -87,9 +89,15 @@ export class CompanyAccessGuard implements CanActivate {
     request.companyUser = {
       id: companyUser.id,
       companyId,
-      permissions: [...new Set(companyUser.roles.flatMap((assignment) =>
-        assignment.role.permissions.map(({ permission }) => permission.code),
-      ))],
+      permissions: [
+        ...new Set(
+          companyUser.roles.flatMap((assignment) =>
+            assignment.role.permissions.map(
+              ({ permission }) => permission.code,
+            ),
+          ),
+        ),
+      ],
     };
 
     return true;

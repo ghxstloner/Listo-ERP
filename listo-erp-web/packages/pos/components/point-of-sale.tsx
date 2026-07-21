@@ -2,6 +2,7 @@
 
 import { usePointOfSale } from "../hooks/use-point-of-sale";
 import { CatalogPagination } from "./catalog-pagination";
+import { ElectronicInvoiceDialog } from "./electronic-invoice-dialog";
 import { PosToolbar } from "./pos-toolbar";
 import { ProductCatalog } from "./product-catalog";
 import { Ticket } from "./ticket";
@@ -87,6 +88,7 @@ export function PointOfSale() {
           sellers={pos.sellers}
           paymentMethod={pos.selectedPaymentMethod}
           paymentMethods={pos.paymentMethods}
+          paymentReference={pos.paymentReference}
           subtotal={pos.subtotal}
           tax={pos.tax}
           total={pos.total}
@@ -104,10 +106,14 @@ export function PointOfSale() {
             )
           }
           onPaymentMethodChange={(id) =>
-            pos.setPaymentMethod(
-              pos.paymentMethods.find((item) => item.id === Number(id)) ?? null,
-            )
+            {
+              pos.setPaymentMethod(
+                pos.paymentMethods.find((item) => item.id === Number(id)) ?? null,
+              );
+              pos.setPaymentReference("");
+            }
           }
+          onPaymentReferenceChange={pos.setPaymentReference}
           onQuantityChange={pos.updateQuantity}
           onCharge={pos.charge}
         />
@@ -123,6 +129,13 @@ export function PointOfSale() {
       {!pos.loading && !pos.cashSession && pos.deviceKey && (
         <PosAccessActions deviceKey={pos.deviceKey} till={pos.posTill ?? null} />
       )}
+      <ElectronicInvoiceDialog
+        saleId={pos.completedSale?.electronicInvoice ? pos.completedSale.id : null}
+        open={Boolean(pos.completedSale?.electronicInvoice)}
+        onOpenChange={(open) => {
+          if (!open) pos.setCompletedSale(null);
+        }}
+      />
     </div>
   );
 }
