@@ -1,5 +1,5 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
   CurrentCompanyId,
   CurrentUser,
@@ -22,5 +22,22 @@ export class SalesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.salesService.create(dto, companyId, user.id);
+  }
+
+  @Get()
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'PROCESSING', 'ACCEPTED', 'REJECTED', 'FAILED'],
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  findAll(
+    @CurrentCompanyId() companyId: number,
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.salesService.findAll(companyId, { status, dateFrom, dateTo });
   }
 }

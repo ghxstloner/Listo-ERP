@@ -162,7 +162,7 @@ export class SalesService {
         products.map((product) => [product.id, product]),
       );
       const lineItems = dto.items.map((item) => {
-        const product = productsById.get(item.productId)!;
+        const product = productsById.get(item.productId);
         const quantity = new Prisma.Decimal(item.quantity);
         const taxRate = product.taxRate ?? new Prisma.Decimal(0);
         const effectiveTaxRate = taxRate.greaterThan(1)
@@ -286,7 +286,7 @@ export class SalesService {
               companyId,
               warehouseId,
               productId: item.productId,
-              saleItemId: saleItemsByProduct.get(item.productId)!.id,
+              saleItemId: saleItemsByProduct.get(item.productId).id,
               type: InventoryMovementType.SALE,
               quantity: quantity.negated(),
               unitCost: item.unitCost,
@@ -391,6 +391,62 @@ export class SalesService {
         lineTotal: Number(item.lineTotal),
       })),
     };
+  }
+
+  async findAll(
+    companyId: number,
+    filters: {
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+  ) {
+    const where: Prisma.SaleWhereInput = { companyId };
+
+    if (filters.status && filters.status !== 'all') {
+      where.electronicInvoice = {
+        status:
+          filters.status as import('@prisma/client').ElectronicInvoiceStatus,
+      };
+    }
+
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) {
+        where.createdAt.gte = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endDate;
+      }
+    }
+
+    const sales = await this.prisma.sale.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        createdAt: true,
+        total: true,
+        customer: { select: { name: true } },
+        seller: { select: { name: true } },
+        electronicInvoice: {
+          select: { id: true, status: true, consecutive: true },
+        },
+      },
+    });
+
+    return sales.map((sale) => ({
+      ...sale,
+      total: Number(sale.total),
+      electronicInvoice: sale.electronicInvoice
+        ? {
+            ...sale.electronicInvoice,
+            canDownload: sale.electronicInvoice.status === 'ACCEPTED',
+          }
+        : null,
+    }));
   }
 
   private hasColombiaFiscalData(customer: {

@@ -45,6 +45,7 @@ import { DotsThreeCircle } from "@phosphor-icons/react/dist/ssr";
 export interface SidebarSubItem {
   title: string;
   href: string;
+  icon?: PhosphorIcon;
 }
 
 export interface SidebarNavItem {
@@ -86,21 +87,23 @@ function CompanyLogo({
   const logoUrl = getCompanyLogoUrl(company?.companyLogo);
 
   return (
-    <div className="flex items-center gap-2 py-[3.6px]">
-      <Avatar className="size-8 shrink-0 rounded-md">
-        <AvatarImage
-          src={logoUrl || undefined}
-          alt={companyName}
-          className="rounded-md object-contain"
-        />
-        <AvatarFallback
-          name={companyName}
-          className="rounded-md bg-sidebar-accent text-xl font-semibold text-sidebar-accent-foreground"
-        />
-      </Avatar>
-      {state === "expanded" && (
-        <span className="truncate text-xl font-semibold">{companyName}</span>
-      )}
+    <div className="flex flex-col items-center py-1">
+      <div className="w-full flex justify-center">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={companyName}
+            className="h-15 w-full object-fit rounded-md"       
+          />
+        ) : (
+          <Avatar className="size-8 shrink-0 rounded-md">
+            <AvatarFallback
+              name={companyName}
+              className="rounded-md bg-sidebar-accent text-xl font-semibold text-sidebar-accent-foreground"
+            />
+          </Avatar>
+        )}
+      </div>
     </div>
   );
 }
@@ -144,6 +147,7 @@ function NavItem({ item }: { item: SidebarNavItem }) {
                     isActive={pathname === subItem.href}
                   >
                     <Link href={subItem.href}>
+                      {subItem.icon && <subItem.icon />}
                       <span>{subItem.title}</span>
                     </Link>
                   </SidebarMenuSubButton>
@@ -259,7 +263,7 @@ export function AppSidebar({ company, isLoading, navigation }: AppSidebarProps) 
         ))}
       </SidebarContent>
       <SidebarSeparator />
-      <SidebarFooter>
+      <SidebarFooter className="bg-secondary/10">
         <UserFooter />
       </SidebarFooter>
     </Sidebar>

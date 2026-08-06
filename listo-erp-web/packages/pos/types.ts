@@ -60,3 +60,17 @@ export interface ApiMessageResponse<T> {
   message: string;
   data: T;
 }
+
+export interface SaleListItem {
+  id: number;
+  createdAt: string;
+  total: number;
+  customer: { name: string };
+  seller: { name: string };
+  electronicInvoice: {
+    id: number;
+    status: ElectronicInvoiceStatus;
+    consecutive: string;
+    canDownload: boolean;
+  } | null;
+}

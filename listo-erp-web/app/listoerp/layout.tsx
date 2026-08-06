@@ -1,6 +1,7 @@
 "use client";
 
 import { AppSidebar, SidebarNavGroup, SidebarNavItem } from "@/components/app-sidebar";
+import { CompanySelector } from "@/components/company-selector";
 import { PageLoading } from "@/components/page-loading";
 import { useLanguage } from "@/components/providers/language-provider";
 import { LanguageToggle } from "@/components/ui/language-toggle";
@@ -17,14 +18,43 @@ import { useSessionPermissions } from "@/packages/auth/api";
 import { useGetCompany } from "@/packages/company/api";
 import { getApiCompanyId, getApiPermissions, setApiPermissions } from "@config";
 import {
+  AddressBook,
+  ArrowLineUp,
+  ArrowsLeftRight,
   Bank,
+  BookOpen,
+  BookOpenText,
+  Buildings,
+  ChartBar,
   ChartLine,
+  ChartLineUp,
+  ChartPie,
+  Clipboard,
+  ClipboardText,
+  CreditCard,
+  CurrencyDollar,
+  Database,
   FileText,
+  Files,
   Gear,
+  GearSix,
+  HandCoins,
+  Hash,
+  Lightning,
+  Monitor,
+  NotePencil,
+  Package,
+  Receipt,
+  SealCheck,
   ShoppingCart,
+  ShoppingCartSimple,
   Spinner,
   Storefront,
+  Truck,
+  UserCircleGear,
+  Users,
   Warehouse,
+  Wrench,
 } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -53,22 +83,27 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
               {
                 title: t("navigation.generalConfiguration"),
                 href: "/listoerp/company",
+                icon: GearSix,
               },
               {
                 title: t("navigation.branchesConfiguration"),
                 href: "/listoerp/company/branches",
+                icon: Buildings,
               },
               {
                 title: t("navigation.seriesAndNumbering"),
                 href: "/listoerp/administracion/series",
+                icon: Hash,
               },
               {
                 title: t("navigation.currencyManagement"),
                 href: "/listoerp/administracion/monedas",
+                icon: CurrencyDollar,
               },
               {
                 title: t("navigation.cashConfiguration"),
                 href: "/listoerp/company/tills",
+                icon: HandCoins,
               },
             ],
           },
@@ -79,22 +114,27 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
               {
                 title: t("navigation.masterCatalogs"),
                 href: "/listoerp/inventory",
+                icon: Database,
               },
               {
                 title: t("navigation.products"),
                 href: "/listoerp/inventory/products",
+                icon: Package,
               },
               {
                 title: t("navigation.services"),
                 href: "/listoerp/inventory/services",
+                icon: Wrench,
               },
               {
                 title: t("navigation.inventoryControl"),
                 href: "/listoerp/inventory/control",
+                icon: ClipboardText,
               },
               {
                 title: t("navigation.warehouseTransfers"),
                 href: "/listoerp/inventory/warehouse-transfers",
+                icon: ArrowsLeftRight,
               },
             ],
           },
@@ -102,14 +142,16 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
             title: t("navigation.purchases"),
             icon: ShoppingCart,
             items: [
-              { title: t("navigation.suppliers"), href: "/listoerp/purchases" },
+              { title: t("navigation.suppliers"), href: "/listoerp/purchases", icon: Truck },
               {
                 title: t("navigation.purchaseOrders"),
                 href: "/listoerp/purchases/orders",
+                icon: ShoppingCartSimple,
               },
               {
                 title: t("navigation.supplierBilling"),
                 href: "/listoerp/purchases/billing",
+                icon: Receipt,
               },
             ],
           },
@@ -120,34 +162,47 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
               {
                 title: t("navigation.commercialCatalogs"),
                 href: "/listoerp/ventas/catalogos",
+                icon: AddressBook,
               },
               {
                 title: t("navigation.customers"),
                 href: "/listoerp/ventas/clientes",
+                icon: Users,
               },
               {
                 title: t("navigation.sellers"),
                 href: "/listoerp/ventas/vendedores",
+                icon: UserCircleGear,
               },
               {
                 title: t("navigation.cashClosures"),
                 href: "/listoerp/ventas/cierres-caja",
+                icon: SealCheck,
               },
               {
                 title: t("navigation.pointOfSale"),
                 href: "/listoerp/ventas/pos",
+                icon: Monitor,
+              },
+              {
+                title: t("navigation.electronicInvoices"),
+                href: "/listoerp/ventas/facturas-electronicas",
+                icon: Files,
               },
               {
                 title: t("navigation.orders"),
                 href: "/listoerp/ventas/pedidos",
+                icon: Clipboard,
               },
               {
                 title: t("navigation.quickBilling"),
                 href: "/listoerp/ventas/facturacion-rapida",
+                icon: Lightning,
               },
               {
                 title: t("navigation.creditNotes"),
                 href: "/listoerp/ventas/notas-credito",
+                icon: NotePencil,
               },
             ],
           },
@@ -158,14 +213,17 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
               {
                 title: t("navigation.bankAccounts"),
                 href: "/listoerp/tesoreria/cuentas-bancarias",
+                icon: CreditCard,
               },
               {
                 title: t("navigation.customerPayments"),
                 href: "/listoerp/tesoreria/cobros",
+                icon: HandCoins,
               },
               {
                 title: t("navigation.financialMovements"),
                 href: "/listoerp/tesoreria/movimientos",
+                icon: ArrowLineUp,
               },
             ],
           },
@@ -176,22 +234,27 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
               {
                 title: t("navigation.purchaseBook"),
                 href: "/listoerp/reportes/libro-compras",
+                icon: BookOpen,
               },
               {
                 title: t("navigation.salesBook"),
                 href: "/listoerp/reportes/libro-ventas",
+                icon: BookOpenText,
               },
               {
                 title: t("navigation.salesByArticle"),
                 href: "/listoerp/reportes/ventas-articulo",
+                icon: ChartBar,
               },
               {
                 title: t("navigation.salesByCustomer"),
                 href: "/listoerp/reportes/ventas-cliente",
+                icon: ChartPie,
               },
               {
                 title: t("navigation.purchasesBySupplier"),
                 href: "/listoerp/reportes/compras-proveedor",
+                icon: ChartLineUp,
               },
             ],
           },
@@ -230,6 +293,7 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
     "/listoerp/ventas/vendedores": "sales.sellers",
     "/listoerp/ventas/cierres-caja": "sales.cash-closures",
     "/listoerp/ventas/pos": "sales.pos",
+    "/listoerp/ventas/facturas-electronicas": "sales.electronic-invoices",
     "/listoerp/ventas/pedidos": "sales.orders",
     "/listoerp/ventas/facturacion-rapida": "sales.quick-billing",
     "/listoerp/ventas/notas-credito": "sales.credit-notes",
@@ -317,10 +381,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         navigation={navigation}
       />
       <SidebarInset>
-        <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-card">
+        <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-t-2 border-primary px-4 bg-card">
           <SidebarTrigger />
           {title && <h1 className="text-lg font-semibold ml-2">{title}</h1>}
           <div className="ml-auto flex items-center gap-2">
+            <CompanySelector />
             <LanguageToggle />
             <ThemeToggle />
           </div>

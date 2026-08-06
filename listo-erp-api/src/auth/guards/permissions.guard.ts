@@ -59,6 +59,8 @@ export class PermissionsGuard implements CanActivate {
       required = ['inventory.products', 'sales.pos'];
     } else if (resource === 'products') {
       required = 'inventory.products';
+    } else if (resource === 'sales' && request.method === 'GET') {
+      required = ['sales.electronic-invoices', 'sales.pos'];
     }
 
     if (!required) return true;

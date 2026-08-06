@@ -1,5 +1,5 @@
 import { api, useApiMutation, useApiQuery } from "@config";
-import type { ApiMessageResponse, CreateSaleRequest, ElectronicInvoiceStatusResponse, PaymentMethod, Sale } from "./types";
+import type { ApiMessageResponse, CreateSaleRequest, ElectronicInvoiceStatus, ElectronicInvoiceStatusResponse, PaymentMethod, Sale, SaleListItem } from "./types";
 
 export type { PaymentMethod } from "./types";
 
@@ -29,3 +29,20 @@ export const useGetElectronicInvoiceStatus = (
 
 export const downloadElectronicInvoiceReceipt = async (saleId: number) =>
   api.getBlob(`electronic-invoicing/sales/${saleId}/invoice/receipt`);
+
+export const useGetSales = (filters: {
+  status?: ElectronicInvoiceStatus | "all";
+  dateFrom?: string;
+  dateTo?: string;
+}) => {
+  const params: Record<string, string | undefined> = {};
+  if (filters.status && filters.status !== "all") params.status = filters.status;
+  if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+  if (filters.dateTo) params.dateTo = filters.dateTo;
+
+  return useApiQuery<SaleListItem[]>(
+    ["sales", filters.status ?? "all", filters.dateFrom ?? "", filters.dateTo ?? ""],
+    "sales",
+    Object.keys(params).length > 0 ? { params } : undefined,
+  );
+};

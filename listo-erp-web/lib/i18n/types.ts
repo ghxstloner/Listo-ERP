@@ -766,6 +766,30 @@ export interface Dictionary {
         amountRequired: string;
       };
     };
+    electronicInvoices: {
+      title: string;
+      description: string;
+      searchPlaceholder: string;
+      filterByStatus: string;
+      allStatuses: string;
+      consecutive: string;
+      date: string;
+      customer: string;
+      seller: string;
+      total: string;
+      status: string;
+      actions: string;
+      noSales: string;
+      downloadReceipt: string;
+      downloadError: string;
+      statusLabels: {
+        pending: string;
+        processing: string;
+        accepted: string;
+        rejected: string;
+        failed: string;
+      };
+    };
   };
   navigation: {
     dashboard: string;
@@ -791,6 +815,7 @@ export interface Dictionary {
     sellers: string;
     cashClosures: string;
     pointOfSale: string;
+    electronicInvoices: string;
     orders: string;
     quickBilling: string;
     creditNotes: string;

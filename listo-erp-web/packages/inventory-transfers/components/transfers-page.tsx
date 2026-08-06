@@ -1,4 +1,5 @@
 "use client";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageLoading } from "@/components/page-loading";
 import { Input } from "@/components/ui/input";
 import { MagnifyingGlass, Spinner } from "@phosphor-icons/react";
@@ -33,28 +34,26 @@ export function TransfersPage() {
       </div>
     );
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            Transferencias entre ubicaciones
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Despache desde un almacén y confirme la recepción en otro almacén.
-          </p>
+    <Card className="w-full">
+      <CardContent>
+        <div className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1 sm:max-w-sm">
+              <MagnifyingGlass className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar transferencia..."
+                className="pl-9"
+              />
+            </div>
+            <div className="flex shrink-0">
+              <CreateTransfer />
+            </div>
+          </div>
+          <TransferTable transfers={filtered} />
         </div>
-        <CreateTransfer />
-      </div>
-      <div className="relative max-w-sm">
-        <MagnifyingGlass className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar transferencia..."
-          className="pl-9"
-        />
-      </div>
-      <TransferTable transfers={filtered} />
-    </div>
+      </CardContent>
+    </Card>
   );
 }

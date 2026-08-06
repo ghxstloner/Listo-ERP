@@ -55,6 +55,7 @@
   --color-company-secondary: var(--company-secondary);
   --color-company-primary-foreground: var(--company-primary-foreground);
   --color-company-secondary-foreground: var(--company-secondary-foreground);
+  --color-header-border: color-mix(in oklch, var(--company-primary) 50%, transparent);
 }
 
 :root {

@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { showToast } from "@/components/ui/sonner";
 import {
   Select,
   SelectContent,
@@ -16,12 +17,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { showToast } from "@/components/ui/sonner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  type Column,
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
 import { DotsThreeVertical, MagnifyingGlass } from "@phosphor-icons/react";
-import { Check, X } from "lucide-react";
+import { ArrowUpDown, Check, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useCancelPurchaseOrder, useReceivePurchaseOrder } from "../api";
 import type { PurchaseOrder } from "../types";
 
@@ -34,6 +52,26 @@ const statusClasses: Record<PurchaseOrder["status"], string> = {
 
 function formatMoney(value: number) {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function SortableHeader({
+  column,
+  children,
+}: {
+  column: Column<PurchaseOrder, unknown>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-2 h-8 px-2"
+      onClick={column.getToggleSortingHandler()}
+    >
+      {children}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
 }
 
 function OrderActions({ order }: { order: PurchaseOrder }) {
@@ -78,56 +116,239 @@ function OrderActions({ order }: { order: PurchaseOrder }) {
   );
 }
 
-export function PurchaseOrdersTable({ orders, isLoading }: { orders: PurchaseOrder[]; isLoading: boolean }) {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredOrders = orders.filter((order) => {
-    const matchesStatus = status === "ALL" || order.status === status;
-    const matchesSearch = !normalizedSearch || [String(order.id), order.supplier.name, order.warehouse.name].some((value) => value.toLowerCase().includes(normalizedSearch));
-    return matchesStatus && matchesSearch;
+function buildColumns(): ColumnDef<PurchaseOrder>[] {
+  return [
+    {
+      id: "id",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Orden</SortableHeader>
+      ),
+      accessorFn: (row) => String(row.id),
+      cell: ({ row }) => (
+        <span className="font-medium">#{row.original.id}</span>
+      ),
+      sortingFn: "basic",
+    },
+    {
+      id: "supplier",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Proveedor</SortableHeader>
+      ),
+      accessorFn: (row) => row.supplier.name,
+      cell: ({ row }) => row.original.supplier.name,
+    },
+    {
+      id: "warehouse",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Almacén</SortableHeader>
+      ),
+      accessorFn: (row) => row.warehouse.name,
+      cell: ({ row }) => row.original.warehouse.name,
+    },
+    {
+      id: "products",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Productos</SortableHeader>
+      ),
+      accessorFn: (row) => {
+        const totalQuantity = row.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+        const total = row.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0);
+        return `${totalQuantity} ${formatMoney(total)}`;
+      },
+      cell: ({ row }) => {
+        const totalQuantity = row.original.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+        const total = row.original.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0);
+        return (
+          <>
+            <span className="font-medium">{totalQuantity}</span>{" "}
+            <span className="text-muted-foreground">unidades</span>
+            <span className="ml-2 hidden text-muted-foreground lg:inline">{formatMoney(total)}</span>
+          </>
+        );
+      },
+    },
+    {
+      id: "createdAt",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Fecha</SortableHeader>
+      ),
+      accessorFn: (row) => row.createdAt,
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap text-muted-foreground">
+          {new Date(row.original.createdAt).toLocaleDateString()}
+        </span>
+      ),
+      sortingFn: "datetime",
+    },
+    {
+      id: "status",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Estado</SortableHeader>
+      ),
+      accessorFn: (row) => row.status,
+      cell: ({ row }) => (
+        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusClasses[row.original.status]}`}>
+          {statusLabels[row.original.status]}
+        </span>
+      ),
+      filterFn: (row, _id, filterValue) => {
+        if (!filterValue || filterValue === "ALL") return true;
+        return row.original.status === filterValue;
+      },
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right"><span className="sr-only">Acciones</span></div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end pr-4"><OrderActions order={row.original} /></div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
+}
+
+interface PurchaseOrdersTableProps {
+  orders: PurchaseOrder[];
+  isLoading: boolean;
+  action?: React.ReactNode;
+}
+
+export function PurchaseOrdersTable({ orders, isLoading, action }: PurchaseOrdersTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [statusValue, setStatusValue] = useState<string>("");
+
+  const columns = useMemo(() => buildColumns(), []);
+
+  const table = useReactTable({
+    data: orders ?? [],
+    columns,
+    state: { sorting, globalFilter },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const q = String(filterValue ?? "").trim().toLowerCase();
+      if (!q) return true;
+      return [
+        String(row.original.id),
+        row.original.supplier.name,
+        row.original.warehouse.name,
+      ].some((value) => value?.toLowerCase().includes(q));
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
-  return (
-    <div>
-      <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <MagnifyingGlass className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por número, proveedor o almacén" className="pl-9" />
-        </div>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Estado" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todos los estados</SelectItem>
-            <SelectItem value="PENDING">Pendientes</SelectItem>
-            <SelectItem value="RECEIVED">Recibidas</SelectItem>
-            <SelectItem value="CANCELLED">Canceladas</SelectItem>
-          </SelectContent>
-        </Select>
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[180px] items-center justify-center py-10 text-muted-foreground">
+        Cargando órdenes de compra...
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="pl-4">Orden</TableHead><TableHead>Proveedor</TableHead><TableHead>Almacén</TableHead><TableHead>Productos</TableHead><TableHead>Fecha</TableHead><TableHead>Estado</TableHead><TableHead className="w-12 pr-4"><span className="sr-only">Acciones</span></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading && <TableRow><TableCell colSpan={7} className="h-28 text-center text-muted-foreground">Cargando órdenes de compra...</TableCell></TableRow>}
-          {!isLoading && filteredOrders.length === 0 && <TableRow><TableCell colSpan={7} className="h-28 text-center text-muted-foreground">{orders.length === 0 ? "Aún no hay órdenes de compra." : "No hay órdenes que coincidan con los filtros."}</TableCell></TableRow>}
-          {!isLoading && filteredOrders.map((order) => {
-            const total = order.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0);
-            const totalQuantity = order.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-            return <TableRow key={order.id}>
-              <TableCell className="pl-4 font-medium">#{order.id}</TableCell>
-              <TableCell>{order.supplier.name}</TableCell><TableCell>{order.warehouse.name}</TableCell>
-              <TableCell><span className="font-medium">{totalQuantity}</span> <span className="text-muted-foreground">unidades</span><span className="ml-2 hidden text-muted-foreground lg:inline">{formatMoney(total)}</span></TableCell>
-              <TableCell className="whitespace-nowrap text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-              <TableCell><span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusClasses[order.status]}`}>{statusLabels[order.status]}</span></TableCell>
-              <TableCell className="pr-4"><OrderActions order={order} /></TableCell>
-            </TableRow>;
-          })}
-        </TableBody>
-      </Table>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 sm:max-w-sm">
+            <MagnifyingGlass className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+            <Input
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder="Buscar por número, proveedor o almacén"
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={statusValue}
+            onValueChange={(value) => {
+              if (value === "ALL") {
+                table.getColumn("status")?.setFilterValue(undefined);
+                setStatusValue("");
+                return;
+              }
+              setStatusValue(value);
+              table.getColumn("status")?.setFilterValue(value);
+            }}
+          >
+            <SelectTrigger className="min-w-[180px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los estados</SelectItem>
+              <SelectItem value="PENDING">Pendientes</SelectItem>
+              <SelectItem value="RECEIVED">Recibidas</SelectItem>
+              <SelectItem value="CANCELLED">Canceladas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between gap-3 sm:justify-end">{action}</div>
+      </div>
+
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center text-muted-foreground">
+                  {orders.length === 0 ? "Aún no hay órdenes de compra." : "No hay órdenes que coincidan con los filtros."}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground text-sm">
+          Página {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Siguiente
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

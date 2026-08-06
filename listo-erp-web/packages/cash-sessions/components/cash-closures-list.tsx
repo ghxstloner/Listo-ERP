@@ -40,6 +40,17 @@ import {
 import type { CashSession } from "@/packages/cash-sessions/types";
 import { useGetTillPosAccess } from "@/packages/till/api";
 import { MagnifyingGlass, Plus, Spinner } from "@phosphor-icons/react";
+import {
+  type Column,
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -63,6 +74,143 @@ function statusClass(status: CashSession["status"]) {
     : status === "EXPIRED"
       ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
       : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300";
+}
+
+function SortableHeader({
+  column,
+  children,
+}: {
+  column: Column<CashSession, unknown>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-2 h-8 px-2"
+      onClick={column.getToggleSortingHandler()}
+    >
+      {children}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+}
+
+function buildColumns(t: (key: string) => string): ColumnDef<CashSession>[] {
+  return [
+    {
+      id: "status",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.status")}</SortableHeader>
+      ),
+      accessorFn: (row) => row.status,
+      cell: ({ row }) => (
+        <span
+          className={`inline-flex rounded-full border px-2 py-1 text-xs font-medium ${statusClass(row.original.status)}`}
+        >
+          {row.original.status === "OPEN"
+            ? t("sales.cashClosures.open")
+            : row.original.status === "EXPIRED"
+              ? "Vencida"
+              : t("sales.cashClosures.closed")}
+        </span>
+      ),
+    },
+    {
+      id: "till",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.till")}</SortableHeader>
+      ),
+      accessorFn: (row) => row.till.tillName,
+      cell: ({ row }) => (
+        <div className="font-medium">
+          {row.original.till.tillName}
+          <div className="text-muted-foreground text-xs">
+            {row.original.till.tillCode}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "branch",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.branch")}</SortableHeader>
+      ),
+      accessorFn: (row) => row.branch.name,
+      cell: ({ row }) => row.original.branch.name,
+    },
+    {
+      id: "openedBy",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.openedBy")}</SortableHeader>
+      ),
+      accessorFn: (row) => row.openedByUser.name,
+      cell: ({ row }) => row.original.openedByUser.name,
+    },
+    {
+      id: "openedAt",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.openedAt")}</SortableHeader>
+      ),
+      accessorFn: (row) => row.openedAt,
+      cell: ({ row }) => dateTime(row.original.openedAt),
+      sortingFn: "datetime",
+    },
+    {
+      id: "closedAt",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.closedAt")}</SortableHeader>
+      ),
+      accessorFn: (row) => row.closedAt ?? "",
+      cell: ({ row }) => dateTime(row.original.closedAt),
+      sortingFn: "datetime",
+    },
+    {
+      id: "openingAmount",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.openingAmount")}</SortableHeader>
+      ),
+      accessorFn: (row) => Number(row.openingAmount ?? 0),
+      cell: ({ row }) => money(row.original.openingAmount),
+      sortingFn: "basic",
+    },
+    {
+      id: "declared",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.declared")}</SortableHeader>
+      ),
+      accessorFn: (row) => Number(row.declaredClosingAmount ?? 0),
+      cell: ({ row }) =>
+        row.original.declaredClosingAmount
+          ? money(row.original.declaredClosingAmount)
+          : "-",
+      sortingFn: "basic",
+    },
+    {
+      id: "difference",
+      header: ({ column }) => (
+        <SortableHeader column={column}>{t("sales.cashClosures.difference")}</SortableHeader>
+      ),
+      accessorFn: (row) => Number(row.differenceAmount ?? 0),
+      cell: ({ row }) =>
+        row.original.differenceAmount
+          ? money(row.original.differenceAmount)
+          : "-",
+      sortingFn: "basic",
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">{t("sales.cashClosures.actions")}</div>,
+      cell: ({ row }) => (
+        <div className="text-right">
+          {row.original.status === "OPEN" || row.original.status === "EXPIRED" ? (
+            <CloseCashSessionDialog session={row.original} />
+          ) : null}
+        </div>
+      ),
+      enableSorting: false,
+    },
+  ];
 }
 
 function OpenCashSessionDialog() {
@@ -325,83 +473,85 @@ function CloseCashSessionDialog({ session }: { session: CashSession }) {
 
 function SessionTable({ sessions }: { sessions: CashSession[] }) {
   const t = useTranslation();
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const columns = useMemo(() => buildColumns(t), [t]);
+
+  const table = useReactTable({
+    data: sessions ?? [],
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
 
   if (sessions.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex min-h-[180px] items-center justify-center py-10">
-          <p className="text-muted-foreground">
-            {t("sales.cashClosures.noSessions")}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex min-h-[180px] items-center justify-center py-10">
+        <p className="text-muted-foreground">
+          {t("sales.cashClosures.noSessions")}
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("sales.cashClosures.status")}</TableHead>
-            <TableHead>{t("sales.cashClosures.till")}</TableHead>
-            <TableHead>{t("sales.cashClosures.branch")}</TableHead>
-            <TableHead>{t("sales.cashClosures.openedBy")}</TableHead>
-            <TableHead>{t("sales.cashClosures.openedAt")}</TableHead>
-            <TableHead>{t("sales.cashClosures.closedAt")}</TableHead>
-            <TableHead>{t("sales.cashClosures.openingAmount")}</TableHead>
-            <TableHead>{t("sales.cashClosures.declared")}</TableHead>
-            <TableHead>{t("sales.cashClosures.difference")}</TableHead>
-            <TableHead className="text-right">
-              {t("sales.cashClosures.actions")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sessions.map((session) => (
-            <TableRow key={session.id}>
-              <TableCell>
-                <span
-                  className={`inline-flex rounded-full border px-2 py-1 text-xs font-medium ${statusClass(session.status)}`}
-                >
-                  {session.status === "OPEN"
-                    ? t("sales.cashClosures.open")
-                    : session.status === "EXPIRED"
-                      ? "Vencida"
-                      : t("sales.cashClosures.closed")}
-                </span>
-              </TableCell>
-              <TableCell className="font-medium">
-                {session.till.tillName}
-                <div className="text-muted-foreground text-xs">
-                  {session.till.tillCode}
-                </div>
-              </TableCell>
-              <TableCell>{session.branch.name}</TableCell>
-              <TableCell>{session.openedByUser.name}</TableCell>
-              <TableCell>{dateTime(session.openedAt)}</TableCell>
-              <TableCell>{dateTime(session.closedAt)}</TableCell>
-              <TableCell>{money(session.openingAmount)}</TableCell>
-              <TableCell>
-                {session.declaredClosingAmount
-                  ? money(session.declaredClosingAmount)
-                  : "-"}
-              </TableCell>
-              <TableCell>
-                {session.differenceAmount
-                  ? money(session.differenceAmount)
-                  : "-"}
-              </TableCell>
-              <TableCell className="text-right">
-                {session.status === "OPEN" || session.status === "EXPIRED" ? (
-                  <CloseCashSessionDialog session={session} />
-                ) : null}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+    <>
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-muted-foreground text-sm">
+          {t("common.page")} {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            {t("common.previous")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            {t("common.next")}
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -460,50 +610,47 @@ export function CashClosuresList() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            {t("sales.cashClosures.title")}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {t("sales.cashClosures.description")}
-          </p>
-        </div>
-        <OpenCashSessionDialog />
-      </div>
+    <Card className="w-full">
+      <CardContent>
+        <div className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1 sm:max-w-sm">
+                <MagnifyingGlass
+                  className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                  weight="bold"
+                />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={t("sales.cashClosures.searchPlaceholder")}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="min-w-[180px]">
+                  <SelectValue placeholder={t("sales.cashClosures.filterByStatus")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("sales.cashClosures.allStatuses")}
+                  </SelectItem>
+                  <SelectItem value="OPEN">{t("sales.cashClosures.open")}</SelectItem>
+                  <SelectItem value="EXPIRED">Vencidas</SelectItem>
+                  <SelectItem value="CLOSED">
+                    {t("sales.cashClosures.closed")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex shrink-0">
+              <OpenCashSessionDialog />
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 sm:max-w-sm">
-          <MagnifyingGlass
-            className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2"
-            weight="bold"
-          />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={t("sales.cashClosures.searchPlaceholder")}
-            className="pl-9"
-          />
+          <SessionTable sessions={filteredSessions} />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="min-w-[180px]">
-            <SelectValue placeholder={t("sales.cashClosures.filterByStatus")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">
-              {t("sales.cashClosures.allStatuses")}
-            </SelectItem>
-            <SelectItem value="OPEN">{t("sales.cashClosures.open")}</SelectItem>
-            <SelectItem value="EXPIRED">Vencidas</SelectItem>
-            <SelectItem value="CLOSED">
-              {t("sales.cashClosures.closed")}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <SessionTable sessions={filteredSessions} />
-    </div>
+      </CardContent>
+    </Card>
   );
 }
