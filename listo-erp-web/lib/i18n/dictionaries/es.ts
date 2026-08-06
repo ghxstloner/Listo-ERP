@@ -425,8 +425,12 @@ export const es: Dictionary = {
       environment: "Ambiente",
       demo: "Demo",
       production: "Producción",
+      connection: "Conexión",
+      connectionHint:
+        "URL y ambiente de TheFactory. La numeración se configura por cada caja.",
       numberingRange: "Rango de numeración",
-      numberingRangeHint: "Formato: prefijo-inicio. Ejemplo: DEMO-1.",
+      numberingRangeHint: "Formato: prefijo-inicio. Ejemplo: A1-1.",
+      numberingMode: "Modalidad del secuencial",
       nextConsecutive: "Próximo consecutivo",
       credentials: "Credenciales TheFactory",
       credentialsHint:
@@ -441,6 +445,8 @@ export const es: Dictionary = {
       invalidNumbering:
         "Ingresa un rango válido y un consecutivo igual o superior al inicio del rango.",
       saved: "Configuración de facturación electrónica guardada correctamente.",
+      tillNumbering: "Numeración de facturación electrónica",
+      tillSaved: "Numeración de la caja guardada correctamente.",
     },
     hierarchyConfiguration: "Configuración de Niveles",
     hierarchy: {

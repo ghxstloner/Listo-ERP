@@ -26,9 +26,8 @@ import {
   useGetColombiaElectronicInvoicingConfiguration,
   useUpdateColombiaElectronicInvoicingConfiguration,
 } from "../api";
-import type { ElectronicInvoicingEnvironment, ElectronicInvoicingNumberingMode } from "../types";
+import type { ElectronicInvoicingEnvironment } from "../types";
 
-const NUMBERING_RANGE_PATTERN = /^[A-Za-z0-9]{1,4}-[1-9]\d*$/;
 const MASKED_TOKEN = "****************";
 
 export function ColombiaElectronicInvoicingConfig() {
@@ -40,21 +39,14 @@ export function ColombiaElectronicInvoicingConfig() {
     useUpdateColombiaElectronicInvoicingConfiguration();
   const [environment, setEnvironment] =
     useState<ElectronicInvoicingEnvironment>("DEMO");
-  const [numberingMode, setNumberingMode] =
-    useState<ElectronicInvoicingNumberingMode>("WITH_PREFIX");
   const [providerBaseUrl, setProviderBaseUrl] = useState("");
-  const [numberingRange, setNumberingRange] = useState("");
-  const [nextConsecutive, setNextConsecutive] = useState("");
   const [tokenEmpresa, setTokenEmpresa] = useState("");
   const [tokenPassword, setTokenPassword] = useState("");
 
   useEffect(() => {
     if (!configuration) return;
     setEnvironment(configuration.environment);
-    setNumberingMode(configuration.numberingMode);
     setProviderBaseUrl(configuration.providerBaseUrl ?? "");
-    setNumberingRange(configuration.numberingRange);
-    setNextConsecutive(String(configuration.nextConsecutive));
     setTokenEmpresa(configuration.hasCredentials ? MASKED_TOKEN : "");
     setTokenPassword(configuration.hasCredentials ? MASKED_TOKEN : "");
   }, [configuration]);
@@ -69,12 +61,10 @@ export function ColombiaElectronicInvoicingConfig() {
   }, [error, t, updateError]);
 
   const handleSave = () => {
-    const next = Number(nextConsecutive);
     const hasNewTokenEmpresa =
       Boolean(tokenEmpresa.trim()) && tokenEmpresa !== MASKED_TOKEN;
     const hasNewTokenPassword =
       Boolean(tokenPassword.trim()) && tokenPassword !== MASKED_TOKEN;
-    const rangeStart = Number(numberingRange.split("-")[1]);
     let hasValidProviderUrl = false;
     try {
       hasValidProviderUrl = new URL(providerBaseUrl).protocol === "https:";
@@ -82,17 +72,6 @@ export function ColombiaElectronicInvoicingConfig() {
       hasValidProviderUrl = false;
     }
 
-    if (
-      !NUMBERING_RANGE_PATTERN.test(numberingRange) ||
-      !Number.isInteger(next) ||
-      next < rangeStart
-    ) {
-      showToast({
-        type: "error",
-        message: t("company.electronicInvoicing.invalidNumbering"),
-      });
-      return;
-    }
     if (!hasValidProviderUrl) {
       showToast({
         type: "error",
@@ -118,10 +97,7 @@ export function ColombiaElectronicInvoicingConfig() {
     updateConfiguration(
       {
         environment,
-        numberingMode,
         providerBaseUrl: providerBaseUrl.trim().replace(/\/$/, ""),
-        rangoNumeracion: numberingRange,
-        nextConsecutive: next,
         ...(hasNewTokenEmpresa && {
           tokenEmpresa: tokenEmpresa.trim(),
           tokenPassword: tokenPassword.trim(),
@@ -212,13 +188,13 @@ export function ColombiaElectronicInvoicingConfig() {
         <section className="space-y-4 border-t pt-6">
           <div>
             <h3 className="font-medium">
-              {t("company.electronicInvoicing.numberingRange")}
+              {t("company.electronicInvoicing.connection")}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {t("company.electronicInvoicing.numberingRangeHint")}
+              {t("company.electronicInvoicing.connectionHint")}
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="electronic-invoicing-environment">
                 {t("company.electronicInvoicing.environment")}
@@ -265,57 +241,8 @@ export function ColombiaElectronicInvoicingConfig() {
                 disabled={isUpdating}
               />
               <p className="text-xs text-muted-foreground">
-                Se valida contra el ambiente y los secuenciales activos de TheFactory.
+                Se valida contra el ambiente de TheFactory.
               </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="electronic-invoicing-numbering-mode">
-                Modalidad del secuencial
-              </Label>
-              <Select
-                value={numberingMode}
-                onValueChange={(value) =>
-                  setNumberingMode(value as ElectronicInvoicingNumberingMode)
-                }
-                disabled={isUpdating}
-              >
-                <SelectTrigger id="electronic-invoicing-numbering-mode" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="WITH_PREFIX">Manual con prefijo</SelectItem>
-                  <SelectItem value="WITHOUT_PREFIX">Manual sin prefijo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="electronic-invoicing-range">
-                {t("company.electronicInvoicing.numberingRange")}
-              </Label>
-              <Input
-                id="electronic-invoicing-range"
-                value={numberingRange}
-                onChange={(event) =>
-                  setNumberingRange(event.target.value.toUpperCase())
-                }
-                placeholder="DEMO-1"
-                maxLength={20}
-                disabled={isUpdating}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="electronic-invoicing-next-consecutive">
-                {t("company.electronicInvoicing.nextConsecutive")}
-              </Label>
-              <Input
-                id="electronic-invoicing-next-consecutive"
-                type="number"
-                min={1}
-                step={1}
-                value={nextConsecutive}
-                onChange={(event) => setNextConsecutive(event.target.value)}
-                disabled={isUpdating}
-              />
             </div>
           </div>
         </section>

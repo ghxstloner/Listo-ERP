@@ -8,6 +8,7 @@ import {
 } from '../auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { UpdateColombiaConfigurationDto } from './dto/update-colombia-configuration.dto';
+import { UpdateTillColombiaConfigurationDto } from './dto/update-till-colombia-configuration.dto';
 import { ElectronicInvoicingService } from './electronic-invoicing.service';
 import type { Response } from 'express';
 
@@ -18,7 +19,7 @@ import type { Response } from 'express';
 export class ElectronicInvoicingController {
   constructor(
     private readonly electronicInvoicing: ElectronicInvoicingService,
-  ) { }
+  ) {}
 
   @Get('configuration/colombia')
   @RequirePermissions('administration.electronic-invoicing')
@@ -34,6 +35,34 @@ export class ElectronicInvoicingController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.electronicInvoicing.updateColombiaConfiguration(
+      companyId,
+      user.id,
+      dto,
+    );
+  }
+
+  @Get('tills/:tillId/colombia')
+  @RequirePermissions('administration.electronic-invoicing')
+  getTillColombiaConfiguration(
+    @Param('tillId') tillId: string,
+    @CurrentCompanyId() companyId: number,
+  ) {
+    return this.electronicInvoicing.getTillColombiaConfiguration(
+      Number(tillId),
+      companyId,
+    );
+  }
+
+  @Put('tills/:tillId/colombia')
+  @RequirePermissions('administration.electronic-invoicing')
+  updateTillColombiaConfiguration(
+    @Param('tillId') tillId: string,
+    @Body() dto: UpdateTillColombiaConfigurationDto,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.electronicInvoicing.updateTillColombiaConfiguration(
+      Number(tillId),
       companyId,
       user.id,
       dto,

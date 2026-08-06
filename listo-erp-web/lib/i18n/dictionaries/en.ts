@@ -417,8 +417,12 @@ export const en: Dictionary = {
       environment: "Environment",
       demo: "Demo",
       production: "Production",
+      connection: "Connection",
+      connectionHint:
+        "TheFactory URL and environment. Numbering is configured per cash register.",
       numberingRange: "Numbering range",
-      numberingRangeHint: "Format: prefix-start. Example: DEMO-1.",
+      numberingRangeHint: "Format: prefix-start. Example: A1-1.",
+      numberingMode: "Sequential mode",
       nextConsecutive: "Next consecutive number",
       credentials: "TheFactory credentials",
       credentialsHint:
@@ -433,6 +437,8 @@ export const en: Dictionary = {
       invalidNumbering:
         "Enter a valid range and a consecutive number at or after the range start.",
       saved: "Electronic invoicing configuration saved successfully.",
+      tillNumbering: "Electronic invoicing numbering",
+      tillSaved: "Cash register numbering saved successfully.",
     },
     hierarchyConfiguration: "Hierarchy Configuration",
     hierarchy: {

@@ -406,8 +406,11 @@ export interface Dictionary {
       environment: string;
       demo: string;
       production: string;
+      connection: string;
+      connectionHint: string;
       numberingRange: string;
       numberingRangeHint: string;
+      numberingMode: string;
       nextConsecutive: string;
       credentials: string;
       credentialsHint: string;
@@ -418,6 +421,8 @@ export interface Dictionary {
       tokenPassword: string;
       invalidNumbering: string;
       saved: string;
+      tillNumbering: string;
+      tillSaved: string;
     };
     hierarchyConfiguration: string;
     hierarchy: {

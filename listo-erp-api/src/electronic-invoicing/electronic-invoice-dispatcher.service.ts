@@ -63,7 +63,7 @@ export class ElectronicInvoiceDispatcher {
     if (invoice.retryCount > 0) {
       try {
         const statusResponse = await this.theFactory.getDocumentStatus(
-          invoice.configuration.providerBaseUrl!,
+          invoice.configuration.providerBaseUrl,
           credentials,
           invoice.consecutive,
         );
@@ -84,7 +84,7 @@ export class ElectronicInvoiceDispatcher {
 
     try {
       const response = await this.theFactory.sendInvoice(
-        invoice.configuration.providerBaseUrl!,
+        invoice.configuration.providerBaseUrl,
         credentials,
         invoice.requestPayload as unknown as TheFactoryInvoicePayload,
       );
@@ -192,7 +192,7 @@ export class ElectronicInvoiceDispatcher {
   ) {
     try {
       const response = await this.theFactory.getDocumentStatus(
-        invoice.configuration.providerBaseUrl!,
+        invoice.configuration.providerBaseUrl,
         credentials,
         invoice.consecutive,
       );

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { decodeId } from "@/lib/hash-id";
+import { TillElectronicInvoicingConfig } from "@/packages/electronic-invoicing/components/till-electronic-invoicing-config";
 import { useGetTill } from "@/packages/till/api";
 import { TillConfigForm } from "@/packages/till/components/till-config-form";
 import { TillPaymentMethods } from "@/packages/till/components/till-payment-methods";
@@ -82,6 +83,7 @@ export default function TillConfigPage() {
               {t("company.generalConfiguration")}
             </TabsTrigger>
             <TabsTrigger value="payment-methods">Métodos de pago</TabsTrigger>
+            <TabsTrigger value="electronic-invoicing">Facturación electrónica</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="general" className="mt-2 w-full">
@@ -92,6 +94,9 @@ export default function TillConfigPage() {
         </TabsContent>
         <TabsContent value="payment-methods" className="mt-2 w-full">
           <TillPaymentMethods till={till} />
+        </TabsContent>
+        <TabsContent value="electronic-invoicing" className="mt-2 w-full">
+          <TillElectronicInvoicingConfig tillId={tillId} />
         </TabsContent>
       </Tabs>
     </div>

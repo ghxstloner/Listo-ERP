@@ -10,6 +10,7 @@ import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
 import { CredentialsService } from './credentials.service';
 import { UpdateColombiaConfigurationDto } from './dto/update-colombia-configuration.dto';
+import { UpdateTillColombiaConfigurationDto } from './dto/update-till-colombia-configuration.dto';
 import { InvoicePayloadFactory } from './invoice-payload.factory';
 import { ReceiptPdfService } from './receipt-pdf.service';
 import { TheFactoryClient } from './the-factory.client';
@@ -57,8 +58,6 @@ export class ElectronicInvoicingService {
       if (
         dto.environment == null ||
         dto.providerBaseUrl == null ||
-        dto.rangoNumeracion == null ||
-        dto.nextConsecutive == null ||
         !hasTokenEmpresa
       ) {
         throw I18nException.badRequest(
@@ -66,35 +65,19 @@ export class ElectronicInvoicingService {
         );
       }
     }
-    if (
-      dto.rangoNumeracion != null &&
-      dto.nextConsecutive == null &&
-      existing
-    ) {
-      throw I18nException.badRequest(
-        'electronic_invoicing.errors.next_consecutive_required',
-      );
-    }
 
-    const numberingRange = dto.rangoNumeracion ?? existing?.numberingRange;
-    const nextConsecutive = dto.nextConsecutive ?? existing?.nextConsecutive;
     const providerBaseUrl = dto.providerBaseUrl ?? existing?.providerBaseUrl;
-    const environment = dto.environment ?? existing?.environment!;
-    const numberingMode =
-      dto.numberingMode ??
-      existing?.numberingMode ??
-      ElectronicInvoicingNumberingMode.WITH_PREFIX;
-    this.validateNumbering(numberingRange, nextConsecutive, numberingMode);
+    const environment = dto.environment ?? existing?.environment;
     this.validateProviderBaseUrl(providerBaseUrl, environment);
 
     const credentials = hasTokenEmpresa
       ? this.credentials.encrypt({
-          tokenEmpresa: dto.tokenEmpresa!,
-          tokenPassword: dto.tokenPassword!,
+          tokenEmpresa: dto.tokenEmpresa,
+          tokenPassword: dto.tokenPassword,
         })
       : null;
     const activeCredentials = credentials
-      ? { tokenEmpresa: dto.tokenEmpresa!, tokenPassword: dto.tokenPassword! }
+      ? { tokenEmpresa: dto.tokenEmpresa, tokenPassword: dto.tokenPassword }
       : existing
         ? this.credentials.decrypt({
             ciphertext: existing.credentialsCiphertext,
@@ -111,27 +94,15 @@ export class ElectronicInvoicingService {
         'electronic_invoicing.errors.company_tax_id_required',
       );
     }
-    const providerNumberingId = await this.validateProviderNumbering({
-      environment,
-      credentials: activeCredentials,
-      taxId: this.normalizeTaxId(company.taxDocumentNumber),
-      numberingRange: numberingRange!,
-      nextConsecutive: nextConsecutive!,
-      numberingMode,
-    });
     const data: Prisma.ElectronicInvoicingConfigurationUncheckedCreateInput = {
       companyId,
       countryCode: COLOMBIA,
       environment,
-      providerBaseUrl: providerBaseUrl!,
-      providerNumberingId,
-      numberingMode,
-      numberingRange: numberingRange!,
-      nextConsecutive: nextConsecutive!,
+      providerBaseUrl: providerBaseUrl,
       credentialsCiphertext:
-        credentials?.ciphertext ?? existing?.credentialsCiphertext!,
-      credentialsNonce: credentials?.nonce ?? existing?.credentialsNonce!,
-      credentialsAuthTag: credentials?.authTag ?? existing?.credentialsAuthTag!,
+        credentials?.ciphertext ?? existing?.credentialsCiphertext,
+      credentialsNonce: credentials?.nonce ?? existing?.credentialsNonce,
+      credentialsAuthTag: credentials?.authTag ?? existing?.credentialsAuthTag,
       encryptionKeyVersion: existing?.encryptionKeyVersion ?? 1,
     };
     const configuration =
@@ -141,10 +112,6 @@ export class ElectronicInvoicingService {
         update: {
           environment: data.environment,
           providerBaseUrl: data.providerBaseUrl,
-          providerNumberingId: data.providerNumberingId,
-          numberingMode: data.numberingMode,
-          numberingRange: data.numberingRange,
-          nextConsecutive: data.nextConsecutive,
           ...(credentials && {
             credentialsCiphertext: credentials.ciphertext,
             credentialsNonce: credentials.nonce,
@@ -177,48 +144,153 @@ export class ElectronicInvoicingService {
     };
   }
 
+  async getTillColombiaConfiguration(tillId: number, companyId: number) {
+    const till = await this.prisma.till.findFirst({
+      where: { id: tillId, companyId },
+      select: { id: true },
+    });
+    if (!till) {
+      throw I18nException.notFound('tills.errors.not_found');
+    }
+    const configuration =
+      await this.prisma.tillElectronicInvoicingConfiguration.findUnique({
+        where: { tillId_countryCode: { tillId, countryCode: COLOMBIA } },
+      });
+    return configuration
+      ? this.serializeTillConfiguration(configuration)
+      : null;
+  }
+
+  async updateTillColombiaConfiguration(
+    tillId: number,
+    companyId: number,
+    userId: number,
+    dto: UpdateTillColombiaConfigurationDto,
+  ) {
+    const till = await this.prisma.till.findFirst({
+      where: { id: tillId, companyId },
+      select: { id: true },
+    });
+    if (!till) {
+      throw I18nException.notFound('tills.errors.not_found');
+    }
+
+    const companyConfig =
+      await this.prisma.electronicInvoicingConfiguration.findUnique({
+        where: { companyId_countryCode: { companyId, countryCode: COLOMBIA } },
+        select: {
+          id: true,
+          environment: true,
+          providerBaseUrl: true,
+          credentialsCiphertext: true,
+          credentialsNonce: true,
+          credentialsAuthTag: true,
+        },
+      });
+    if (!companyConfig) {
+      throw I18nException.badRequest(
+        'electronic_invoicing.errors.configuration_required',
+      );
+    }
+    this.validateProviderBaseUrl(
+      companyConfig.providerBaseUrl,
+      companyConfig.environment,
+    );
+
+    const existing =
+      await this.prisma.tillElectronicInvoicingConfiguration.findUnique({
+        where: { tillId_countryCode: { tillId, countryCode: COLOMBIA } },
+      });
+
+    const numberingRange = dto.rangoNumeracion ?? existing?.numberingRange;
+    const nextConsecutive = dto.nextConsecutive ?? existing?.nextConsecutive;
+    const numberingMode =
+      dto.numberingMode ??
+      existing?.numberingMode ??
+      ElectronicInvoicingNumberingMode.WITH_PREFIX;
+
+    if (
+      dto.rangoNumeracion != null &&
+      dto.nextConsecutive == null &&
+      !existing
+    ) {
+      throw I18nException.badRequest(
+        'electronic_invoicing.errors.next_consecutive_required',
+      );
+    }
+
+    this.validateNumbering(numberingRange, nextConsecutive);
+
+    const activeCredentials = this.credentials.decrypt({
+      ciphertext: companyConfig.credentialsCiphertext,
+      nonce: companyConfig.credentialsNonce,
+      authTag: companyConfig.credentialsAuthTag,
+    });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { taxDocumentNumber: true },
+    });
+    if (!company?.taxDocumentNumber) {
+      throw I18nException.badRequest(
+        'electronic_invoicing.errors.company_tax_id_required',
+      );
+    }
+
+    const providerNumberingId = await this.validateProviderNumbering({
+      environment: companyConfig.environment,
+      credentials: activeCredentials,
+      taxId: this.normalizeTaxId(company.taxDocumentNumber),
+      numberingRange: numberingRange,
+      nextConsecutive: nextConsecutive,
+      numberingMode,
+    });
+
+    const data: Prisma.TillElectronicInvoicingConfigurationUncheckedCreateInput =
+      {
+        tillId,
+        companyId,
+        countryCode: COLOMBIA,
+        numberingMode,
+        numberingRange: numberingRange,
+        nextConsecutive: nextConsecutive,
+        providerNumberingId,
+      };
+
+    const configuration =
+      await this.prisma.tillElectronicInvoicingConfiguration.upsert({
+        where: { tillId_countryCode: { tillId, countryCode: COLOMBIA } },
+        create: data,
+        update: {
+          numberingMode: data.numberingMode,
+          numberingRange: data.numberingRange,
+          nextConsecutive: data.nextConsecutive,
+          providerNumberingId: data.providerNumberingId,
+        },
+      });
+
+    await this.audit.logUpdate(
+      userId,
+      companyId,
+      'electronic-invoicing-till',
+      `Configuración de numeración caja ${tillId}`,
+      configuration.id,
+    );
+
+    return {
+      message: 'electronic_invoicing.success.till_configuration_saved',
+      data: this.serializeTillConfiguration(configuration),
+    };
+  }
+
   async createPendingInvoice(
     tx: Prisma.TransactionClient,
     saleId: number,
     companyId: number,
   ) {
-    const configuration = await tx.electronicInvoicingConfiguration.findUnique({
-      where: { companyId_countryCode: { companyId, countryCode: COLOMBIA } },
-      select: {
-        id: true,
-        providerBaseUrl: true,
-        providerNumberingId: true,
-        numberingRange: true,
-        numberingMode: true,
-      },
-    });
-    if (!configuration) {
-      throw I18nException.badRequest(
-        'electronic_invoicing.errors.configuration_required',
-      );
-    }
-    this.validateProviderBaseUrl(configuration.providerBaseUrl);
-    if (!configuration.providerNumberingId) {
-      throw I18nException.badRequest(
-        'electronic_invoicing.errors.numbering_validation_required',
-      );
-    }
-
-    // The returned value is the only safe source for the concurrent allocation.
-    const reservedConfiguration =
-      await tx.electronicInvoicingConfiguration.update({
-        where: { id: configuration.id },
-        data: { nextConsecutive: { increment: 1 } },
-        select: { id: true, numberingRange: true, nextConsecutive: true },
-      });
-    const consecutive = this.buildConsecutive(
-      reservedConfiguration.numberingRange,
-      reservedConfiguration.nextConsecutive - 1,
-      configuration.numberingMode,
-    );
     const sale = await tx.sale.findUniqueOrThrow({
       where: { id: saleId },
       select: {
+        cashSessionId: true,
         paymentReference: true,
         createdAt: true,
         customer: {
@@ -244,6 +316,59 @@ export class ElectronicInvoicingService {
         },
       },
     });
+
+    const cashSession = await tx.cashSession.findUniqueOrThrow({
+      where: { id: sale.cashSessionId },
+      select: { tillId: true },
+    });
+
+    const tillConfiguration =
+      await tx.tillElectronicInvoicingConfiguration.findUnique({
+        where: {
+          tillId_countryCode: {
+            tillId: cashSession.tillId,
+            countryCode: COLOMBIA,
+          },
+        },
+        select: {
+          id: true,
+          numberingRange: true,
+          numberingMode: true,
+        },
+      });
+    if (!tillConfiguration) {
+      throw I18nException.badRequest(
+        'electronic_invoicing.errors.till_configuration_required',
+      );
+    }
+
+    const companyConfiguration =
+      await tx.electronicInvoicingConfiguration.findUnique({
+        where: { companyId_countryCode: { companyId, countryCode: COLOMBIA } },
+        select: {
+          id: true,
+          providerBaseUrl: true,
+        },
+      });
+    if (!companyConfiguration) {
+      throw I18nException.badRequest(
+        'electronic_invoicing.errors.configuration_required',
+      );
+    }
+    this.validateProviderBaseUrl(companyConfiguration.providerBaseUrl);
+
+    const reservedConfiguration =
+      await tx.tillElectronicInvoicingConfiguration.update({
+        where: { id: tillConfiguration.id },
+        data: { nextConsecutive: { increment: 1 } },
+        select: { id: true, numberingRange: true, nextConsecutive: true },
+      });
+    const consecutive = this.buildConsecutive(
+      reservedConfiguration.numberingRange,
+      reservedConfiguration.nextConsecutive - 1,
+      tillConfiguration.numberingMode,
+    );
+
     if (
       !sale.paymentMethod.dianCode ||
       !/^\d{2}$/.test(sale.paymentMethod.dianCode)
@@ -264,8 +389,8 @@ export class ElectronicInvoicingService {
 
     const payload = this.payloadFactory.create({
       consecutive,
-      numberingRange: configuration.numberingRange,
-      numberingMode: configuration.numberingMode,
+      numberingRange: tillConfiguration.numberingRange,
+      numberingMode: tillConfiguration.numberingMode,
       issuedAt: sale.createdAt,
       paymentReference: sale.paymentReference,
       customer: sale.customer,
@@ -273,7 +398,7 @@ export class ElectronicInvoicingService {
       items: sale.items.map((item) => ({
         sku: item.product.sku,
         name: item.product.name,
-        dianCode: item.product.dianCode!,
+        dianCode: item.product.dianCode,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         taxRate: item.taxRate,
@@ -284,7 +409,8 @@ export class ElectronicInvoicingService {
     return tx.electronicInvoice.create({
       data: {
         saleId,
-        configurationId: reservedConfiguration.id,
+        configurationId: companyConfiguration.id,
+        tillConfigurationId: reservedConfiguration.id,
         consecutive,
         requestPayload: payload as unknown as Prisma.InputJsonValue,
       },
@@ -351,7 +477,6 @@ export class ElectronicInvoicingService {
   private validateNumbering(
     numberingRange: string | undefined,
     nextConsecutive: number | undefined,
-    numberingMode: ElectronicInvoicingNumberingMode,
   ) {
     const match = numberingRange?.match(/^([A-Za-z0-9]{1,4})-([1-9]\d*)$/);
     if (
@@ -405,10 +530,6 @@ export class ElectronicInvoicingService {
     countryCode: string;
     environment: string;
     providerBaseUrl: string | null;
-    providerNumberingId: string | null;
-    numberingMode: ElectronicInvoicingNumberingMode;
-    numberingRange: string;
-    nextConsecutive: number;
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -417,11 +538,33 @@ export class ElectronicInvoicingService {
       countryCode: configuration.countryCode,
       environment: configuration.environment,
       providerBaseUrl: configuration.providerBaseUrl,
-      providerNumberingId: configuration.providerNumberingId,
+      hasCredentials: true,
+      createdAt: configuration.createdAt,
+      updatedAt: configuration.updatedAt,
+    };
+  }
+
+  private serializeTillConfiguration(configuration: {
+    id: number;
+    tillId: number;
+    companyId: number;
+    countryCode: string;
+    numberingMode: ElectronicInvoicingNumberingMode;
+    numberingRange: string;
+    nextConsecutive: number;
+    providerNumberingId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: configuration.id,
+      tillId: configuration.tillId,
+      companyId: configuration.companyId,
+      countryCode: configuration.countryCode,
       numberingMode: configuration.numberingMode,
       numberingRange: configuration.numberingRange,
       nextConsecutive: configuration.nextConsecutive,
-      hasCredentials: true,
+      providerNumberingId: configuration.providerNumberingId,
       createdAt: configuration.createdAt,
       updatedAt: configuration.updatedAt,
     };
@@ -468,8 +611,6 @@ export class ElectronicInvoicingService {
         { reason: providerMessage },
       );
     }
-    // HKA's DEMO portal permits both habilitation and Produccion 2.1 sequentials.
-    // Production Listo accounts must still use a Produccion 2.1 sequential.
     const allowedSequentialEnvironments =
       input.environment === ElectronicInvoicingEnvironment.DEMO
         ? ['2', '3']
@@ -516,7 +657,13 @@ export class ElectronicInvoicingService {
   }
 
   private normalized(value: unknown) {
-    return String(value ?? '')
+    const raw =
+      typeof value === 'string'
+        ? value
+        : value == null
+          ? ''
+          : JSON.stringify(value);
+    return raw
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim()

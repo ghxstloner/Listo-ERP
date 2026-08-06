@@ -423,8 +423,12 @@ export const pt: Dictionary = {
       environment: "Ambiente",
       demo: "Demonstração",
       production: "Produção",
+      connection: "Conexão",
+      connectionHint:
+        "URL e ambiente TheFactory. A numeração é configurada por caixa.",
       numberingRange: "Faixa de numeração",
-      numberingRangeHint: "Formato: prefixo-início. Exemplo: DEMO-1.",
+      numberingRangeHint: "Formato: prefixo-início. Exemplo: A1-1.",
+      numberingMode: "Modo sequencial",
       nextConsecutive: "Próximo consecutivo",
       credentials: "Credenciais TheFactory",
       credentialsHint:
@@ -439,6 +443,8 @@ export const pt: Dictionary = {
       invalidNumbering:
         "Informe uma faixa válida e um consecutivo igual ou superior ao início da faixa.",
       saved: "Configuração de faturamento eletrônico salva com sucesso.",
+      tillNumbering: "Numeração de faturamento eletrônico",
+      tillSaved: "Numeração da caixa salva com sucesso.",
     },
     hierarchyConfiguration: "Configuração de Níveis",
     hierarchy: {

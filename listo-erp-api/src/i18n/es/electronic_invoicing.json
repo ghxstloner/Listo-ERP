@@ -1,6 +1,7 @@
 {
   "success": {
-    "configuration_saved": "La configuración de facturación electrónica se guardó correctamente"
+    "configuration_saved": "La configuración de facturación electrónica se guardó correctamente",
+    "till_configuration_saved": "La configuración de numeración de la caja se guardó correctamente"
   },
   "errors": {
     "credentials_pair_required": "Debes proporcionar Token Empresa y Token Contraseña juntos",
@@ -8,6 +9,7 @@
     "next_consecutive_required": "Debes indicar el próximo consecutivo al cambiar el rango de numeración",
     "invalid_numbering": "El rango de numeración o el próximo consecutivo no son válidos",
     "configuration_required": "Debes configurar la facturación electrónica de Colombia antes de registrar ventas.",
+    "till_configuration_required": "Debes configurar la numeración de facturación electrónica para esta caja antes de registrar ventas.",
     "provider_url_required": "La URL debe corresponder al ambiente oficial de TheFactory seleccionado.",
     "company_tax_id_required": "La empresa debe tener configurado su NIT para validar la numeración con TheFactory.",
     "provider_numbering_not_found": "TheFactory no devolvió numeraciones para el NIT y las credenciales configuradas en este ambiente. Respuesta: {reason}",

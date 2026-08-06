@@ -1,17 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ElectronicInvoicingEnvironment,
-  ElectronicInvoicingNumberingMode,
-} from '@prisma/client';
-import { Type } from 'class-transformer';
+import { ElectronicInvoicingEnvironment } from '@prisma/client';
 import {
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   IsUrl,
   MaxLength,
-  Min,
 } from 'class-validator';
 
 export class UpdateColombiaConfigurationDto {
@@ -19,11 +13,6 @@ export class UpdateColombiaConfigurationDto {
   @IsEnum(ElectronicInvoicingEnvironment)
   @IsOptional()
   environment?: ElectronicInvoicingEnvironment;
-
-  @ApiPropertyOptional({ enum: ElectronicInvoicingNumberingMode })
-  @IsEnum(ElectronicInvoicingNumberingMode)
-  @IsOptional()
-  numberingMode?: ElectronicInvoicingNumberingMode;
 
   @ApiPropertyOptional({
     description: 'URL base de TheFactory para esta empresa y ambiente',
@@ -45,17 +34,4 @@ export class UpdateColombiaConfigurationDto {
   @MaxLength(500)
   @IsOptional()
   tokenPassword?: string;
-
-  @ApiPropertyOptional({ example: 'DEMO-1' })
-  @IsString()
-  @MaxLength(20)
-  @IsOptional()
-  rangoNumeracion?: string;
-
-  @ApiPropertyOptional({ example: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  nextConsecutive?: number;
 }

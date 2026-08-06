@@ -77,6 +77,7 @@ model Company {
   cashSessions                      CashSession[]
   sales                             Sale[]
   electronicInvoicingConfigurations ElectronicInvoicingConfiguration[]
+  tillElectronicInvoicingConfigurations TillElectronicInvoicingConfiguration[]
 }
 
 model CompanyUser {
@@ -231,6 +232,7 @@ model till {
   company                 Company                 @relation(fields: [companyId], references: [id])
   cashSessions            CashSession[]
   paymentMethods          TillPaymentMethod[]
+  electronicInvoicing     TillElectronicInvoicingConfiguration[]
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
 
@@ -793,48 +795,68 @@ model ElectronicInvoicingConfiguration {
   countryCode           String                         @db.Char(2)
   environment           ElectronicInvoicingEnvironment
   providerBaseUrl       String?
-  providerNumberingId   String?
-  numberingMode         ElectronicInvoicingNumberingMode @default(WITH_PREFIX)
   credentialsCiphertext String
   credentialsNonce      String
   credentialsAuthTag    String
   encryptionKeyVersion  Int                            @default(1)
-  numberingRange        String
-  nextConsecutive       Int
   createdAt             DateTime                       @default(now())
   updatedAt             DateTime                       @updatedAt
 
-  company  Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company  Company                             @relation(fields: [companyId], references: [id], onDelete: Cascade)
   invoices ElectronicInvoice[]
+  tills    TillElectronicInvoicingConfiguration[]
 
   @@unique([companyId, countryCode])
 }
 
+model TillElectronicInvoicingConfiguration {
+  id                  Int                            @id @default(autoincrement())
+  tillId              Int
+  companyId           Int
+  countryCode         String                         @db.Char(2)
+  numberingMode       ElectronicInvoicingNumberingMode @default(WITH_PREFIX)
+  numberingRange      String
+  nextConsecutive     Int
+  providerNumberingId String?
+  createdAt           DateTime                       @default(now())
+  updatedAt           DateTime                       @updatedAt
+
+  till        till                         @relation(fields: [tillId], references: [id], onDelete: Cascade)
+  company     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  configuration ElectronicInvoicingConfiguration @relation(fields: [companyId, countryCode], references: [companyId, countryCode], onDelete: Cascade)
+  invoices    ElectronicInvoice[]
+
+  @@unique([tillId, countryCode])
+  @@index([companyId, countryCode])
+}
+
 model ElectronicInvoice {
-  id               Int                           @id @default(autoincrement())
-  saleId           Int                           @unique
-  configurationId  Int
-  documentType     ElectronicInvoiceDocumentType @default(INVOICE)
-  status           ElectronicInvoiceStatus       @default(PENDING)
-  consecutive      String
-  requestPayload   Json
-  providerResponse Json?
-  cufe             String?
-  qr               String?
-  submittedAt      DateTime?
-  acceptedAt       DateTime?
-  retryCount       Int                           @default(0)
-  nextRetryAt      DateTime?
-  lastError        String?
-  createdAt        DateTime                      @default(now())
-  updatedAt        DateTime                      @updatedAt
+  id                    Int                           @id @default(autoincrement())
+  saleId                Int                           @unique
+  configurationId       Int
+  tillConfigurationId   Int
+  documentType          ElectronicInvoiceDocumentType @default(INVOICE)
+  status                ElectronicInvoiceStatus       @default(PENDING)
+  consecutive           String
+  requestPayload        Json
+  providerResponse      Json?
+  cufe                  String?
+  qr                    String?
+  submittedAt           DateTime?
+  acceptedAt            DateTime?
+  retryCount            Int                           @default(0)
+  nextRetryAt           DateTime?
+  lastError             String?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
 
-  sale          Sale                             @relation(fields: [saleId], references: [id], onDelete: Restrict)
-  configuration ElectronicInvoicingConfiguration @relation(fields: [configurationId], references: [id], onDelete: Restrict)
-  attempts      ElectronicInvoiceAttempt[]
-  artifacts     ElectronicInvoiceArtifact[]
+  sale              Sale                              @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  configuration     ElectronicInvoicingConfiguration  @relation(fields: [configurationId], references: [id], onDelete: Restrict)
+  tillConfiguration TillElectronicInvoicingConfiguration @relation(fields: [tillConfigurationId], references: [id], onDelete: Restrict)
+  attempts          ElectronicInvoiceAttempt[]
+  artifacts         ElectronicInvoiceArtifact[]
 
-  @@unique([configurationId, consecutive])
+  @@unique([tillConfigurationId, consecutive])
   @@index([status, nextRetryAt])
 }
 

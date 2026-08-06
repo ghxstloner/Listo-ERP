@@ -3,7 +3,6 @@ import { Prisma } from '@prisma/client';
 import {
   TheFactoryGeneralTax,
   TheFactoryInvoicePayload,
-  TheFactoryLineTax,
   TheFactoryTaxTotal,
 } from './the-factory.types';
 
@@ -131,9 +130,9 @@ export class InvoicePayloadFactory {
 
     return {
       nombreRazonSocial: customer.name,
-      tipoPersona: customer.fiscalPersonType!,
-      tipoIdentificacion: customer.taxDocumentType!,
-      numeroDocumento: customer.taxId!,
+      tipoPersona: customer.fiscalPersonType,
+      tipoIdentificacion: customer.taxDocumentType,
+      numeroDocumento: customer.taxId,
       ...(customer.taxCheckDigit && {
         numeroIdentificacionDV: customer.taxCheckDigit,
       }),

@@ -6,10 +6,6 @@ export interface ColombiaElectronicInvoicingConfiguration {
   countryCode: "CO";
   environment: ElectronicInvoicingEnvironment;
   providerBaseUrl: string | null;
-  providerNumberingId: string | null;
-  numberingMode: ElectronicInvoicingNumberingMode;
-  numberingRange: string;
-  nextConsecutive: number;
   hasCredentials: boolean;
   createdAt: string;
   updatedAt: string;
@@ -17,15 +13,36 @@ export interface ColombiaElectronicInvoicingConfiguration {
 
 export interface UpdateColombiaElectronicInvoicingConfigurationRequest {
   environment?: ElectronicInvoicingEnvironment;
-  numberingMode?: ElectronicInvoicingNumberingMode;
   providerBaseUrl?: string;
   tokenEmpresa?: string;
   tokenPassword?: string;
-  rangoNumeracion?: string;
-  nextConsecutive?: number;
 }
 
 export interface UpdateColombiaElectronicInvoicingConfigurationResponse {
   message: string;
   data: ColombiaElectronicInvoicingConfiguration;
+}
+
+export interface TillColombiaElectronicInvoicingConfiguration {
+  id: number;
+  tillId: number;
+  companyId: number;
+  countryCode: "CO";
+  numberingMode: ElectronicInvoicingNumberingMode;
+  numberingRange: string;
+  nextConsecutive: number;
+  providerNumberingId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateTillColombiaElectronicInvoicingConfigurationRequest {
+  numberingMode?: ElectronicInvoicingNumberingMode;
+  rangoNumeracion?: string;
+  nextConsecutive?: number;
+}
+
+export interface UpdateTillColombiaElectronicInvoicingConfigurationResponse {
+  message: string;
+  data: TillColombiaElectronicInvoicingConfiguration;
 }
