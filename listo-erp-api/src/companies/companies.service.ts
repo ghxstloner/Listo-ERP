@@ -12,10 +12,9 @@ const DEFAULT_PAYMENT_METHODS = [
     name: 'Efectivo',
     code: 'CASH',
     dianCode: '10',
-    requiresReference: false,
   },
-  { name: 'Tarjeta', code: 'CARD', requiresReference: true },
-  { name: 'Transferencia', code: 'TRANSFER', requiresReference: true },
+  { name: 'Tarjeta', code: 'CARD' },
+  { name: 'Transferencia', code: 'TRANSFER' },
 ];
 
 @Injectable()

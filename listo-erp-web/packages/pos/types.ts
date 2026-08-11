@@ -11,17 +11,25 @@ export interface PaymentMethod {
   code: string;
   dianCode: string | null;
   image: string | null;
-  requiresReference: boolean;
   isActive: boolean;
   companyId: number;
+}
+
+export interface SalePaymentEntry {
+  paymentMethodId: number;
+  amount: number;
+}
+
+export interface LocalPaymentEntry extends SalePaymentEntry {
+  localId: string;
 }
 
 export interface CreateSaleRequest {
   deviceKey: string;
   customerId: number;
   sellerId: number;
-  paymentMethodId: number;
-  paymentReference?: string;
+  orderId?: number;
+  payments: SalePaymentEntry[];
   items: Array<{ productId: number; quantity: number }>;
 }
 

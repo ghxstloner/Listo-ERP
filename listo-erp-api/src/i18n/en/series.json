@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Series not found",
+    "module_already_exists": "A series already exists for this module in the company"
+  },
+  "success": {
+    "created": "Series created successfully",
+    "updated": "Series updated successfully",
+    "deleted": "Series deleted successfully"
+  }
+}

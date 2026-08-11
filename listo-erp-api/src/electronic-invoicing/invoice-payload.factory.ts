@@ -11,7 +11,9 @@ export interface InvoicePayloadInput {
   numberingRange: string;
   numberingMode: 'WITH_PREFIX' | 'WITHOUT_PREFIX';
   issuedAt: Date;
-  paymentReference: string | null;
+  payments: Array<{
+    dianCode: string;
+  }>;
   customer: {
     name: string;
     isFinalConsumer: boolean;
@@ -20,7 +22,6 @@ export interface InvoicePayloadInput {
     taxCheckDigit: string | null;
     fiscalPersonType: string | null;
   };
-  paymentMethod: { dianCode: string };
   items: Array<{
     sku: string;
     name: string;
@@ -93,15 +94,10 @@ export class InvoicePayloadFactory {
         detalleDeFactura: detailDeFactura,
         impuestosGenerales: generalTaxes,
         impuestosTotales: taxTotals,
-        mediosDePago: [
-          {
-            metodoDePago: '1',
-            medioPago: input.paymentMethod.dianCode,
-            ...(input.paymentReference && {
-              numeroDeReferencia: input.paymentReference,
-            }),
-          },
-        ],
+        mediosDePago: input.payments.map((payment) => ({
+          metodoDePago: '1' as const,
+          medioPago: payment.dianCode,
+        })),
         totalSinImpuestos: this.format(totalWithoutTax),
         totalBaseImponible: this.format(totalBaseImponible),
         totalBrutoConImpuesto: this.format(totalWithoutTax.plus(totalTax)),

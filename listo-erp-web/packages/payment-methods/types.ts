@@ -4,7 +4,6 @@ export interface PaymentMethod {
   code: string;
   dianCode: string | null;
   image: string | null;
-  requiresReference: boolean;
   isActive: boolean;
   companyId: number;
 }
@@ -13,7 +12,6 @@ export interface PaymentMethodRequest {
   name: string;
   code: string;
   dianCode: string | null;
-  requiresReference: boolean;
   isActive: boolean;
 }
 

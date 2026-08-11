@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "Serie no encontrada",
+    "module_already_exists": "Ya existe una serie para este módulo en la empresa"
+  },
+  "success": {
+    "created": "Serie creada exitosamente",
+    "updated": "Serie actualizada exitosamente",
+    "deleted": "Serie eliminada exitosamente"
+  }
+}

@@ -23,6 +23,18 @@ class CreateSaleItemDto {
   quantity: number;
 }
 
+class CreateSalePaymentDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  paymentMethodId: number;
+
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0.0001)
+  amount: number;
+}
+
 export class CreateSaleDto {
   @IsString()
   @MaxLength(100)
@@ -41,12 +53,19 @@ export class CreateSaleDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  paymentMethodId: number;
+  @IsOptional()
+  orderId?: number;
 
   @IsString()
   @IsOptional()
   @MaxLength(100)
   paymentReference?: string;
+
+  @IsArray()
+  @IsNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSalePaymentDto)
+  payments: CreateSalePaymentDto[];
 
   @IsArray()
   @IsNotEmpty()

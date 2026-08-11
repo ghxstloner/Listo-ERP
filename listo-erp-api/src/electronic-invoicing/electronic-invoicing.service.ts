@@ -291,7 +291,6 @@ export class ElectronicInvoicingService {
       where: { id: saleId },
       select: {
         cashSessionId: true,
-        paymentReference: true,
         createdAt: true,
         customer: {
           select: {
@@ -303,7 +302,11 @@ export class ElectronicInvoicingService {
             fiscalPersonType: true,
           },
         },
-        paymentMethod: { select: { dianCode: true } },
+        payments: {
+          select: {
+            paymentMethod: { select: { dianCode: true } },
+          },
+        },
         items: {
           select: {
             quantity: true,
@@ -369,13 +372,15 @@ export class ElectronicInvoicingService {
       tillConfiguration.numberingMode,
     );
 
-    if (
-      !sale.paymentMethod.dianCode ||
-      !/^\d{2}$/.test(sale.paymentMethod.dianCode)
-    ) {
-      throw I18nException.badRequest(
-        'sales.errors.payment_method_dian_code_required',
-      );
+    for (const payment of sale.payments) {
+      if (
+        !payment.paymentMethod.dianCode ||
+        !/^\d{2}$/.test(payment.paymentMethod.dianCode)
+      ) {
+        throw I18nException.badRequest(
+          'sales.errors.payment_method_dian_code_required',
+        );
+      }
     }
     if (
       sale.items.some(
@@ -392,9 +397,10 @@ export class ElectronicInvoicingService {
       numberingRange: tillConfiguration.numberingRange,
       numberingMode: tillConfiguration.numberingMode,
       issuedAt: sale.createdAt,
-      paymentReference: sale.paymentReference,
+      payments: sale.payments.map((payment) => ({
+        dianCode: payment.paymentMethod.dianCode,
+      })),
       customer: sale.customer,
-      paymentMethod: { dianCode: sale.paymentMethod.dianCode },
       items: sale.items.map((item) => ({
         sku: item.product.sku,
         name: item.product.name,

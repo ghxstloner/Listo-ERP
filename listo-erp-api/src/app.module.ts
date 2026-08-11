@@ -24,6 +24,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { SellersModule } from './sellers/sellers.module';
 import { SalesModule } from './sales/sales.module';
+import { OrdersModule } from './orders/orders.module';
+import { SeriesModule } from './series/series.module';
 import { SubcategoriesModule } from './subcategories/subcategories.module';
 import { SubdepartmentsModule } from './subdepartments/subdepartments.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
@@ -83,6 +85,8 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     SuppliersModule,
     SellersModule,
     SalesModule,
+    OrdersModule,
+    SeriesModule,
     ProductsModule,
     ExchangeRatesModule,
     PaymentMethodsModule,

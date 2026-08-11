@@ -10,7 +10,7 @@ import type { Department } from "@/packages/department/types";
 import type { SubCategory } from "@/packages/subcategory/types";
 import type { SubDepartment } from "@/packages/subdepartment/types";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { ClipboardText, MagnifyingGlass } from "@phosphor-icons/react";
 import { useState } from "react";
 
 type HierarchyItem = Department | SubDepartment | Category | SubCategory;
@@ -102,6 +102,7 @@ interface PosToolbarProps {
   onCategoryChange: (categoryId?: number) => void;
   onSubcategoryChange: (subcategoryId?: number) => void;
   onSearchChange: (search: string) => void;
+  onOrdersClick: () => void;
 }
 
 export function PosToolbar({
@@ -119,6 +120,7 @@ export function PosToolbar({
   onCategoryChange,
   onSubcategoryChange,
   onSearchChange,
+  onOrdersClick,
 }: PosToolbarProps) {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
@@ -126,7 +128,10 @@ export function PosToolbar({
         <MagnifyingGlass className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
         <Input className="h-11 pl-9" value={search} onChange={(event) => onSearchChange(event.target.value)} placeholder="Buscar producto o SKU" />
       </div>
-      <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+       <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+         <Button type="button" variant="outline" className="h-11" onClick={onOrdersClick}>
+           <ClipboardText className="mr-2 size-4" weight="bold" /> Pedidos
+         </Button>
         <div className="w-full sm:w-52"><SearchSelect label="Departamento" placeholder="Todos los departamentos" items={departments} selectedId={departmentId} onChange={onDepartmentChange} /></div>
         {departmentId && subdepartments.length > 0 && <div className="w-full sm:w-52"><SearchSelect label="Subdepartamento" placeholder="Todos los subdepartamentos" items={subdepartments} selectedId={subdepartmentId} onChange={onSubdepartmentChange} /></div>}
         {subdepartmentId && categories.length > 0 && <div className="w-full sm:w-52"><SearchSelect label="Categoría" placeholder="Todas las categorías" items={categories} selectedId={categoryId} onChange={onCategoryChange} /></div>}

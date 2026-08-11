@@ -14,6 +14,7 @@ const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   'warehouse-branches': 'administration.branches',
   currencies: 'administration.currencies',
   'exchange-rates': 'administration.currencies',
+  series: 'administration.series',
   tills: 'administration.tills',
   departments: 'inventory.catalogs',
   subdepartments: 'inventory.catalogs',
@@ -28,6 +29,7 @@ const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   'payment-methods': ['sales.catalogs', 'sales.pos'],
   'cash-sessions': ['sales.cash-closures', 'sales.pos'],
   sales: 'sales.pos',
+  orders: 'sales.orders',
   audit: 'reports.sales-book',
 };
 

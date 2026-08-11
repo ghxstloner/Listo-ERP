@@ -141,7 +141,6 @@ export class TillsService {
       code: true,
       dianCode: true,
       image: true,
-      requiresReference: true,
       isActive: true,
       companyId: true,
     };

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   CashSessionStatus,
   InventoryMovementType,
+  OrderStatus,
   Prisma,
 } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -36,13 +37,18 @@ export class SalesService {
   ) {}
 
   async create(dto: CreateSaleDto, companyId: number, userId: number) {
+    const paymentMethodIds = dto.payments.map((p) => p.paymentMethodId);
+    if (new Set(paymentMethodIds).size !== paymentMethodIds.length) {
+      throw I18nException.badRequest('sales.errors.duplicate_payment_method');
+    }
+
     const productIds = dto.items.map((item) => item.productId);
     if (new Set(productIds).size !== productIds.length) {
       throw I18nException.badRequest('sales.errors.duplicate_product');
     }
 
     const sale = await this.prisma.$transaction(async (tx) => {
-      const [cashSession, customer, seller, paymentMethod, products, company] =
+      const [cashSession, order, customer, seller, paymentMethods, products, company] =
         await Promise.all([
           tx.cashSession.findFirst({
             where: {
@@ -55,6 +61,19 @@ export class SalesService {
             select: { id: true, branchId: true, tillId: true },
             orderBy: { openedAt: 'desc' },
           }),
+          dto.orderId
+            ? tx.order.findFirst({
+                where: { id: dto.orderId, companyId },
+                select: {
+                  id: true,
+                  status: true,
+                  branchId: true,
+                  customerId: true,
+                  sellerId: true,
+                  items: { select: { productId: true, quantity: true } },
+                },
+              })
+            : Promise.resolve(null),
           tx.customer.findFirst({
             where: { id: dto.customerId, companyId, isActive: true },
             select: {
@@ -71,15 +90,15 @@ export class SalesService {
               id: dto.sellerId,
               companyId,
               isActive: true,
-              sellerUsers: {
-                some: { userId, companyId, user: { isActive: true } },
-              },
+              ...(dto.orderId
+                ? {}
+                : { sellerUsers: { some: { userId, companyId, user: { isActive: true } } } }),
             },
             select: { id: true },
           }),
-          tx.paymentMethod.findFirst({
-            where: { id: dto.paymentMethodId, companyId, isActive: true },
-            select: { id: true, dianCode: true, requiresReference: true },
+          tx.paymentMethod.findMany({
+            where: { id: { in: paymentMethodIds }, companyId, isActive: true },
+            select: { id: true, dianCode: true },
           }),
           tx.product.findMany({
             where: { id: { in: productIds }, companyId, isActive: true },
@@ -99,37 +118,55 @@ export class SalesService {
 
       if (!cashSession)
         throw I18nException.badRequest('sales.errors.cash_session_required');
+      if (dto.orderId && !order)
+        throw I18nException.badRequest('sales.errors.order_not_found');
+      if (order?.status !== undefined && order.status !== OrderStatus.PENDING)
+        throw I18nException.badRequest('sales.errors.order_not_pending');
+      if (
+        order &&
+        (order.branchId == null ||
+          order.customerId !== dto.customerId ||
+          order.sellerId !== dto.sellerId)
+      ) {
+        throw I18nException.badRequest('sales.errors.order_changed');
+      }
       if (!customer)
         throw I18nException.badRequest('sales.errors.customer_not_found');
       if (!seller)
         throw I18nException.badRequest('sales.errors.seller_not_found');
-      if (!paymentMethod)
+      if (paymentMethods.length !== paymentMethodIds.length) {
         throw I18nException.badRequest('sales.errors.payment_method_not_found');
-      const tillPaymentMethod = await tx.tillPaymentMethod.findUnique({
-        where: {
-          tillId_paymentMethodId: {
-            tillId: cashSession.tillId,
-            paymentMethodId: paymentMethod.id,
+      }
+
+      const paymentMethodsMap = new Map(
+        paymentMethods.map((pm) => [pm.id, pm]),
+      );
+      for (const payment of dto.payments) {
+        const tillPaymentMethod = await tx.tillPaymentMethod.findUnique({
+          where: {
+            tillId_paymentMethodId: {
+              tillId: cashSession.tillId,
+              paymentMethodId: payment.paymentMethodId,
+            },
           },
-        },
-        select: { tillId: true },
-      });
-      if (!tillPaymentMethod)
-        throw I18nException.badRequest('sales.errors.payment_method_not_found');
+          select: { tillId: true },
+        });
+        if (!tillPaymentMethod)
+          throw I18nException.badRequest('sales.errors.payment_method_not_found');
+      }
+
       if (products.length !== productIds.length) {
         throw I18nException.badRequest('sales.errors.product_not_found');
       }
       const paymentReference = dto.paymentReference?.trim() || null;
-      if (paymentMethod.requiresReference && !paymentReference) {
-        throw I18nException.badRequest(
-          'sales.errors.payment_reference_required',
-        );
-      }
       if (company?.country?.code === 'CO') {
-        if (!paymentMethod.dianCode) {
-          throw I18nException.badRequest(
-            'sales.errors.payment_method_dian_code_required',
-          );
+        for (const payment of dto.payments) {
+          const pm = paymentMethodsMap.get(payment.paymentMethodId);
+          if (!pm?.dianCode) {
+            throw I18nException.badRequest(
+              'sales.errors.payment_method_dian_code_required',
+            );
+          }
         }
         if (products.some((product) => !product.dianCode)) {
           throw I18nException.badRequest(
@@ -146,9 +183,10 @@ export class SalesService {
         }
       }
 
+      const saleBranchId = order?.branchId ?? cashSession.branchId;
       const warehouseBranches = await tx.warehouseBranch.findMany({
         where: {
-          branchId: cashSession.branchId,
+          branchId: saleBranchId,
           warehouse: { companyId, isActive: true },
         },
         select: { warehouseId: true },
@@ -188,6 +226,15 @@ export class SalesService {
         (sum, item) => sum.plus(item.taxAmount),
         new Prisma.Decimal(0),
       );
+      const total = subtotal.plus(taxAmount);
+
+      const paymentsTotal = dto.payments.reduce(
+        (sum, p) => sum.plus(p.amount),
+        new Prisma.Decimal(0),
+      );
+      if (!paymentsTotal.equals(total)) {
+        throw I18nException.badRequest('sales.errors.payments_total_mismatch');
+      }
 
       const balances = await tx.inventoryBalance.findMany({
         where: {
@@ -221,22 +268,34 @@ export class SalesService {
       const sale = await tx.sale.create({
         data: {
           companyId,
-          branchId: cashSession.branchId,
+          branchId: saleBranchId,
           cashSessionId: cashSession.id,
           customerId: customer.id,
           sellerId: seller.id,
-          paymentMethodId: paymentMethod.id,
           paymentReference,
           createdByUserId: userId,
           subtotal,
           taxAmount,
-          total: subtotal.plus(taxAmount),
+          total,
           items: {
             create: lineItems.map(({ unitCost: _, ...item }) => item),
           },
+          payments: {
+            create: dto.payments.map((payment) => ({
+              paymentMethodId: payment.paymentMethodId,
+              amount: payment.amount,
+            })),
+          },
         },
-        include: { items: true },
+        include: { items: true, payments: true },
       });
+
+      if (order) {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: OrderStatus.PAID, saleId: sale.id },
+        });
+      }
 
       if (company?.country?.code === 'CO') {
         await this.electronicInvoicing.createPendingInvoice(
@@ -347,6 +406,14 @@ export class SalesService {
       paymentMethod: { select: { id: true, code: true, name: true } },
       electronicInvoice: {
         select: { id: true, status: true, consecutive: true },
+      },
+      payments: {
+        select: {
+          id: true,
+          paymentMethodId: true,
+          amount: true,
+          paymentMethod: { select: { id: true, name: true, code: true } },
+        },
       },
       items: {
         select: {

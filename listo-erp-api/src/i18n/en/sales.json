@@ -1,6 +1,8 @@
 {
   "errors": {
     "duplicate_product": "The same product cannot be registered more than once.",
+    "duplicate_payment_method": "The same payment method cannot be used more than once in a sale.",
+    "payments_total_mismatch": "The sum of payments does not match the sale total.",
     "cash_session_required": "You must have an open cash session to register a sale.",
     "customer_not_found": "The selected customer is not available.",
     "seller_not_found": "The selected seller is not available for your user.",
@@ -9,9 +11,11 @@
     "warehouse_not_found": "The cash session branch has no associated active warehouses.",
     "insufficient_stock": "There is not enough stock in the branch warehouses.",
     "product_dian_code_required": "All products must have a DIAN code to register sales in Colombia.",
-    "payment_reference_required": "The selected payment method requires a reference.",
     "payment_method_dian_code_required": "The selected payment method must have a DIAN code to register sales in Colombia.",
-    "customer_fiscal_data_required": "The selected customer must have complete fiscal data or be marked as a Final Consumer."
+    "customer_fiscal_data_required": "The selected customer must have complete fiscal data or be marked as a Final Consumer.",
+    "order_not_found": "The selected order is not available.",
+    "order_not_pending": "The order is no longer pending payment.",
+    "order_changed": "The order changed and must be loaded again before checkout."
   },
   "success": {
     "created": "Sale registered successfully."

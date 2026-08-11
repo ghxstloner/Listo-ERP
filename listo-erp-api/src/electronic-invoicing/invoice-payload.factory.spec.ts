@@ -10,7 +10,7 @@ describe('InvoicePayloadFactory', () => {
       numberingRange: 'DEMO-1',
       numberingMode: 'WITH_PREFIX',
       issuedAt: new Date('2026-07-20T12:34:56.000Z'),
-      paymentReference: 'TX-42',
+      payments: [{ dianCode: '10' }],
       customer: {
         name: 'Cliente de prueba',
         isFinalConsumer: false,
@@ -19,7 +19,6 @@ describe('InvoicePayloadFactory', () => {
         taxCheckDigit: '7',
         fiscalPersonType: '1',
       },
-      paymentMethod: { dianCode: '10' },
       items: [
         {
           sku: 'SKU-1',
@@ -48,7 +47,6 @@ describe('InvoicePayloadFactory', () => {
             expect.objectContaining({
               metodoDePago: '1',
               medioPago: '10',
-              numeroDeReferencia: 'TX-42',
             }),
           ],
         }),
@@ -94,7 +92,7 @@ describe('InvoicePayloadFactory', () => {
       numberingRange: 'DEMO-1',
       numberingMode: 'WITH_PREFIX',
       issuedAt: new Date('2026-07-20T12:34:56.000Z'),
-      paymentReference: null,
+      payments: [{ dianCode: '10' }],
       customer: {
         name: 'Consumidor Final',
         isFinalConsumer: true,
@@ -103,7 +101,6 @@ describe('InvoicePayloadFactory', () => {
         taxCheckDigit: null,
         fiscalPersonType: null,
       },
-      paymentMethod: { dianCode: '10' },
       items: [
         {
           sku: 'TAXED',

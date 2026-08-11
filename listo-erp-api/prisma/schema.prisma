@@ -44,40 +44,42 @@ model Company {
   taxCheckDigit     String? // Dígito verificador (Panamá)
   fiscalName        String? // Razón social
 
-  createdAt                         DateTime                           @default(now())
-  updatedAt                         DateTime                           @updatedAt
-  companyLogo                       String?                            @default("")
-  defaultCurrencyId                 Int?
-  companyUsers                      CompanyUser[]
-  roles                             CompanyRole[]
-  branches                          branch[]
-  tills                             till[]
-  departments                       Department[]
-  subdepartments                    Subdepartment[]
-  categories                        Category[]
-  subcategories                     Subcategory[]
-  suppliers                         Supplier[]
-  purchaseOrders                    PurchaseOrder[]
-  inventoryTransfers                InventoryTransfer[]
-  customers                         Customer[]
-  sellers                           Seller[]
-  sellerUsers                       SellerUser[]
-  products                          Product[]
-  defaultCustomer                   Customer?                          @relation("CompanyDefaultCustomer", fields: [defaultCustomerId], references: [id], onDelete: SetNull)
-  defaultSeller                     Seller?                            @relation("CompanyDefaultSeller", fields: [defaultSellerId], references: [id], onDelete: SetNull)
-  defaultCurrency                   Currency?                          @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
-  exchangeRates                     ExchangeRate[]
-  paymentMethods                    PaymentMethod[]
-  country                           Country?                           @relation(fields: [countryId], references: [id])
-  auditLogs                         AuditLog[]
-  warehouses                        Warehouse[]
-  inventoryBalances                 InventoryBalance[]
-  inventoryMovements                InventoryMovement[]
-  hierarchyConfig                   CompanyHierarchyConfig?
-  cashSessions                      CashSession[]
-  sales                             Sale[]
-  electronicInvoicingConfigurations ElectronicInvoicingConfiguration[]
+  createdAt                             DateTime                               @default(now())
+  updatedAt                             DateTime                               @updatedAt
+  companyLogo                           String?                                @default("")
+  defaultCurrencyId                     Int?
+  companyUsers                          CompanyUser[]
+  roles                                 CompanyRole[]
+  branches                              branch[]
+  tills                                 till[]
+  departments                           Department[]
+  subdepartments                        Subdepartment[]
+  categories                            Category[]
+  subcategories                         Subcategory[]
+  suppliers                             Supplier[]
+  purchaseOrders                        PurchaseOrder[]
+  inventoryTransfers                    InventoryTransfer[]
+  customers                             Customer[]
+  sellers                               Seller[]
+  sellerUsers                           SellerUser[]
+  products                              Product[]
+  defaultCustomer                       Customer?                              @relation("CompanyDefaultCustomer", fields: [defaultCustomerId], references: [id], onDelete: SetNull)
+  defaultSeller                         Seller?                                @relation("CompanyDefaultSeller", fields: [defaultSellerId], references: [id], onDelete: SetNull)
+  defaultCurrency                       Currency?                              @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
+  exchangeRates                         ExchangeRate[]
+  paymentMethods                        PaymentMethod[]
+  country                               Country?                               @relation(fields: [countryId], references: [id])
+  auditLogs                             AuditLog[]
+  warehouses                            Warehouse[]
+  inventoryBalances                     InventoryBalance[]
+  inventoryMovements                    InventoryMovement[]
+  hierarchyConfig                       CompanyHierarchyConfig?
+  cashSessions                          CashSession[]
+  sales                                 Sale[]
+  orders                                Order[]
+  electronicInvoicingConfigurations     ElectronicInvoicingConfiguration[]
   tillElectronicInvoicingConfigurations TillElectronicInvoicingConfiguration[]
+  series                                Series[]
 }
 
 model CompanyUser {
@@ -167,6 +169,7 @@ model User {
   openedCashSessions   CashSession[] @relation("CashSessionOpenedBy")
   closedCashSessions   CashSession[] @relation("CashSessionClosedBy")
   sales                Sale[]
+  createdOrders        Order[]       @relation("OrderCreatedBy")
 }
 
 enum AuditAction {
@@ -211,15 +214,16 @@ model branch {
   warehouses   WarehouseBranch[]
   cashSessions CashSession[]
   sales        Sale[]
+  orders       Order[]
 
   @@unique([companyId, branchCode])
 }
 
 model till {
-  id                      Int                     @id @default(autoincrement())
-  tillCode                String                  @unique
+  id                      Int                                    @id @default(autoincrement())
+  tillCode                String                                 @unique
   tillName                String
-  isActive                Boolean                 @default(true)
+  isActive                Boolean                                @default(true)
   companyId               Int
   branchId                Int
   posAccessCodeHash       String?
@@ -228,13 +232,13 @@ model till {
   posAssociatedIp         String?
   posAssociatedSessionId  String?
   posAssociationExpiresAt DateTime?
-  branch                  branch                  @relation(fields: [branchId], references: [id])
-  company                 Company                 @relation(fields: [companyId], references: [id])
+  branch                  branch                                 @relation(fields: [branchId], references: [id])
+  company                 Company                                @relation(fields: [companyId], references: [id])
   cashSessions            CashSession[]
   paymentMethods          TillPaymentMethod[]
   electronicInvoicing     TillElectronicInvoicingConfiguration[]
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
+  createdAt               DateTime                               @default(now())
+  updatedAt               DateTime                               @updatedAt
 
   @@unique([branchId, tillCode])
   @@index([companyId, posAssociationType])
@@ -319,19 +323,19 @@ model ExchangeRate {
 }
 
 model PaymentMethod {
-  id                Int                 @id @default(autoincrement())
-  name              String
-  code              String
-  dianCode          String?
-  requiresReference Boolean             @default(false)
-  image             String?
-  isActive          Boolean             @default(true)
-  companyId         Int
-  company           Company             @relation(fields: [companyId], references: [id])
-  sales             Sale[]
-  tills             TillPaymentMethod[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id           Int                 @id @default(autoincrement())
+  name         String
+  code         String
+  dianCode     String?
+  image        String?
+  isActive     Boolean             @default(true)
+  companyId    Int
+  company      Company             @relation(fields: [companyId], references: [id])
+  sales        Sale[]
+  salePayments SalePayment[]
+  tills        TillPaymentMethod[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@unique([companyId, code])
 }
@@ -430,49 +434,51 @@ model Supplier {
 }
 
 model Customer {
-  id                     Int      @id @default(autoincrement())
-  name                   String
-  taxId                  String?
-  taxDocumentType        String?
-  address                String?
-  phone                  String?
-  email                  String?
-  contactName            String?
-  isFinalConsumer        Boolean  @default(false)
-  fiscalPersonType       String?
-  taxCheckDigit          String?
-  rutResponsibilities    String[] @default([])
-  taxRegime              String?
-  fiscalAddress          String?
-  fiscalCountryCode      String?  @db.Char(2)
-  fiscalDepartmentCode   String?
-  fiscalDepartment       String?
-  fiscalCityCode         String?
-  fiscalCity             String?
-  fiscalTaxCodes         String[] @default([])
-  isActive               Boolean  @default(true)
-  companyId              Int
-  company                Company  @relation(fields: [companyId], references: [id])
-  defaultForCompanies    Company[] @relation("CompanyDefaultCustomer")
-  sales                  Sale[]
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  taxId                String?
+  taxDocumentType      String?
+  address              String?
+  phone                String?
+  email                String?
+  contactName          String?
+  isFinalConsumer      Boolean   @default(false)
+  fiscalPersonType     String?
+  taxCheckDigit        String?
+  rutResponsibilities  String[]  @default([])
+  taxRegime            String?
+  fiscalAddress        String?
+  fiscalCountryCode    String?   @db.Char(2)
+  fiscalDepartmentCode String?
+  fiscalDepartment     String?
+  fiscalCityCode       String?
+  fiscalCity           String?
+  fiscalTaxCodes       String[]  @default([])
+  isActive             Boolean   @default(true)
+  companyId            Int
+  company              Company   @relation(fields: [companyId], references: [id])
+  defaultForCompanies  Company[] @relation("CompanyDefaultCustomer")
+  sales                Sale[]
+  orders               Order[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@unique([companyId, taxDocumentType, taxId])
 }
 
 model Seller {
-  id          Int          @id @default(autoincrement())
-  code        String
-  name        String
-  isActive    Boolean      @default(true)
-  companyId   Int
-  company     Company      @relation(fields: [companyId], references: [id])
-  defaultForCompanies Company[] @relation("CompanyDefaultSeller")
-  sellerUsers SellerUser[]
-  sales       Sale[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id                  Int          @id @default(autoincrement())
+  code                String
+  name                String
+  isActive            Boolean      @default(true)
+  companyId           Int
+  company             Company      @relation(fields: [companyId], references: [id])
+  defaultForCompanies Company[]    @relation("CompanyDefaultSeller")
+  sellerUsers         SellerUser[]
+  sales               Sale[]
+  orders              Order[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   @@unique([companyId, code])
 }
@@ -519,6 +525,7 @@ model Product {
   inventoryBalances  InventoryBalance[]
   inventoryMovements InventoryMovement[]
   saleItems          SaleItem[]
+  orderItems         OrderItem[]
   transferItems      InventoryTransferItem[]
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
@@ -561,6 +568,14 @@ enum InventoryMovementType {
   TRANSFER_OUT
   TRANSFER_IN
   SALE
+  ORDER_RESERVE
+  ORDER_CANCEL
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
 }
 
 enum InventoryTransferStatus {
@@ -641,6 +656,7 @@ model InventoryMovement {
   purchaseOrderId     Int?
   purchaseOrderItemId Int?
   saleItemId          Int?
+  orderItemId         Int?
   createdByUserId     Int
   createdAt           DateTime              @default(now())
 
@@ -649,9 +665,11 @@ model InventoryMovement {
   product           Product            @relation(fields: [productId], references: [id])
   purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
   saleItem          SaleItem?          @relation(fields: [saleItemId], references: [id])
+  orderItem         OrderItem?         @relation(fields: [orderItemId], references: [id])
 
   @@unique([purchaseOrderItemId])
   @@index([saleItemId])
+  @@index([orderItemId])
   @@index([companyId, warehouseId, productId, createdAt])
   @@index([purchaseOrderId])
 }
@@ -726,30 +744,32 @@ model WarehouseBranch {
 }
 
 model Sale {
-  id              Int      @id @default(autoincrement())
-  companyId       Int
-  branchId        Int
-  cashSessionId   Int
-  customerId      Int
-  sellerId        Int
-  paymentMethodId Int
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  branchId         Int
+  cashSessionId    Int
+  customerId       Int
+  sellerId         Int
+  paymentMethodId  Int?
   paymentReference String?
-  createdByUserId Int
-  subtotal        Decimal  @db.Decimal(18, 4)
-  taxAmount       Decimal  @db.Decimal(18, 4)
-  total           Decimal  @db.Decimal(18, 4)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdByUserId  Int
+  subtotal         Decimal  @db.Decimal(18, 4)
+  taxAmount        Decimal  @db.Decimal(18, 4)
+  total            Decimal  @db.Decimal(18, 4)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   company           Company            @relation(fields: [companyId], references: [id])
   branch            branch             @relation(fields: [branchId], references: [id])
   cashSession       CashSession        @relation(fields: [cashSessionId], references: [id])
   customer          Customer           @relation(fields: [customerId], references: [id])
   seller            Seller             @relation(fields: [sellerId], references: [id])
-  paymentMethod     PaymentMethod      @relation(fields: [paymentMethodId], references: [id])
+  paymentMethod     PaymentMethod?     @relation(fields: [paymentMethodId], references: [id])
   createdByUser     User               @relation(fields: [createdByUserId], references: [id])
   items             SaleItem[]
+  payments          SalePayment[]
   electronicInvoice ElectronicInvoice?
+  order             Order?
 
   @@index([companyId, createdAt])
   @@index([cashSessionId])
@@ -802,7 +822,7 @@ model ElectronicInvoicingConfiguration {
   createdAt             DateTime                       @default(now())
   updatedAt             DateTime                       @updatedAt
 
-  company  Company                             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company  Company                                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   invoices ElectronicInvoice[]
   tills    TillElectronicInvoicingConfiguration[]
 
@@ -810,48 +830,48 @@ model ElectronicInvoicingConfiguration {
 }
 
 model TillElectronicInvoicingConfiguration {
-  id                  Int                            @id @default(autoincrement())
+  id                  Int                              @id @default(autoincrement())
   tillId              Int
   companyId           Int
-  countryCode         String                         @db.Char(2)
+  countryCode         String                           @db.Char(2)
   numberingMode       ElectronicInvoicingNumberingMode @default(WITH_PREFIX)
   numberingRange      String
   nextConsecutive     Int
   providerNumberingId String?
-  createdAt           DateTime                       @default(now())
-  updatedAt           DateTime                       @updatedAt
+  createdAt           DateTime                         @default(now())
+  updatedAt           DateTime                         @updatedAt
 
-  till        till                         @relation(fields: [tillId], references: [id], onDelete: Cascade)
-  company     Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  till          till                             @relation(fields: [tillId], references: [id], onDelete: Cascade)
+  company       Company                          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   configuration ElectronicInvoicingConfiguration @relation(fields: [companyId, countryCode], references: [companyId, countryCode], onDelete: Cascade)
-  invoices    ElectronicInvoice[]
+  invoices      ElectronicInvoice[]
 
   @@unique([tillId, countryCode])
   @@index([companyId, countryCode])
 }
 
 model ElectronicInvoice {
-  id                    Int                           @id @default(autoincrement())
-  saleId                Int                           @unique
-  configurationId       Int
-  tillConfigurationId   Int
-  documentType          ElectronicInvoiceDocumentType @default(INVOICE)
-  status                ElectronicInvoiceStatus       @default(PENDING)
-  consecutive           String
-  requestPayload        Json
-  providerResponse      Json?
-  cufe                  String?
-  qr                    String?
-  submittedAt           DateTime?
-  acceptedAt            DateTime?
-  retryCount            Int                           @default(0)
-  nextRetryAt           DateTime?
-  lastError             String?
-  createdAt             DateTime                      @default(now())
-  updatedAt             DateTime                      @updatedAt
+  id                  Int                           @id @default(autoincrement())
+  saleId              Int                           @unique
+  configurationId     Int
+  tillConfigurationId Int
+  documentType        ElectronicInvoiceDocumentType @default(INVOICE)
+  status              ElectronicInvoiceStatus       @default(PENDING)
+  consecutive         String
+  requestPayload      Json
+  providerResponse    Json?
+  cufe                String?
+  qr                  String?
+  submittedAt         DateTime?
+  acceptedAt          DateTime?
+  retryCount          Int                           @default(0)
+  nextRetryAt         DateTime?
+  lastError           String?
+  createdAt           DateTime                      @default(now())
+  updatedAt           DateTime                      @updatedAt
 
-  sale              Sale                              @relation(fields: [saleId], references: [id], onDelete: Restrict)
-  configuration     ElectronicInvoicingConfiguration  @relation(fields: [configurationId], references: [id], onDelete: Restrict)
+  sale              Sale                                 @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  configuration     ElectronicInvoicingConfiguration     @relation(fields: [configurationId], references: [id], onDelete: Restrict)
   tillConfiguration TillElectronicInvoicingConfiguration @relation(fields: [tillConfigurationId], references: [id], onDelete: Restrict)
   attempts          ElectronicInvoiceAttempt[]
   artifacts         ElectronicInvoiceArtifact[]
@@ -889,6 +909,19 @@ model ElectronicInvoiceArtifact {
   @@unique([electronicInvoiceId, type])
 }
 
+model SalePayment {
+  id              Int      @id @default(autoincrement())
+  saleId          Int
+  paymentMethodId Int
+  amount          Decimal  @db.Decimal(18, 4)
+  createdAt       DateTime @default(now())
+
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@index([saleId])
+}
+
 model SaleItem {
   id        Int      @id @default(autoincrement())
   saleId    Int
@@ -909,6 +942,56 @@ model SaleItem {
   @@index([productId])
 }
 
+model Order {
+  id              Int         @id @default(autoincrement())
+  companyId       Int
+  branchId        Int?
+  customerId      Int
+  sellerId        Int?
+  createdByUserId Int
+  status          OrderStatus @default(PENDING)
+  notes           String?
+  saleId          Int?        @unique
+  subtotal        Decimal     @db.Decimal(18, 4)
+  taxAmount       Decimal     @db.Decimal(18, 4)
+  total           Decimal     @db.Decimal(18, 4)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  company     Company     @relation(fields: [companyId], references: [id])
+  branch      branch?     @relation(fields: [branchId], references: [id])
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  seller      Seller?     @relation(fields: [sellerId], references: [id])
+  createdByUser User      @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
+  sale        Sale?       @relation(fields: [saleId], references: [id])
+  items       OrderItem[]
+
+  @@index([companyId, status])
+  @@index([companyId, createdAt])
+  @@index([customerId])
+  @@index([sellerId])
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Decimal  @db.Decimal(18, 4)
+  unitPrice Decimal  @db.Decimal(18, 4)
+  taxRate   Decimal  @db.Decimal(5, 4)
+  taxAmount Decimal  @db.Decimal(18, 4)
+  lineTotal Decimal  @db.Decimal(18, 4)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order              Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product            Product             @relation(fields: [productId], references: [id])
+  inventoryMovements InventoryMovement[]
+
+  @@unique([orderId, productId])
+  @@index([productId])
+}
+
 model CompanyHierarchyConfig {
   id         Int     @id @default(autoincrement())
   companyId  Int     @unique
@@ -917,4 +1000,25 @@ model CompanyHierarchyConfig {
   level3Name String  @default("Categoría")
   level4Name String  @default("Subcategoría")
   company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+enum SeriesModule {
+  ORDERS
+}
+
+model Series {
+  id          Int          @id @default(autoincrement())
+  description String
+  format      String
+  consecutive Int          @default(1)
+  module      SeriesModule
+  isActive    Boolean      @default(true)
+  companyId   Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, module])
+  @@index([companyId])
 }

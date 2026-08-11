@@ -1,6 +1,8 @@
 {
   "errors": {
     "duplicate_product": "同一商品不能重复登记。",
+    "duplicate_payment_method": "同一支付方式在同一笔销售中不能使用超过一次。",
+    "payments_total_mismatch": "付款总额与销售总额不匹配。",
     "cash_session_required": "登记销售前必须打开收银班次。",
     "customer_not_found": "所选客户不可用。",
     "seller_not_found": "所选销售员不适用于当前用户。",
@@ -9,7 +11,6 @@
     "warehouse_not_found": "收银分店没有关联的活跃仓库。",
     "insufficient_stock": "分店仓库库存不足。",
     "product_dian_code_required": "在哥伦比亚登记销售时，所有商品都必须具有 DIAN 代码。",
-    "payment_reference_required": "所选付款方式需要参考号。",
     "payment_method_dian_code_required": "在哥伦比亚登记销售时，所选付款方式必须具有 DIAN 代码。",
     "customer_fiscal_data_required": "所选客户必须具有完整的税务资料或标记为最终消费者。"
   },

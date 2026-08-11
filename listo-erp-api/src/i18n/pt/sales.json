@@ -1,6 +1,8 @@
 {
   "errors": {
     "duplicate_product": "O mesmo produto não pode ser registrado mais de uma vez.",
+    "duplicate_payment_method": "O mesmo método de pagamento não pode ser usado mais de uma vez em uma venda.",
+    "payments_total_mismatch": "A soma dos pagamentos não corresponde ao total da venda.",
     "cash_session_required": "Você deve ter um caixa aberto para registrar uma venda.",
     "customer_not_found": "O cliente selecionado não está disponível.",
     "seller_not_found": "O vendedor selecionado não está disponível para seu usuário.",
@@ -9,7 +11,6 @@
     "warehouse_not_found": "A filial do caixa não possui armazéns ativos associados.",
     "insufficient_stock": "Não há estoque suficiente nos armazéns da filial.",
     "product_dian_code_required": "Todos os produtos devem ter um código DIAN para registrar vendas na Colômbia.",
-    "payment_reference_required": "O método de pagamento selecionado exige uma referência.",
     "payment_method_dian_code_required": "O método de pagamento selecionado deve ter um código DIAN para registrar vendas na Colômbia.",
     "customer_fiscal_data_required": "O cliente selecionado deve ter dados fiscais completos ou estar marcado como Consumidor Final."
   },

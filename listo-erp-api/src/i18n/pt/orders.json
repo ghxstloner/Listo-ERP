@@ -1,0 +1,20 @@
+{
+  "errors": {
+    "customer_not_found": "O cliente selecionado não está disponível.",
+    "seller_not_found": "O vendedor selecionado não está disponível para o seu usuário.",
+    "product_not_found": "Um ou mais produtos não estão disponíveis.",
+    "branch_not_found": "A filial selecionada não está disponível.",
+    "warehouse_not_found": "A filial não possui armazéns ativos associados.",
+    "insufficient_stock": "Não há estoque suficiente nos armazéns da filial.",
+    "duplicate_product": "Você não pode registrar o mesmo produto mais de uma vez no pedido.",
+    "order_not_found": "O pedido não existe ou você não tem acesso a ele.",
+    "order_not_editable": "Este pedido não pode ser editado porque já foi pago ou cancelado.",
+    "order_already_cancelled": "Este pedido já foi cancelado.",
+    "order_already_paid": "Este pedido já foi pago."
+  },
+  "success": {
+    "created": "Pedido criado com sucesso.",
+    "updated": "Pedido atualizado com sucesso.",
+    "cancelled": "Pedido cancelado com sucesso."
+  }
+}

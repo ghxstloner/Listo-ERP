@@ -1,11 +1,12 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Branch } from "@/packages/branch/types";
 import type { Customer } from "@/packages/customers/types";
 import type { Seller } from "@/packages/sellers/types";
 
 interface TicketSelectorProps {
   label: string;
   value?: string;
-  items: Array<Customer | Seller>;
+  items: Array<Customer | Seller | Branch>;
   onChange: (value: string) => void;
 }
 

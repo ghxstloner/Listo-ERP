@@ -13,13 +13,20 @@ import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
 import type { Product } from "@/packages/product/types";
 import { useGetSellers } from "@/packages/sellers/api";
+import { useGetOrder } from "@/packages/orders/api";
 import { useGetTillPosAccess } from "@/packages/till/api";
 import type { Seller } from "@/packages/sellers/types";
 import { useEffect, useRef, useState } from "react";
 import { useCreateSale } from "../api";
 import { getPosDeviceKey } from "../device-key";
-import type { CartItem, PaymentMethod, Sale } from "../types";
+import type { CartItem, LocalPaymentEntry, PaymentMethod, Sale } from "../types";
 import { getTaxRate } from "../utils";
+
+let paymentIdCounter = 0;
+function nextPaymentId() {
+  paymentIdCounter += 1;
+  return `local-${paymentIdCounter}-${Date.now()}`;
+}
 
 export function usePointOfSale() {
   const [departmentId, setDepartmentId] = useState<number | undefined>();
@@ -30,11 +37,9 @@ export function usePointOfSale() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [seller, setSeller] = useState<Seller | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(
-    null,
-  );
-  const [paymentReference, setPaymentReference] = useState("");
+  const [payments, setPayments] = useState<LocalPaymentEntry[]>([]);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [catalogSize, setCatalogSize] = useState({ width: 0, height: 0 });
   const [deviceKey] = useState<string | null>(() => {
@@ -61,8 +66,9 @@ export function usePointOfSale() {
   const [sellersResponse, sellersLoading] = useGetSellers();
   const [cashSession, cashSessionLoading] = useGetCurrentCashSession();
   const [posTill, posTillLoading] = useGetTillPosAccess();
+  const [selectedOrder, selectedOrderLoading] = useGetOrder(selectedOrderId);
   const [inventoryBalances, inventoryLoading] = useGetBranchInventoryBalances(
-    cashSession?.branchId,
+    selectedOrder?.branchId ?? cashSession?.branchId,
   );
   const [createSale, creatingSale, createSaleError] = useCreateSale();
   const [company, companyLoading] = useGetCompany(companyId);
@@ -113,6 +119,7 @@ export function usePointOfSale() {
     posTillLoading ||
     inventoryLoading ||
     companyLoading ||
+    selectedOrderLoading ||
     !deviceKey;
 
   useEffect(() => {
@@ -140,13 +147,30 @@ export function usePointOfSale() {
   const selectedCustomer = customer && customers.some((item) => item.id === customer.id)
     ? customer
     : (customers.find((item) => item.id === company?.defaultCustomerId) ?? null);
-  const selectedSeller = seller && sellers.some((item) => item.id === seller.id)
-    ? seller
-    : (sellers.find((item) => item.id === company?.defaultSellerId) ?? null);
-  const selectedPaymentMethod =
-    paymentMethod && paymentMethods.some((item) => item.id === paymentMethod.id)
-      ? paymentMethod
-      : (paymentMethods[0] ?? null);
+  const selectedSeller = seller ?? (sellers.find((item) => item.id === company?.defaultSellerId) ?? null);
+  const hasOrderSeller = selectedOrder?.seller && seller?.id === selectedOrder.seller.id;
+
+  useEffect(() => {
+    if (!selectedOrder) return;
+    if (!selectedOrder.seller || !selectedOrder.branch) {
+      showToast({ type: "error", message: "El pedido debe tener sucursal y vendedor para poder cobrarse." });
+      setSelectedOrderId(null);
+      return;
+    }
+    setCart(selectedOrder.items.map((item) => ({
+      product: {
+        id: item.productId,
+        sku: item.product.sku,
+        name: item.product.name,
+        salePrice: Number(item.unitPrice),
+        taxRate: Number(item.taxRate),
+      } as Product,
+      quantity: Number(item.quantity),
+    })));
+    setCustomer(selectedOrder.customer as Customer);
+    setSeller(selectedOrder.seller as Seller);
+    setPayments([]);
+  }, [selectedOrder]);
 
   useEffect(() => {
     if (loading) return;
@@ -200,9 +224,15 @@ export function usePointOfSale() {
     0,
   );
   const total = subtotal + tax;
+  const paymentsTotal = payments.reduce((sum, p) => sum + p.amount, 0);
+  const remaining = Math.round((total - paymentsTotal) * 100) / 100;
+  const usedPaymentMethodIds = new Set(payments.map((p) => p.paymentMethodId));
+  const availablePaymentMethods = paymentMethods.filter(
+    (pm) => !usedPaymentMethodIds.has(pm.id),
+  );
   const canOperate = Boolean(
     selectedCustomer &&
-    selectedSeller &&
+    (selectedSeller || hasOrderSeller) &&
     posTill &&
     cashSession?.status === "OPEN" &&
     cashSession.tillId === posTill.id &&
@@ -210,7 +240,7 @@ export function usePointOfSale() {
   );
 
   const addProduct = (product: Product) => {
-    if (!selectedCustomer || !selectedSeller) {
+    if (!selectedCustomer || (!selectedSeller && !hasOrderSeller)) {
       showToast({
         type: "error",
         message: !selectedCustomer
@@ -223,7 +253,7 @@ export function usePointOfSale() {
     if (availableStock <= 0) {
       showToast({
         type: "warning",
-        message: "Este producto no tiene inventario disponible.",
+        message: "Este producto no tiene inventario disponible en esta sucursal.",
       });
       return;
     }
@@ -273,18 +303,81 @@ export function usePointOfSale() {
     );
   };
 
-  const charge = () => {
-    if (!selectedCustomer || !selectedSeller || !selectedPaymentMethod) {
+  const addPayment = (
+    paymentMethod: PaymentMethod,
+    amount: number,
+  ) => {
+    if (usedPaymentMethodIds.has(paymentMethod.id)) {
       showToast({
         type: "error",
-        message: "Selecciona cliente, vendedor y método de pago.",
+        message: "Este método de pago ya fue agregado.",
       });
       return;
     }
-    if (selectedPaymentMethod.requiresReference && !paymentReference.trim()) {
+    const maxAmount = remaining > 0 ? remaining : 0;
+    const clampedAmount = Math.min(amount, maxAmount);
+    if (clampedAmount <= 0) {
+      showToast({
+        type: "warning",
+        message: "No hay monto pendiente por pagar.",
+      });
+      return;
+    }
+    setPayments((current) => [
+      ...current,
+      {
+        localId: nextPaymentId(),
+        paymentMethodId: paymentMethod.id,
+        amount: Math.round(clampedAmount * 100) / 100,
+      },
+    ]);
+  };
+
+  const updatePayment = (
+    paymentMethodId: number,
+    newAmount: number,
+  ) => {
+    const existingPayment = payments.find(
+      (p) => p.paymentMethodId === paymentMethodId,
+    );
+    if (existingPayment) {
+      if (newAmount <= 0) {
+        setPayments((current) =>
+          current.filter((p) => p.localId !== existingPayment.localId),
+        );
+      } else {
+        const maxAllowed = existingPayment.amount + remaining;
+        const clampedAmount = Math.min(newAmount, maxAllowed);
+        setPayments((current) =>
+          current.map((p) =>
+            p.localId === existingPayment.localId
+              ? { ...p, amount: Math.round(clampedAmount * 100) / 100 }
+              : p,
+          ),
+        );
+      }
+    } else if (newAmount > 0 && remaining > 0) {
+      const clampedAmount = Math.min(newAmount, remaining);
+      setPayments((current) => [
+        ...current,
+        {
+          localId: nextPaymentId(),
+          paymentMethodId,
+          amount: Math.round(clampedAmount * 100) / 100,
+        },
+      ]);
+    }
+  };
+
+  const removePayment = (localId: string) => {
+    setPayments((current) => current.filter((p) => p.localId !== localId));
+  };
+
+  const charge = () => {
+    if (!selectedCustomer || !selectedSeller) {
       showToast({
         type: "error",
-        message: "El método de pago seleccionado requiere una referencia.",
+        message: "Selecciona cliente y vendedor.",
       });
       return;
     }
@@ -302,13 +395,33 @@ export function usePointOfSale() {
       });
       return;
     }
+    if (payments.length === 0) {
+      showToast({
+        type: "error",
+        message: "Agrega al menos un método de pago.",
+      });
+      return;
+    }
+    if (remaining !== 0) {
+      showToast({
+        type: "error",
+        message:
+          remaining > 0
+            ? "El monto de los pagos no cubre el total de la venta."
+            : "El monto de los pagos excede el total de la venta.",
+      });
+      return;
+    }
     createSale(
       {
         deviceKey: deviceKey!,
         customerId: selectedCustomer.id,
         sellerId: selectedSeller.id,
-        paymentMethodId: selectedPaymentMethod.id,
-        paymentReference: paymentReference.trim() || undefined,
+        orderId: selectedOrderId ?? undefined,
+        payments: payments.map(({ paymentMethodId, amount }) => ({
+          paymentMethodId,
+          amount,
+        })),
         items: cart.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -316,11 +429,13 @@ export function usePointOfSale() {
       },
       (response) => {
         setCart([]);
-        setPaymentReference("");
+        setPayments([]);
+        setSelectedOrderId(null);
         setCompletedSale(response.data);
         queryClient.invalidateQueries({
-          queryKey: ["inventory", "branches", cashSession.branchId, "balances"],
+          queryKey: ["inventory", "branches", selectedOrder?.branchId ?? cashSession.branchId, "balances"],
         });
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
         showToast({
           type: "success",
           message: "Venta registrada correctamente.",
@@ -337,8 +452,12 @@ export function usePointOfSale() {
 
   return {
     addProduct,
+    addPayment,
+    updatePayment,
+    removePayment,
     canOperate,
     cashSession,
+    columns,
     deviceKey,
     cart,
     catalogViewportRef,
@@ -354,25 +473,29 @@ export function usePointOfSale() {
     loading,
     pageProducts,
     paymentMethods,
-    paymentReference,
+    availablePaymentMethods,
+    payments,
+    paymentsTotal,
+    remaining,
     posTill,
     rows,
     search,
     selectedCustomer,
-    selectedPaymentMethod,
     selectedSeller,
+    selectOrder: setSelectedOrderId,
     setCustomer,
     setCategoryId,
     setDepartmentId,
     setPage,
-    setPaymentMethod,
-    setPaymentReference,
     setCompletedSale,
     setSearch,
     setSeller,
     setSubcategoryId,
     setSubdepartmentId,
-    sellers,
+    sellers:
+      selectedSeller && !sellers.some((item) => item.id === selectedSeller.id)
+        ? [...sellers, selectedSeller]
+        : sellers,
     stockByProduct,
     subcategories,
     subcategoryId,

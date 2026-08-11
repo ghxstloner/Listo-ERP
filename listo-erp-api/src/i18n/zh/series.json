@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "not_found": "未找到序列",
+    "module_already_exists": "该公司此模块已存在序列"
+  },
+  "success": {
+    "created": "序列创建成功",
+    "updated": "序列更新成功",
+    "deleted": "序列删除成功"
+  }
+}

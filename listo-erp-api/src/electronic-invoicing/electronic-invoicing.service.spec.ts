@@ -397,10 +397,13 @@ describe('ElectronicInvoicingService', () => {
         sale: {
           findUniqueOrThrow: jest.fn().mockResolvedValue({
             cashSessionId: 10,
-            paymentReference: null,
             createdAt: new Date('2026-07-20T00:00:00.000Z'),
             customer: { isFinalConsumer: true, name: 'Consumidor Final' },
-            paymentMethod: { dianCode: '10' },
+            payments: [
+              {
+                paymentMethod: { dianCode: '10' },
+              },
+            ],
             items: [
               {
                 quantity: {},
@@ -473,10 +476,13 @@ describe('ElectronicInvoicingService', () => {
         sale: {
           findUniqueOrThrow: jest.fn().mockResolvedValue({
             cashSessionId: 10,
-            paymentReference: null,
             createdAt: new Date('2026-07-20T00:00:00.000Z'),
             customer: { isFinalConsumer: true },
-            paymentMethod: { dianCode: '10' },
+            payments: [
+              {
+                paymentMethod: { dianCode: '10' },
+              },
+            ],
             items: [],
           }),
         },

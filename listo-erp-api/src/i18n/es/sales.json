@@ -1,6 +1,8 @@
 {
   "errors": {
     "duplicate_product": "No puedes registrar el mismo producto más de una vez.",
+    "duplicate_payment_method": "No puedes usar el mismo método de pago más de una vez en una venta.",
+    "payments_total_mismatch": "La suma de los pagos no coincide con el total de la venta.",
     "cash_session_required": "Debes tener una caja abierta para registrar una venta.",
     "customer_not_found": "El cliente seleccionado no está disponible.",
     "seller_not_found": "El vendedor seleccionado no está disponible para tu usuario.",
@@ -9,9 +11,11 @@
     "warehouse_not_found": "La sucursal de la caja no tiene almacenes activos asociados.",
     "insufficient_stock": "No hay existencias suficientes en los almacenes de la sucursal.",
     "product_dian_code_required": "Todos los productos deben tener un código DIAN para registrar ventas en Colombia.",
-    "payment_reference_required": "El método de pago seleccionado requiere una referencia.",
     "payment_method_dian_code_required": "El método de pago seleccionado debe tener un código DIAN para registrar ventas en Colombia.",
-    "customer_fiscal_data_required": "El cliente seleccionado debe tener datos fiscales completos o estar marcado como Consumidor Final."
+    "customer_fiscal_data_required": "El cliente seleccionado debe tener datos fiscales completos o estar marcado como Consumidor Final.",
+    "order_not_found": "El pedido seleccionado no está disponible.",
+    "order_not_pending": "El pedido ya no está pendiente de pago.",
+    "order_changed": "El pedido cambió y debe cargarse nuevamente antes de cobrarlo."
   },
   "success": {
     "created": "Venta registrada correctamente."

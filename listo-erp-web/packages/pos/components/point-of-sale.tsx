@@ -4,6 +4,7 @@ import { usePointOfSale } from "../hooks/use-point-of-sale";
 import { CatalogPagination } from "./catalog-pagination";
 import { ElectronicInvoiceDialog } from "./electronic-invoice-dialog";
 import { PosToolbar } from "./pos-toolbar";
+import { OrdersDialog } from "./orders-dialog";
 import { ProductCatalog } from "./product-catalog";
 import { Ticket } from "./ticket";
 import {
@@ -11,9 +12,11 @@ import {
   CloseExpiredCashSessionDialog,
   PosAccessActions,
 } from "./pos-session-gate";
+import { useState } from "react";
 
 export function PointOfSale() {
   const pos = usePointOfSale();
+  const [ordersOpen, setOrdersOpen] = useState(false);
 
   return (
     <div className="h-[calc(100dvh-5.5rem)] min-h-[560px]">
@@ -55,6 +58,7 @@ export function PointOfSale() {
               pos.setSubcategoryId(subcategoryId);
               pos.setPage(1);
             }}
+            onOrdersClick={() => setOrdersOpen(true)}
           />
           <div className="flex min-h-0 flex-1 flex-col gap-3">
             {pos.loading ? (
@@ -66,6 +70,7 @@ export function PointOfSale() {
                 <ProductCatalog
                   products={pos.pageProducts}
                   rows={pos.rows}
+                  columns={pos.columns}
                   stockByProduct={pos.stockByProduct}
                   disabled={!pos.canOperate}
                   viewportRef={pos.catalogViewportRef}
@@ -86,12 +91,13 @@ export function PointOfSale() {
           customers={pos.customers}
           seller={pos.selectedSeller}
           sellers={pos.sellers}
-          paymentMethod={pos.selectedPaymentMethod}
           paymentMethods={pos.paymentMethods}
-          paymentReference={pos.paymentReference}
+          availablePaymentMethods={pos.availablePaymentMethods}
+          payments={pos.payments}
           subtotal={pos.subtotal}
           tax={pos.tax}
           total={pos.total}
+          remaining={pos.remaining}
           canCharge={pos.canOperate}
           charging={pos.creatingSale}
           stockByProduct={pos.stockByProduct}
@@ -105,19 +111,19 @@ export function PointOfSale() {
               pos.sellers.find((item) => item.id === Number(id)) ?? null,
             )
           }
-          onPaymentMethodChange={(id) =>
-            {
-              pos.setPaymentMethod(
-                pos.paymentMethods.find((item) => item.id === Number(id)) ?? null,
-              );
-              pos.setPaymentReference("");
-            }
-          }
-          onPaymentReferenceChange={pos.setPaymentReference}
+          onAddPayment={pos.addPayment}
+          onUpdatePayment={pos.updatePayment}
+          onRemovePayment={pos.removePayment}
           onQuantityChange={pos.updateQuantity}
           onCharge={pos.charge}
         />
       </div>
+      <OrdersDialog
+        open={ordersOpen}
+        onOpenChange={setOrdersOpen}
+        defaultBranchId={pos.cashSession?.branchId}
+        onSelectOrder={pos.selectOrder}
+      />
       {!pos.loading && pos.cashSession?.status === "EXPIRED" && (
         <CloseExpiredCashSessionDialog session={pos.cashSession} />
       )}
