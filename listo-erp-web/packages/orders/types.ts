@@ -2,6 +2,9 @@ import type { Product } from "@/packages/product/types";
 
 export interface CartItem {
   product: Product;
+  productPriceId: number;
+  unitPrice: number;
+  priceName?: string;
   quantity: number;
 }
 
@@ -10,7 +13,7 @@ export interface CreateOrderRequest {
   branchId?: number;
   sellerId?: number;
   notes?: string;
-  items: Array<{ productId: number; quantity: number }>;
+  items: Array<{ productId: number; productPriceId: number; quantity: number }>;
 }
 
 export interface UpdateOrderRequest {
@@ -18,7 +21,7 @@ export interface UpdateOrderRequest {
   branchId?: number;
   sellerId?: number;
   notes?: string;
-  items?: Array<{ productId: number; quantity: number }>;
+  items?: Array<{ productId: number; productPriceId: number; quantity: number }>;
 }
 
 export type OrderStatus = "PENDING" | "PAID" | "CANCELLED";
@@ -26,6 +29,7 @@ export type OrderStatus = "PENDING" | "PAID" | "CANCELLED";
 export interface OrderItem {
   id: number;
   productId: number;
+  productPriceId: number | null;
   quantity: number;
   unitPrice: number;
   taxRate: number;
@@ -36,6 +40,11 @@ export interface OrderItem {
     sku: string;
     name: string;
   };
+  productPrice?: {
+    id: number;
+    name: string;
+    amount: number;
+  } | null;
 }
 
 export interface Order {
@@ -48,6 +57,8 @@ export interface Order {
   status: OrderStatus;
   notes: string | null;
   saleId: number | null;
+  orderNumber: string | null;
+  seriesId: number | null;
   subtotal: number;
   taxAmount: number;
   total: number;
@@ -72,6 +83,7 @@ export interface Order {
 
 export interface OrderListItem {
   id: number;
+  orderNumber: string | null;
   status: OrderStatus;
   createdAt: string;
   total: number;

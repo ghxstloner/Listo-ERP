@@ -37,6 +37,15 @@ export class UpdateProductDto {
   salePrice?: number;
 
   @ApiPropertyOptional({
+    description: 'ID del precio predeterminado del producto; null lo desasigna',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  defaultPriceId?: number | null;
+
+  @ApiPropertyOptional({
     description: 'Tasa de impuesto como fracción: 0.12 equivale a 12%',
   })
   @IsOptional()

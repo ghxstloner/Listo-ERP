@@ -29,6 +29,10 @@ export class CompaniesService {
   async create(createCompanyDto: CreateCompanyDto, userId: number) {
     await this.validateTaxDocument(createCompanyDto);
     const result = await this.prisma.$transaction(async (tx) => {
+      const defaultCurrency = await tx.currency.findUnique({
+        where: { code: 'USD' },
+        select: { id: true },
+      });
       const company = await tx.company.create({
         data: {
           name: createCompanyDto.name,
@@ -47,6 +51,7 @@ export class CompaniesService {
           taxDocumentNumber: createCompanyDto.taxDocumentNumber,
           taxCheckDigit: createCompanyDto.taxCheckDigit,
           fiscalName: createCompanyDto.fiscalName,
+          defaultCurrencyId: defaultCurrency?.id,
         },
         select: {
           id: true,
@@ -70,7 +75,21 @@ export class CompaniesService {
           taxDocumentNumber: true,
           taxCheckDigit: true,
           fiscalName: true,
+          defaultCurrencyId: true,
         },
+      });
+
+      const currencies = await tx.currency.findMany({
+        select: { id: true, code: true, symbol: true },
+      });
+      await tx.companyCurrency.createMany({
+        data: currencies.map((currency) => ({
+          companyId: company.id,
+          currencyId: currency.id,
+          isActive: ['COP', 'USD', 'VES'].includes(currency.code),
+          symbol: currency.symbol,
+        })),
+        skipDuplicates: true,
       });
 
       const companyUser = await tx.companyUser.create({
@@ -155,26 +174,64 @@ export class CompaniesService {
         countryId: true,
         defaultCustomerId: true,
         defaultSellerId: true,
+        defaultCurrencyId: true,
         taxDocumentType: true,
         taxDocumentNumber: true,
         taxCheckDigit: true,
         fiscalName: true,
-        country: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            taxDocumentTypes: true,
+         country: {
+           select: {
+             id: true,
+             code: true,
+             name: true,
+             taxDocumentTypes: true,
+           },
+         },
+          defaultCurrency: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              symbol: true,
+              companySettings: {
+                where: { companyId: id },
+                select: {
+                  symbol: true,
+                  decimalPlaces: true,
+                  decimalSeparator: true,
+                  thousandsSeparator: true,
+                  format: true,
+                  rounding: true,
+                },
+              },
+            },
           },
-        },
-      },
-    });
+       },
+     });
 
     if (!company) {
       throw I18nException.notFound('companies.errors.not_found');
     }
 
-    return company;
+    const { defaultCurrency, ...companyData } = company;
+    const settings = defaultCurrency?.companySettings[0];
+
+    return {
+      ...companyData,
+      defaultCurrency: defaultCurrency
+        ? {
+            id: defaultCurrency.id,
+            code: defaultCurrency.code,
+            name: defaultCurrency.name,
+            symbol: settings?.symbol ?? defaultCurrency.symbol,
+            decimalPlaces: settings?.decimalPlaces ?? 2,
+            decimalSeparator: settings?.decimalSeparator ?? '.',
+            thousandsSeparator: settings?.thousandsSeparator ?? ',',
+            format: settings?.format ?? 'symbol_before',
+            rounding: settings?.rounding ?? 'half_up',
+          }
+        : null,
+    };
   }
 
   async update(id: number, updateCompanyDto: UpdateCompanyDto, userId: number) {
@@ -200,12 +257,27 @@ export class CompaniesService {
         updateCompanyDto.taxCheckDigit ?? company.taxCheckDigit ?? undefined,
     });
 
-    if (updateCompanyDto.defaultCurrencyId != null) {
-      const currency = await this.prisma.currency.findUnique({
-        where: { id: updateCompanyDto.defaultCurrencyId },
+    const selectedCurrencyIds = [updateCompanyDto.defaultCurrencyId].filter(
+      (value): value is number => value != null,
+    );
+    if (selectedCurrencyIds.length > 0) {
+      const currencies = await this.prisma.currency.findMany({
+        where: { id: { in: selectedCurrencyIds } },
+        select: { id: true },
       });
-      if (!currency) {
+      if (currencies.length !== new Set(selectedCurrencyIds).size) {
         throw I18nException.badRequest('currencies.errors.not_found');
+      }
+      const activeSettings = await this.prisma.companyCurrency.findMany({
+        where: {
+          companyId: id,
+          currencyId: { in: selectedCurrencyIds },
+          isActive: true,
+        },
+        select: { currencyId: true },
+      });
+      if (activeSettings.length !== new Set(selectedCurrencyIds).size) {
+        throw I18nException.badRequest('currencies.errors.inactive');
       }
     }
     if (updateCompanyDto.defaultCustomerId != null) {
@@ -235,7 +307,7 @@ export class CompaniesService {
       }
     }
 
-    const updatedCompany = await this.prisma.company.update({
+    await this.prisma.company.update({
       where: { id },
       data: updateCompanyDto,
       select: {
@@ -273,9 +345,11 @@ export class CompaniesService {
 
     await this.auditService.logUpdate(userId, id, 'companies', 'Empresa', id);
 
+    const companyWithCurrency = await this.findOne(id);
+
     return {
       message: 'companies.success.updated',
-      data: updatedCompany,
+      data: companyWithCurrency,
     };
   }
 

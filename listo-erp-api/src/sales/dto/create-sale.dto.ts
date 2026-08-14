@@ -8,6 +8,7 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -16,6 +17,11 @@ class CreateSaleItemDto {
   @IsInt()
   @Min(1)
   productId: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  productPriceId: number;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
@@ -69,7 +75,9 @@ export class CreateSaleDto {
 
   @IsArray()
   @IsNotEmpty()
+  @IsOptional()
+  @ValidateIf((dto: { orderId?: number }) => !dto.orderId)
   @ValidateNested({ each: true })
   @Type(() => CreateSaleItemDto)
-  items: CreateSaleItemDto[];
+  items?: CreateSaleItemDto[];
 }

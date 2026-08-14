@@ -18,6 +18,11 @@ class UpdateOrderItemDto {
   productId: number;
 
   @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  productPriceId: number;
+
+  @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0.0001)
   quantity: number;

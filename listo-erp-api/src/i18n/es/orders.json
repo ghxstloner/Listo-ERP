@@ -3,6 +3,7 @@
     "customer_not_found": "El cliente seleccionado no está disponible.",
     "seller_not_found": "El vendedor seleccionado no está disponible para tu usuario.",
     "product_not_found": "Uno o más productos no están disponibles.",
+    "product_price_not_found": "Uno o más precios no pertenecen al producto o están inactivos.",
     "branch_not_found": "La sucursal seleccionada no está disponible.",
     "warehouse_not_found": "La sucursal no tiene almacenes activos asociados.",
     "insufficient_stock": "No hay existencias suficientes en los almacenes de la sucursal.",
@@ -10,7 +11,8 @@
     "order_not_found": "El pedido no existe o no tienes acceso a él.",
     "order_not_editable": "Este pedido no se puede editar porque ya fue pagado o cancelado.",
     "order_already_cancelled": "Este pedido ya fue cancelado.",
-    "order_already_paid": "Este pedido ya fue pagado."
+    "order_already_paid": "Este pedido ya fue pagado.",
+    "no_active_series": "No hay una serie activa configurada para el módulo de pedidos."
   },
   "success": {
     "created": "Pedido creado correctamente.",

@@ -2,19 +2,24 @@
 
 import { PageLoading } from "@/components/page-loading";
 import { useTranslation } from "@/hooks/use-translation";
+import { encodeId } from "@/lib/hash-id";
 import { Spinner } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useGetSeries } from "../api";
 import type { Series } from "../types";
 import { ListSeries } from "./list-series";
 
-export function SeriesList() {
+interface SeriesListProps {
+  headerAction?: React.ReactNode;
+}
+
+export function SeriesList({ headerAction }: SeriesListProps) {
   const t = useTranslation();
   const router = useRouter();
   const [series, isLoading, error] = useGetSeries();
 
   const handleEdit = (series: Series) => {
-    router.push(`/listoerp/administracion/series/${series.id}`);
+    router.push(`/listoerp/company/series/${encodeId(series.id)}`);
   };
 
   if (isLoading) {
@@ -41,6 +46,7 @@ export function SeriesList() {
     <ListSeries
       series={series ?? []}
       onEdit={handleEdit}
+      headerAction={headerAction}
     />
   );
 }

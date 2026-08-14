@@ -4,7 +4,9 @@
     "code_exists": "A currency with that code already exists.",
     "used_by_companies": "Cannot delete the currency because {count} company(ies) use it as default currency.",
     "used_by_branches": "Cannot delete the currency because {count} branch(es) use it.",
-    "has_exchange_rates": "Cannot delete the currency because it has {count} exchange rate(s) associated. Delete them first."
+    "has_exchange_rates": "Cannot delete the currency because it has {count} exchange rate(s) associated. Delete them first.",
+    "cannot_disable_default": "The base or operation currency cannot be disabled. Select another currency first.",
+    "inactive": "The selected currency is inactive for this company."
   },
   "success": {
     "created": "Currency created successfully",

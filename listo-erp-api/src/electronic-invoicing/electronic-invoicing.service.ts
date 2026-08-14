@@ -12,7 +12,10 @@ import { CredentialsService } from './credentials.service';
 import { UpdateColombiaConfigurationDto } from './dto/update-colombia-configuration.dto';
 import { UpdateTillColombiaConfigurationDto } from './dto/update-till-colombia-configuration.dto';
 import { InvoicePayloadFactory } from './invoice-payload.factory';
-import { ReceiptPdfService } from './receipt-pdf.service';
+import {
+  ReceiptCurrency,
+  ReceiptPdfService,
+} from './receipt-pdf.service';
 import { TheFactoryClient } from './the-factory.client';
 
 const COLOMBIA = 'CO';
@@ -461,6 +464,30 @@ export class ElectronicInvoicingService {
         requestPayload: true,
         cufe: true,
         qr: true,
+        sale: {
+          select: {
+            company: {
+              select: {
+                defaultCurrency: {
+                  select: {
+                    code: true,
+                    symbol: true,
+                    companySettings: {
+                      where: { companyId },
+                      select: {
+                        symbol: true,
+                        decimalPlaces: true,
+                        decimalSeparator: true,
+                        thousandsSeparator: true,
+                        format: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
     if (!invoice || !invoice.cufe) {
@@ -468,12 +495,24 @@ export class ElectronicInvoicingService {
         'electronic_invoicing.errors.artifact_not_available',
       );
     }
+    const defaultCurrency = invoice.sale.company.defaultCurrency;
+    const settings = defaultCurrency?.companySettings[0];
+    const currency: ReceiptCurrency = {
+      code: defaultCurrency?.code ?? 'USD',
+      symbol: settings?.symbol ?? defaultCurrency?.symbol ?? '$',
+      decimalPlaces: settings?.decimalPlaces ?? 2,
+      decimalSeparator: settings?.decimalSeparator ?? '.',
+      thousandsSeparator: settings?.thousandsSeparator ?? ',',
+      format: settings?.format ?? 'symbol_before',
+    };
+
     return {
       content: await this.receiptPdf.create({
         payload:
           invoice.requestPayload as unknown as import('./the-factory.types').TheFactoryInvoicePayload,
         cufe: invoice.cufe,
         qr: invoice.qr,
+        currency,
       }),
       contentType: 'application/pdf',
       filename: `${invoice.consecutive}-recibo.pdf`,

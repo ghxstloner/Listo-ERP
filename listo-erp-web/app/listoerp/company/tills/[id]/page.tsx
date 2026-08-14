@@ -83,7 +83,9 @@ export default function TillConfigPage() {
               {t("company.generalConfiguration")}
             </TabsTrigger>
             <TabsTrigger value="payment-methods">Métodos de pago</TabsTrigger>
-            <TabsTrigger value="electronic-invoicing">Facturación electrónica</TabsTrigger>
+            <TabsTrigger value="electronic-invoicing">
+              Facturación electrónica
+            </TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="general" className="mt-2 w-full">

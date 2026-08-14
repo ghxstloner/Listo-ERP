@@ -9,11 +9,20 @@
     "category_not_found": "La categoría no existe o no pertenece al subdepartamento seleccionado.",
     "category_required": "Debe seleccionar categoría para asignar una subcategoría.",
     "subcategory_not_found": "La subcategoría no existe o no pertenece a la categoría seleccionada.",
-    "supplier_not_found": "El proveedor no existe o no pertenece a la empresa."
+    "supplier_not_found": "El proveedor no existe o no pertenece a la empresa.",
+    "price_not_found": "El precio no existe o no pertenece al producto.",
+    "price_name_required": "El nombre del precio es obligatorio.",
+    "default_price_not_found": "El precio predeterminado no existe, no pertenece al producto o está inactivo.",
+    "default_price_inactive": "El precio predeterminado no puede desactivarse.",
+    "default_price_required": "No puedes eliminar el precio predeterminado del producto."
   },
   "success": {
     "created": "Producto creado exitosamente",
     "updated": "Producto actualizado exitosamente",
-    "deleted": "Producto eliminado exitosamente"
+    "deleted": "Producto eliminado exitosamente",
+    "price_created": "Precio creado exitosamente",
+    "price_updated": "Precio actualizado exitosamente",
+    "price_deleted": "Precio eliminado exitosamente",
+    "default_price_updated": "Precio predeterminado actualizado exitosamente"
   }
 }

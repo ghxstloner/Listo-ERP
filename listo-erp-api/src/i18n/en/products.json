@@ -9,11 +9,20 @@
     "category_not_found": "The category does not exist or does not belong to the selected subdepartment.",
     "category_required": "You must select a category to assign a subcategory.",
     "subcategory_not_found": "The subcategory does not exist or does not belong to the selected category.",
-    "supplier_not_found": "The supplier does not exist or does not belong to the company."
+    "supplier_not_found": "The supplier does not exist or does not belong to the company.",
+    "price_not_found": "The price does not exist or does not belong to the product.",
+    "price_name_required": "The price name is required.",
+    "default_price_not_found": "The default price does not exist, does not belong to the product, or is inactive.",
+    "default_price_inactive": "The default price cannot be deactivated.",
+    "default_price_required": "The product's default price cannot be deleted."
   },
   "success": {
     "created": "Product created successfully",
     "updated": "Product updated successfully",
-    "deleted": "Product deleted successfully"
+    "deleted": "Product deleted successfully",
+    "price_created": "Price created successfully",
+    "price_updated": "Price updated successfully",
+    "price_deleted": "Price deleted successfully",
+    "default_price_updated": "Default price updated successfully"
   }
 }

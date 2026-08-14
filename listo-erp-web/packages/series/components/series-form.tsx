@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -32,7 +38,9 @@ export function SeriesForm({ series }: SeriesFormProps) {
   const [description, setDescription] = useState(series?.description ?? "");
   const [format, setFormat] = useState(series?.format ?? "");
   const [consecutive, setConsecutive] = useState(series?.consecutive ?? 1);
-  const [module, setModule] = useState<SeriesModule>(series?.module ?? SERIES_MODULES[0]);
+  const [module, setModule] = useState<SeriesModule>(
+    series?.module ?? SERIES_MODULES[0],
+  );
   const [isActive, setIsActive] = useState(series?.isActive ?? true);
   const [createSeries, isCreating] = useCreateSeries();
   const [updateSeries, isUpdating] = useUpdateSeries(series?.id ?? 0);
@@ -40,15 +48,24 @@ export function SeriesForm({ series }: SeriesFormProps) {
 
   const save = () => {
     if (!description.trim()) {
-      showToast({ type: "error", message: t("administration.series.validation.descriptionRequired") });
+      showToast({
+        type: "error",
+        message: t("administration.series.validation.descriptionRequired"),
+      });
       return;
     }
     if (!format.trim()) {
-      showToast({ type: "error", message: t("administration.series.validation.formatRequired") });
+      showToast({
+        type: "error",
+        message: t("administration.series.validation.formatRequired"),
+      });
       return;
     }
     if (consecutive < 1) {
-      showToast({ type: "error", message: t("administration.series.validation.consecutiveMin") });
+      showToast({
+        type: "error",
+        message: t("administration.series.validation.consecutiveMin"),
+      });
       return;
     }
     const payload = {
@@ -66,7 +83,7 @@ export function SeriesForm({ series }: SeriesFormProps) {
           ? t("administration.series.seriesUpdated")
           : t("administration.series.seriesCreated"),
       });
-      router.push("/listoerp/administracion/series");
+      router.push("/listoerp/company/series");
     };
     if (series) updateSeries(payload, onSuccess);
     else createSeries(payload, onSuccess);
@@ -128,7 +145,9 @@ export function SeriesForm({ series }: SeriesFormProps) {
               disabled={isSaving}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t("administration.series.selectModule")} />
+                <SelectValue
+                  placeholder={t("administration.series.selectModule")}
+                />
               </SelectTrigger>
               <SelectContent>
                 {SERIES_MODULES.map((mod) => (

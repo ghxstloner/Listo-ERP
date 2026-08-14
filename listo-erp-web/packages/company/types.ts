@@ -18,8 +18,22 @@ export interface Company {
   taxDocumentNumber: string;
   taxCheckDigit: string;
   fiscalName: string;
+  defaultCurrencyId: number | null;
+  defaultCurrency: CompanyCurrency | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CompanyCurrency {
+  id: number;
+  code: string;
+  name: string;
+  symbol: string;
+  decimalPlaces: number;
+  decimalSeparator: string;
+  thousandsSeparator: string;
+  format: "symbol_before" | "symbol_after" | "code_before" | "code_after";
+  rounding: "half_up" | "half_even" | "up" | "down";
 }
 
 export interface UpdateCompanyResponse {

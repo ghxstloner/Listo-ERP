@@ -7,6 +7,7 @@
     "product_not_found": "One or more products are unavailable",
     "product_not_supplied": "All products must be linked to the selected supplier",
     "default_currency_required": "The company must have a default currency to create purchase orders",
+    "exchange_rate_required": "No rate is registered for the operation currency and the current date",
     "not_pending": "Only pending orders can be received or cancelled"
   },
   "success": {

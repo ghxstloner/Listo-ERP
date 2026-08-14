@@ -11,12 +11,13 @@ import { queryClient } from "@/packages/config/query/client";
 import { useGetProducts } from "@/packages/product/api";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
-import type { Product } from "@/packages/product/types";
+import { getProductDefaultPrice } from "@/packages/product/types";
+import type { Product, ProductPrice } from "@/packages/product/types";
 import { useGetSellers } from "@/packages/sellers/api";
 import { useGetOrder } from "@/packages/orders/api";
 import { useGetTillPosAccess } from "@/packages/till/api";
 import type { Seller } from "@/packages/sellers/types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCreateSale } from "../api";
 import { getPosDeviceKey } from "../device-key";
 import type { CartItem, LocalPaymentEntry, PaymentMethod, Sale } from "../types";
@@ -73,11 +74,15 @@ export function usePointOfSale() {
   const [createSale, creatingSale, createSaleError] = useCreateSale();
   const [company, companyLoading] = useGetCompany(companyId);
 
-  const products = (
-    Array.isArray(productsResponse)
-      ? productsResponse
-      : (productsResponse?.data ?? [])
-  ).filter((product) => product.isActive);
+  const products = useMemo(
+    () =>
+      (
+        Array.isArray(productsResponse)
+          ? productsResponse
+          : (productsResponse?.data ?? [])
+      ).filter((product) => product.isActive),
+    [productsResponse],
+  );
   const departments = (departmentsResponse?.data ?? []).filter(
     (department) => department.isActive,
   );
@@ -157,20 +162,67 @@ export function usePointOfSale() {
       setSelectedOrderId(null);
       return;
     }
-    setCart(selectedOrder.items.map((item) => ({
-      product: {
+    setCart(selectedOrder.items.map((item) => {
+      const catalogProduct = products.find((product) => product.id === item.productId);
+      const legacyPrice: ProductPrice = {
+        id: 0,
+        productId: item.productId,
+        name: item.productPrice?.name ?? "Precio del pedido",
+        amount: Number(item.unitPrice),
+        isActive: true,
+        sortOrder: Number.MAX_SAFE_INTEGER,
+      };
+      const orderPrice: ProductPrice = {
+        id: item.productPriceId ?? legacyPrice.id,
+        productId: item.productId,
+        name: item.productPrice?.name ?? "Precio del pedido",
+        amount: item.productPrice?.amount ?? Number(item.unitPrice),
+        isActive: true,
+        sortOrder: 0,
+      };
+      const product = catalogProduct
+        ? item.productPriceId == null
+          ? { ...catalogProduct, prices: [...catalogProduct.prices, legacyPrice] }
+          : catalogProduct
+        : {
         id: item.productId,
         sku: item.product.sku,
         name: item.product.name,
         salePrice: Number(item.unitPrice),
+        defaultPriceId: item.productPriceId,
+        prices: [orderPrice],
+        defaultPrice: orderPrice,
+        description: null,
+        costPrice: null,
         taxRate: Number(item.taxRate),
-      } as Product,
+        unit: null,
+        dianCode: null,
+        image: null,
+        isActive: true,
+        companyId,
+        departmentId: 0,
+        subdepartmentId: null,
+        categoryId: null,
+        subcategoryId: null,
+        department: { id: 0, name: "", code: "" },
+        subdepartment: null,
+        category: null,
+        subcategory: null,
+        createdAt: "",
+        updatedAt: "",
+      } as Product;
+      return {
+      product,
+      productPriceId: item.productPriceId ?? legacyPrice.id,
+      unitPrice: Number(item.unitPrice),
+      priceName: item.productPrice?.name,
       quantity: Number(item.quantity),
-    })));
+      };
+    }));
     setCustomer(selectedOrder.customer as Customer);
     setSeller(selectedOrder.seller as Seller);
     setPayments([]);
-  }, [selectedOrder]);
+  }, [companyId, products, selectedOrder]);
 
   useEffect(() => {
     if (loading) return;
@@ -215,12 +267,12 @@ export function usePointOfSale() {
     currentPage * productsPerPage,
   );
   const subtotal = cart.reduce(
-    (sum, item) => sum + item.product.salePrice * item.quantity,
+    (sum, item) => sum + item.unitPrice * item.quantity,
     0,
   );
   const tax = cart.reduce(
     (sum, item) =>
-      sum + item.product.salePrice * item.quantity * getTaxRate(item.product),
+      sum + item.unitPrice * item.quantity * getTaxRate(item.product),
     0,
   );
   const total = subtotal + tax;
@@ -249,7 +301,15 @@ export function usePointOfSale() {
       });
       return;
     }
+    const price = getProductDefaultPrice(product);
+    if (!price) {
+      showToast({ type: "error", message: "Este producto no tiene un precio activo." });
+      return;
+    }
     const availableStock = stockByProduct.get(product.id) ?? 0;
+    const currentQuantity = cart
+      .filter((item) => item.product.id === product.id)
+      .reduce((sum, item) => sum + item.quantity, 0);
     if (availableStock <= 0) {
       showToast({
         type: "warning",
@@ -257,8 +317,7 @@ export function usePointOfSale() {
       });
       return;
     }
-    const existingItem = cart.find((item) => item.product.id === product.id);
-    if (existingItem && existingItem.quantity >= availableStock) {
+    if (currentQuantity >= availableStock) {
       showToast({
         type: "warning",
         message: "Ya alcanzaste el inventario disponible para este producto.",
@@ -267,25 +326,31 @@ export function usePointOfSale() {
     }
     setCart((current) => {
       const item = current.find((line) => line.product.id === product.id);
-      if (!item) return [...current, { product, quantity: 1 }];
+      if (!item) return [...current, { product, productPriceId: price.id, unitPrice: price.amount, priceName: price.name, quantity: 1 }];
       return current.map((line) =>
-        line.product.id === product.id
+        line === item
           ? { ...line, quantity: line.quantity + 1 }
           : line,
       );
     });
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productPriceId: number, quantity: number) => {
     if (!Number.isFinite(quantity)) return;
+    const item = cart.find((line) => line.productPriceId === productPriceId);
+    if (!item) return;
+    const productId = item.product.id;
     if (quantity <= 0) {
       setCart((current) =>
-        current.filter((item) => item.product.id !== productId),
+        current.filter((item) => item.productPriceId !== productPriceId),
       );
       return;
     }
     const availableStock = stockByProduct.get(productId) ?? 0;
-    const nextQuantity = Math.min(quantity, availableStock);
+    const otherQuantity = cart
+      .filter((line) => line.product.id === productId && line.productPriceId !== productPriceId)
+      .reduce((sum, line) => sum + line.quantity, 0);
+    const nextQuantity = Math.min(quantity, Math.max(0, availableStock - otherQuantity));
     if (quantity > availableStock) {
       showToast({
         type: "warning",
@@ -294,13 +359,48 @@ export function usePointOfSale() {
     }
     setCart((current) =>
       nextQuantity <= 0
-        ? current.filter((item) => item.product.id !== productId)
+        ? current.filter((item) => item.productPriceId !== productPriceId)
         : current.map((item) =>
-            item.product.id === productId
+            item.productPriceId === productPriceId
               ? { ...item, quantity: nextQuantity }
               : item,
           ),
     );
+  };
+
+  const updatePrice = (productPriceId: number, price: ProductPrice) => {
+    setCart((current) => {
+      const currentItem = current.find((item) => item.productPriceId === productPriceId);
+      const existingTarget = current.find((item) => item.productPriceId === price.id);
+      if (!currentItem || (existingTarget && existingTarget !== currentItem)) {
+        if (!currentItem || !existingTarget) return current;
+        const maxStock = stockByProduct.get(currentItem.product.id) ?? Number.MAX_SAFE_INTEGER;
+        const otherQuantity = current
+          .filter(
+            (item) =>
+              item.product.id === currentItem.product.id &&
+              item !== currentItem &&
+              item !== existingTarget,
+          )
+          .reduce((sum, item) => sum + item.quantity, 0);
+        const mergedQuantity = Math.min(
+          maxStock - otherQuantity,
+          existingTarget.quantity + currentItem.quantity,
+        );
+        return current
+          .filter((item) => item !== currentItem)
+          .map((item) =>
+            item === existingTarget
+              ? { ...item, quantity: Math.max(0, mergedQuantity) }
+              : item,
+          );
+      }
+      return current.map((item) =>
+        item === currentItem
+          ? { ...item, productPriceId: price.id, unitPrice: price.amount, priceName: price.name }
+          : item,
+      );
+    });
   };
 
   const addPayment = (
@@ -422,10 +522,15 @@ export function usePointOfSale() {
           paymentMethodId,
           amount,
         })),
-        items: cart.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-        })),
+        ...(selectedOrderId
+          ? {}
+          : {
+              items: cart.map((item) => ({
+                productId: item.product.id,
+                productPriceId: item.productPriceId,
+                quantity: item.quantity,
+              })),
+            }),
       },
       (response) => {
         setCart([]);
@@ -506,5 +611,6 @@ export function usePointOfSale() {
     total,
     totalPages,
     updateQuantity,
+    updatePrice,
   };
 }

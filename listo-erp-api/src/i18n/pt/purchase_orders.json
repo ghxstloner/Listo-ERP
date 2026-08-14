@@ -7,6 +7,7 @@
     "product_not_found": "Um ou mais produtos não estão disponíveis",
     "product_not_supplied": "Todos os produtos devem estar associados ao fornecedor selecionado",
     "default_currency_required": "A empresa deve ter uma moeda padrão para criar pedidos de compra",
+    "exchange_rate_required": "Não há uma taxa registrada para a moeda de operação e a data atual",
     "not_pending": "Somente pedidos pendentes podem ser recebidos ou cancelados"
   },
   "success": {

@@ -3,6 +3,7 @@
     "customer_not_found": "The selected customer is not available.",
     "seller_not_found": "The selected seller is not available for your user.",
     "product_not_found": "One or more products are not available.",
+    "product_price_not_found": "One or more prices do not belong to the product or are inactive.",
     "branch_not_found": "The selected branch is not available.",
     "warehouse_not_found": "The branch has no active associated warehouses.",
     "insufficient_stock": "There is not enough stock in the branch warehouses.",
@@ -10,7 +11,8 @@
     "order_not_found": "The order does not exist or you do not have access to it.",
     "order_not_editable": "This order cannot be edited because it has already been paid or cancelled.",
     "order_already_cancelled": "This order has already been cancelled.",
-    "order_already_paid": "This order has already been paid."
+    "order_already_paid": "This order has already been paid.",
+    "no_active_series": "There is no active series configured for the orders module."
   },
   "success": {
     "created": "Order created successfully.",

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Customer } from "@/packages/customers/types";
 import type { Seller } from "@/packages/sellers/types";
 import type { CartItem, LocalPaymentEntry, PaymentMethod } from "../types";
+import type { ProductPrice } from "@/packages/product/types";
 import { TicketCheckout } from "./ticket-checkout";
 import { PaymentSplitPanel } from "./payment-split-panel";
 import { PaymentDialog } from "./payment-dialog";
@@ -31,7 +32,8 @@ interface TicketProps {
   onAddPayment: (method: PaymentMethod, amount: number) => void;
   onUpdatePayment: (methodId: number, amount: number) => void;
   onRemovePayment: (localId: string) => void;
-  onQuantityChange: (productId: number, quantity: number) => void;
+  onQuantityChange: (productPriceId: number, quantity: number) => void;
+  onPriceChange: (productPriceId: number, price: ProductPrice) => void;
   onCharge: () => void;
 }
 
@@ -54,7 +56,7 @@ export function Ticket(props: TicketProps) {
           </div>
           <div className="min-h-0 flex-1 divide-y overflow-y-auto border-y">
             {props.cart.length === 0 ? <p className="text-muted-foreground py-10 text-center text-sm">Agrega productos para iniciar el ticket.</p> : props.cart.map((item) => (
-              <TicketItem key={item.product.id} item={item} availableStock={props.stockByProduct.get(item.product.id) ?? 0} onQuantityChange={props.onQuantityChange} />
+               <TicketItem key={item.productPriceId} item={item} availableStock={props.stockByProduct.get(item.product.id) ?? 0} onQuantityChange={props.onQuantityChange} onPriceChange={props.onPriceChange} />
             ))}
           </div>
            <TicketSummary subtotal={props.subtotal} tax={props.tax} total={props.total} />

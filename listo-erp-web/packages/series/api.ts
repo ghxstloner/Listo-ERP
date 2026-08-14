@@ -1,5 +1,6 @@
 import { useApiMutation, useApiQuery } from "@config";
 import type { Series, CreateSeriesRequest, UpdateSeriesRequest } from "./types";
+import type { SeriesModule } from "./constants";
 
 export const useGetSeries = () => {
   return useApiQuery<Series[]>(["series"], "series");
@@ -7,6 +8,13 @@ export const useGetSeries = () => {
 
 export const useGetSeriesById = (id: Series["id"]) => {
   return useApiQuery<Series>(["series", id], `series/${id}`);
+};
+
+export const useGetActiveSeries = (module: SeriesModule) => {
+  return useApiQuery<Series | null>(
+    ["series", "active", module],
+    `series/active/${module}`,
+  );
 };
 
 export const useCreateSeries = () => {

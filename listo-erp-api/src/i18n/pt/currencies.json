@@ -4,7 +4,9 @@
     "code_exists": "Já existe uma moeda com esse código.",
     "used_by_companies": "Não é possível excluir a moeda porque {count} empresa(s) a utilizam como moeda padrão.",
     "used_by_branches": "Não é possível excluir a moeda porque {count} filial(is) a utilizam.",
-    "has_exchange_rates": "Não é possível excluir a moeda porque tem {count} tipo(s) de câmbio associado(s). Elimine-os primeiro."
+    "has_exchange_rates": "Não é possível excluir a moeda porque tem {count} tipo(s) de câmbio associado(s). Elimine-os primeiro.",
+    "cannot_disable_default": "A moeda base ou de operação não pode ser desativada. Selecione outra moeda primeiro.",
+    "inactive": "A moeda selecionada está inativa para esta empresa."
   },
   "success": {
     "created": "Moeda criada com sucesso",

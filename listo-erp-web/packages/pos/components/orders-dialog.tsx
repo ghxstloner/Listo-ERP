@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useGetBranches } from "@/packages/branch/api";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { useGetOrders } from "@/packages/orders/api";
 import type { OrderListItem } from "@/packages/orders/types";
 import { CaretDown, Check, Spinner } from "@phosphor-icons/react";
@@ -36,6 +37,7 @@ export function OrdersDialog({
   defaultBranchId,
   onSelectOrder,
 }: OrdersDialogProps) {
+  const { formatMoney } = useCurrency();
   const [branchIds, setBranchIds] = useState<number[] | null>(null);
   const [branchesInitialized, setBranchesInitialized] = useState(false);
   const [branches] = useGetBranches();
@@ -130,7 +132,7 @@ export function OrdersDialog({
                 >
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-semibold">Pedido #{order.id}</span>
-                    <span className="font-semibold">{Number(order.total).toLocaleString(undefined, { style: "currency", currency: "USD" })}</span>
+                    <span className="font-semibold">{formatMoney(order.total)}</span>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {order.customer?.name ?? "Sin cliente"} · {order.seller?.name ?? "Sin vendedor"} · {order.branch?.name ?? "Sin sucursal"}

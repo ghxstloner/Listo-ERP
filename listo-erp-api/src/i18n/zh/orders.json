@@ -3,6 +3,7 @@
     "customer_not_found": "所选客户不可用。",
     "seller_not_found": "所选销售人员对您的用户不可用。",
     "product_not_found": "一个或多个产品不可用。",
+    "product_price_not_found": "一个或多个价格不属于该商品或已停用。",
     "branch_not_found": "所选分店不可用。",
     "warehouse_not_found": "该分店没有关联的有效仓库。",
     "insufficient_stock": "分店仓库库存不足。",
@@ -10,7 +11,8 @@
     "order_not_found": "订单不存在或您无权访问。",
     "order_not_editable": "此订单无法编辑，因为已付款或已取消。",
     "order_already_cancelled": "此订单已被取消。",
-    "order_already_paid": "此订单已付款。"
+    "order_already_paid": "此订单已付款。",
+    "no_active_series": "没有为订单模块配置活动的序列。"
   },
   "success": {
     "created": "订单创建成功。",

@@ -114,8 +114,9 @@ export function PointOfSale() {
           onAddPayment={pos.addPayment}
           onUpdatePayment={pos.updatePayment}
           onRemovePayment={pos.removePayment}
-          onQuantityChange={pos.updateQuantity}
-          onCharge={pos.charge}
+           onQuantityChange={pos.updateQuantity}
+           onPriceChange={pos.updatePrice}
+           onCharge={pos.charge}
         />
       </div>
       <OrdersDialog

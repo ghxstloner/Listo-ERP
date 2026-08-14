@@ -2,6 +2,9 @@ import type { Product } from "@/packages/product/types";
 
 export interface CartItem {
   product: Product;
+  productPriceId: number;
+  unitPrice: number;
+  priceName?: string;
   quantity: number;
 }
 
@@ -30,7 +33,7 @@ export interface CreateSaleRequest {
   sellerId: number;
   orderId?: number;
   payments: SalePaymentEntry[];
-  items: Array<{ productId: number; quantity: number }>;
+  items?: Array<{ productId: number; productPriceId: number; quantity: number }>;
 }
 
 export interface Sale {

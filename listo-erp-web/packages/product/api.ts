@@ -6,7 +6,29 @@ import type {
   CreateProductResponse,
   UpdateProductRequest,
   ProductsApiResponse,
+  ProductPrice,
 } from "./types";
+
+export interface ProductPricesResponse {
+  data: ProductPrice[];
+  meta: { entityName: string };
+}
+
+export interface CreateProductPriceRequest {
+  name: string;
+  amount: number;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export type ProductPriceRequest = CreateProductPriceRequest;
+
+export interface UpdateProductPriceRequest {
+  name?: string;
+  amount?: number;
+  isActive?: boolean;
+  sortOrder?: number;
+}
 
 export interface ProductFilters {
   departmentId?: number;
@@ -32,6 +54,49 @@ export const useGetProducts = (filters: ProductFilters = {}) => {
 export const useGetProduct = (id: Product["id"]) => {
   return useApiQuery<Product>(["products", id], `products/${id}`);
 };
+
+export const useGetProductPrices = (
+  id: Product["id"],
+  includeInactive = true,
+) =>
+  useApiQuery<ProductPricesResponse>(
+    ["products", id, "prices", includeInactive],
+    `products/${id}/prices`,
+    { params: { includeInactive } },
+  );
+
+export const useCreateProductPrice = (productId: Product["id"]) =>
+  useApiMutation<
+    { message: string; data: ProductPrice },
+    CreateProductPriceRequest
+  >(`products/${productId}/prices`, "post");
+
+export const useUpdateProductPrice = (
+  productId: Product["id"],
+  priceId: ProductPrice["id"],
+) =>
+  useApiMutation<
+    { message: string; data: ProductPrice },
+    UpdateProductPriceRequest
+  >(`products/${productId}/prices/${priceId}`, "patch");
+
+export const useDeleteProductPrice = (
+  productId: Product["id"],
+  priceId: ProductPrice["id"],
+) =>
+  useApiMutation<{ message: string }, void>(
+    `products/${productId}/prices/${priceId}`,
+    "delete",
+  );
+
+export const useSetDefaultProductPrice = (
+  productId: Product["id"],
+  priceId: ProductPrice["id"],
+) =>
+  useApiMutation<{ message: string; data: Product }, void>(
+    `products/${productId}/default-price/${priceId}`,
+    "patch",
+  );
 
 export const useUpdateProduct = (id: Product["id"]) => {
   return useApiMutation<Product, UpdateProductRequest>(`products/${id}`, "patch");

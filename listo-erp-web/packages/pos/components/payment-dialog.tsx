@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
+import { MoneyInput } from "@/packages/currency/components/money-input";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle } from "@phosphor-icons/react";
 import { getPaymentMethodImageUrl } from "@/packages/payment-methods/api";
 import type { LocalPaymentEntry, PaymentMethod } from "../types";
-import { formatAmount } from "../utils";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -36,6 +36,7 @@ export function PaymentDialog({
   remaining,
   onUpdatePayment,
 }: PaymentDialogProps) {
+  const { formatMoney, parseMoney } = useCurrency();
   const paymentsTotal = payments.reduce((sum, p) => sum + p.amount, 0);
 
   const paymentByMethodId = new Map<number, LocalPaymentEntry>();
@@ -44,7 +45,7 @@ export function PaymentDialog({
   }
 
   const handleInputChange = (methodId: number, value: string) => {
-    const numericValue = Number(value) || 0;
+    const numericValue = parseMoney(value);
     onUpdatePayment(methodId, numericValue);
   };
 
@@ -60,15 +61,15 @@ export function PaymentDialog({
           <div className="space-y-1 mt-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatAmount(subtotal)}</span>
+              <span>{formatMoney(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Impuestos</span>
-              <span>{formatAmount(tax)}</span>
+              <span>{formatMoney(tax)}</span>
             </div>
             <div className="flex justify-between text-base font-semibold pt-1 border-t">
               <span>Total a pagar</span>
-              <span className="text-foreground">{formatAmount(total)}</span>
+              <span className="text-foreground">{formatMoney(total)}</span>
             </div>
           </div>
         </DialogHeader>
@@ -96,19 +97,15 @@ export function PaymentDialog({
                   <p className="text-sm font-medium truncate">{method.name}</p>
                   {existingPayment && (
                     <p className="text-xs text-emerald-600">
-                      Asignado: {formatAmount(existingPayment.amount)}
+                      Asignado: {formatMoney(existingPayment.amount)}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="relative w-32">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={maxAllowed}
-                      step={0.01}
+                    <MoneyInput
                       value={displayValue}
-                      onChange={(e) => handleInputChange(method.id, e.target.value)}
+                      onValueChange={(value) => handleInputChange(method.id, value)}
                       placeholder="Monto"
                       disabled={isDisabled}
                       className="text-sm"
@@ -132,13 +129,13 @@ export function PaymentDialog({
           <div className="space-y-1 text-sm">
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Pagado:</span>
-              <span className="font-medium">{formatAmount(paymentsTotal)}</span>
+                <span className="font-medium">{formatMoney(paymentsTotal)}</span>
             </div>
             {remaining > 0 ? (
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Faltan:</span>
                 <span className="font-semibold text-foreground">
-                  {formatAmount(remaining)}
+                  {formatMoney(remaining)}
                 </span>
               </div>
             ) : (

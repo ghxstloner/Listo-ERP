@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { InventoryMovementType, OrderStatus, Prisma } from '@prisma/client';
+import {
+  InventoryMovementType,
+  OrderStatus,
+  Prisma,
+  SeriesModule,
+} from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
+import { SeriesService } from '../series/series.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
@@ -11,6 +17,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private seriesService: SeriesService,
   ) {}
 
   async create(dto: CreateOrderDto, companyId: number, userId: number) {
@@ -41,9 +48,15 @@ export class OrdersService {
           where: { id: { in: productIds }, companyId, isActive: true },
           select: {
             id: true,
-            salePrice: true,
             taxRate: true,
             costPrice: true,
+            prices: {
+              where: {
+                id: { in: dto.items.map((item) => item.productPriceId) },
+                isActive: true,
+              },
+              select: { id: true, amount: true },
+            },
           },
         }),
       ]);
@@ -63,17 +76,26 @@ export class OrdersService {
       );
       const lineItems = dto.items.map((item) => {
         const product = productsById.get(item.productId);
+        const productPrice = product.prices.find(
+          (price) => price.id === item.productPriceId,
+        );
+        if (!productPrice) {
+          throw I18nException.badRequest(
+            'orders.errors.product_price_not_found',
+          );
+        }
         const quantity = new Prisma.Decimal(item.quantity);
         const taxRate = product.taxRate ?? new Prisma.Decimal(0);
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;
-        const baseAmount = product.salePrice.mul(quantity);
+        const baseAmount = productPrice.amount.mul(quantity);
         const taxAmount = baseAmount.mul(effectiveTaxRate);
         return {
           productId: item.productId,
+          productPriceId: productPrice.id,
           quantity,
-          unitPrice: product.salePrice,
+          unitPrice: productPrice.amount,
           taxRate,
           taxAmount,
           lineTotal: baseAmount.plus(taxAmount),
@@ -90,6 +112,20 @@ export class OrdersService {
       );
       const total = subtotal.plus(taxAmount);
 
+      const activeSeries = await this.seriesService.findActiveByModule(
+        companyId,
+        SeriesModule.ORDERS,
+      );
+      if (!activeSeries) {
+        throw I18nException.badRequest('orders.errors.no_active_series');
+      }
+      const { previousConsecutive, format } =
+        await this.seriesService.consumeConsecutive(tx, activeSeries.id);
+      const orderNumber = this.seriesService.formatNumber(
+        format,
+        previousConsecutive,
+      );
+
       const order = await tx.order.create({
         data: {
           company: { connect: { id: companyId } },
@@ -97,7 +133,9 @@ export class OrdersService {
           branch: branch ? { connect: { id: branch.id } } : undefined,
           seller: seller ? { connect: { id: seller.id } } : undefined,
           createdByUser: { connect: { id: userId } },
+          series: { connect: { id: activeSeries.id } },
           notes: dto.notes,
+          orderNumber,
           subtotal,
           taxAmount,
           total,
@@ -162,6 +200,7 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
+        orderNumber: true,
         status: true,
         createdAt: true,
         total: true,
@@ -172,7 +211,10 @@ export class OrdersService {
           select: {
             id: true,
             quantity: true,
+            productPriceId: true,
+            unitPrice: true,
             product: { select: { id: true, name: true, sku: true } },
+            productPrice: { select: { id: true, name: true, amount: true } },
           },
         },
       },
@@ -185,6 +227,10 @@ export class OrdersService {
       items: order.items.map((item) => ({
         ...item,
         quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        productPrice: item.productPrice
+          ? { ...item.productPrice, amount: Number(item.productPrice.amount) }
+          : null,
       })),
     }));
   }
@@ -253,13 +299,24 @@ export class OrdersService {
       const productsToAddOrUpdate = dto.items ?? [];
 
       const productIds = productsToAddOrUpdate.map((item) => item.productId);
+      if (new Set(productIds).size !== productIds.length) {
+        throw I18nException.badRequest('orders.errors.duplicate_product');
+      }
       const products = await tx.product.findMany({
         where: { id: { in: productIds }, companyId, isActive: true },
         select: {
           id: true,
-          salePrice: true,
           taxRate: true,
           costPrice: true,
+          prices: {
+            where: {
+              id: {
+                in: productsToAddOrUpdate.map((item) => item.productPriceId),
+              },
+              isActive: true,
+            },
+            select: { id: true, amount: true },
+          },
         },
       });
       if (products.length !== productIds.length) {
@@ -271,17 +328,26 @@ export class OrdersService {
 
       const newLineItems = productsToAddOrUpdate.map((item) => {
         const product = productsById.get(item.productId);
+        const productPrice = product.prices.find(
+          (price) => price.id === item.productPriceId,
+        );
+        if (!productPrice) {
+          throw I18nException.badRequest(
+            'orders.errors.product_price_not_found',
+          );
+        }
         const quantity = new Prisma.Decimal(item.quantity);
         const taxRate = product.taxRate ?? new Prisma.Decimal(0);
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;
-        const baseAmount = product.salePrice.mul(quantity);
+        const baseAmount = productPrice.amount.mul(quantity);
         const taxAmount = baseAmount.mul(effectiveTaxRate);
         return {
           productId: item.productId,
+          productPriceId: productPrice.id,
           quantity,
-          unitPrice: product.salePrice,
+          unitPrice: productPrice.amount,
           taxRate,
           taxAmount,
           lineTotal: baseAmount.plus(taxAmount),
@@ -307,8 +373,10 @@ export class OrdersService {
         where: { id },
         data: {
           customerId: dto.customerId ?? existing.customerId,
-          branchId: dto.branchId !== undefined ? dto.branchId : existing.branchId,
-          sellerId: dto.sellerId !== undefined ? dto.sellerId : existing.sellerId,
+          branchId:
+            dto.branchId !== undefined ? dto.branchId : existing.branchId,
+          sellerId:
+            dto.sellerId !== undefined ? dto.sellerId : existing.sellerId,
           notes: dto.notes !== undefined ? dto.notes : existing.notes,
           subtotal,
           taxAmount,
@@ -373,6 +441,8 @@ export class OrdersService {
       status: true,
       notes: true,
       saleId: true,
+      orderNumber: true,
+      seriesId: true,
       subtotal: true,
       taxAmount: true,
       total: true,
@@ -385,12 +455,14 @@ export class OrdersService {
         select: {
           id: true,
           productId: true,
+          productPriceId: true,
           quantity: true,
           unitPrice: true,
           taxRate: true,
           taxAmount: true,
           lineTotal: true,
           product: { select: { id: true, sku: true, name: true } },
+          productPrice: { select: { id: true, name: true, amount: true } },
         },
       },
     };
@@ -407,6 +479,7 @@ export class OrdersService {
         taxRate: Prisma.Decimal;
         taxAmount: Prisma.Decimal;
         lineTotal: Prisma.Decimal;
+        productPrice?: { amount: Prisma.Decimal } | null;
       }>;
     },
   >(order: T) {
@@ -422,6 +495,12 @@ export class OrdersService {
         taxRate: Number(item.taxRate),
         taxAmount: Number(item.taxAmount),
         lineTotal: Number(item.lineTotal),
+        productPrice: item.productPrice
+          ? {
+              ...item.productPrice,
+              amount: Number(item.productPrice.amount),
+            }
+          : null,
       })),
     };
   }

@@ -39,6 +39,7 @@ import { ArrowUpDown } from "lucide-react";
 import * as React from "react";
 import { getProductImageUrl } from "../api";
 import type { Product } from "../types";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 
 type TFunction = (key: string) => string;
 
@@ -86,13 +87,6 @@ function StatusPill({ isActive, t }: { isActive: boolean; t: TFunction }) {
   );
 }
 
-function formatCurrency(value: number | null | undefined) {
-  return new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "USD",
-  }).format(value ?? 0);
-}
-
 function formatDate(value?: string) {
   if (!value) return "-";
   const date = new Date(value);
@@ -106,10 +100,13 @@ function buildColumns({
   onDelete,
   isDeleting,
   deletingProductId,
+  formatMoney,
 }: Pick<
   ProductTableProps,
   "t" | "onEdit" | "onDelete" | "isDeleting" | "deletingProductId"
->): ColumnDef<Product>[] {
+> & {
+  formatMoney: (value: number | string | null | undefined) => string;
+}): ColumnDef<Product>[] {
   return [
     {
       id: "image",
@@ -170,10 +167,10 @@ function buildColumns({
       cell: ({ row }) => (
         <div className="min-w-0">
           <div className="truncate font-medium">
-            {formatCurrency(row.original.salePrice)}
+            {formatMoney(row.original.salePrice)}
           </div>
           <div className="text-muted-foreground truncate text-sm">
-            {t("inventory.products.cost")}: {formatCurrency(row.original.costPrice)}
+            {t("inventory.products.cost")}: {formatMoney(row.original.costPrice)}
           </div>
         </div>
       ),
@@ -275,13 +272,14 @@ export function ProductTable({
   t,
   action,
 }: ProductTableProps) {
+  const { formatMoney } = useCurrency();
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [statusValue, setStatusValue] = React.useState<string>("");
 
   const columns = React.useMemo(
-    () => buildColumns({ t, onEdit, onDelete, isDeleting, deletingProductId }),
-    [t, onEdit, onDelete, isDeleting, deletingProductId]
+    () => buildColumns({ t, onEdit, onDelete, isDeleting, deletingProductId, formatMoney }),
+    [t, onEdit, onDelete, isDeleting, deletingProductId, formatMoney]
   );
 
   const table = useReactTable({

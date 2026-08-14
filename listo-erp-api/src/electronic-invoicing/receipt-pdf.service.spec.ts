@@ -7,6 +7,14 @@ describe('ReceiptPdfService', () => {
     const pdf = await service.create({
       cufe: 'cufe-test',
       qr: 'https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=cufe-test',
+      currency: {
+        code: 'USD',
+        symbol: '$',
+        decimalPlaces: 2,
+        decimalSeparator: '.',
+        thousandsSeparator: ',',
+        format: 'symbol_before',
+      },
       payload: {
         factura: {
           consecutivoDocumento: 'FE1',
@@ -39,6 +47,14 @@ describe('ReceiptPdfService', () => {
     const pdf = await service.create({
       cufe: 'cufe-test',
       qr: `data:image/svg+xml;base64,${qr}`,
+      currency: {
+        code: 'USD',
+        symbol: '$',
+        decimalPlaces: 2,
+        decimalSeparator: '.',
+        thousandsSeparator: ',',
+        format: 'symbol_before',
+      },
       payload: {
         factura: {
           consecutivoDocumento: 'FE1',

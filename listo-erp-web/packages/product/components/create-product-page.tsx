@@ -23,6 +23,8 @@ import { useProductValidation } from "@/packages/product/hooks/use-product-valid
 import type { CreateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
+import { MoneyInput } from "@/packages/currency/components/money-input";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { ArrowLeft, Camera, Spinner, Upload } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -34,6 +36,7 @@ export function CreateProductPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { validateProductFields } = useProductValidation();
+  const { parseMoney } = useCurrency();
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [salePrice, setSalePrice] = useState("");
@@ -99,7 +102,7 @@ export function CreateProductPage() {
     const request: CreateProductRequest = {
       sku: sku.trim(),
       name: name.trim(),
-      salePrice: Number(salePrice),
+      salePrice: parseMoney(salePrice),
       taxRate: taxRate ? Number(taxRate) / 100 : undefined,
       departmentId: departmentId!,
       subdepartmentId,
@@ -150,7 +153,7 @@ export function CreateProductPage() {
     !!sku.trim() &&
     !!name.trim() &&
     !!salePrice.trim() &&
-    Number(salePrice) > 0 &&
+    parseMoney(salePrice) > 0 &&
     !!departmentId;
   return (
     <div className="w-full p-4 space-y-4">
@@ -221,15 +224,12 @@ export function CreateProductPage() {
                     {t("inventory.products.salePrice")}{" "}
                     <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="salePrice"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={salePrice}
-                    onChange={(event) => setSalePrice(event.target.value)}
-                    disabled={creating}
-                  />
+                   <MoneyInput
+                     id="salePrice"
+                     value={salePrice}
+                     onValueChange={setSalePrice}
+                     disabled={creating}
+                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="taxRate">

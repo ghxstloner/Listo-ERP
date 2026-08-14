@@ -9,11 +9,20 @@
     "category_not_found": "类别不存在或不属于所选子部门。",
     "category_required": "必须选择类别才能分配子类别。",
     "subcategory_not_found": "子类别不存在或不属于所选类别。",
-    "supplier_not_found": "供应商不存在或不属于该公司。"
+    "supplier_not_found": "供应商不存在或不属于该公司。",
+    "price_not_found": "价格不存在或不属于该商品。",
+    "price_name_required": "价格名称为必填项。",
+    "default_price_not_found": "默认价格不存在、不属于该商品或已停用。",
+    "default_price_inactive": "默认价格不能停用。",
+    "default_price_required": "不能删除商品的默认价格。"
   },
   "success": {
     "created": "产品创建成功",
     "updated": "产品更新成功",
-    "deleted": "产品删除成功"
+    "deleted": "产品删除成功",
+    "price_created": "价格创建成功",
+    "price_updated": "价格更新成功",
+    "price_deleted": "价格删除成功",
+    "default_price_updated": "默认价格更新成功"
   }
 }

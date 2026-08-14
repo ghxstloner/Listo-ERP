@@ -31,6 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTranslation } from "@/hooks/use-translation";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
+import { MoneyInput } from "@/packages/currency/components/money-input";
 import { getPosDeviceKey } from "@/packages/pos/device-key";
 import {
   useCloseCashSession,
@@ -54,14 +56,6 @@ import { ArrowUpDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-
-function money(value: string | number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
 
 function dateTime(value: string | null) {
   if (!value) return "-";
@@ -96,7 +90,10 @@ function SortableHeader({
   );
 }
 
-function buildColumns(t: (key: string) => string): ColumnDef<CashSession>[] {
+function buildColumns(
+  t: (key: string) => string,
+  formatMoney: (value: number | string | null | undefined) => string,
+): ColumnDef<CashSession>[] {
   return [
     {
       id: "status",
@@ -171,7 +168,7 @@ function buildColumns(t: (key: string) => string): ColumnDef<CashSession>[] {
         <SortableHeader column={column}>{t("sales.cashClosures.openingAmount")}</SortableHeader>
       ),
       accessorFn: (row) => Number(row.openingAmount ?? 0),
-      cell: ({ row }) => money(row.original.openingAmount),
+      cell: ({ row }) => formatMoney(row.original.openingAmount),
       sortingFn: "basic",
     },
     {
@@ -182,7 +179,7 @@ function buildColumns(t: (key: string) => string): ColumnDef<CashSession>[] {
       accessorFn: (row) => Number(row.declaredClosingAmount ?? 0),
       cell: ({ row }) =>
         row.original.declaredClosingAmount
-          ? money(row.original.declaredClosingAmount)
+          ? formatMoney(row.original.declaredClosingAmount)
           : "-",
       sortingFn: "basic",
     },
@@ -194,7 +191,7 @@ function buildColumns(t: (key: string) => string): ColumnDef<CashSession>[] {
       accessorFn: (row) => Number(row.differenceAmount ?? 0),
       cell: ({ row }) =>
         row.original.differenceAmount
-          ? money(row.original.differenceAmount)
+          ? formatMoney(row.original.differenceAmount)
           : "-",
       sortingFn: "basic",
     },
@@ -215,6 +212,7 @@ function buildColumns(t: (key: string) => string): ColumnDef<CashSession>[] {
 
 function OpenCashSessionDialog() {
   const t = useTranslation();
+  const { parseMoney } = useCurrency();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -234,7 +232,7 @@ function OpenCashSessionDialog() {
   };
 
   const handleOpenSession = () => {
-    const amount = Number(openingAmount);
+    const amount = parseMoney(openingAmount);
 
     if (!till) {
       showToast({
@@ -243,7 +241,7 @@ function OpenCashSessionDialog() {
       });
       return;
     }
-    if (Number.isNaN(amount) || amount < 0) {
+    if (!Number.isFinite(amount) || amount < 0) {
       showToast({
         type: "error",
         message: t("sales.cashClosures.validation.amountRequired"),
@@ -303,14 +301,10 @@ function OpenCashSessionDialog() {
               <Label htmlFor="opening-amount">
                 {t("sales.cashClosures.openingAmount")}
               </Label>
-              <Input
+              <MoneyInput
                 id="opening-amount"
-                type="number"
-                min="0"
-                step="0.01"
                 value={openingAmount}
-                onChange={(event) => setOpeningAmount(event.target.value)}
-                placeholder="0.00"
+                onValueChange={setOpeningAmount}
                 disabled={isOpening}
               />
             </div>
@@ -348,6 +342,7 @@ function OpenCashSessionDialog() {
 
 function CloseCashSessionDialog({ session }: { session: CashSession }) {
   const t = useTranslation();
+  const { formatMoney, parseMoney } = useCurrency();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [declaredClosingAmount, setDeclaredClosingAmount] = useState("");
@@ -357,8 +352,8 @@ function CloseCashSessionDialog({ session }: { session: CashSession }) {
   );
 
   const handleCloseSession = () => {
-    const amount = Number(declaredClosingAmount);
-    if (Number.isNaN(amount) || amount < 0) {
+    const amount = parseMoney(declaredClosingAmount);
+    if (!Number.isFinite(amount) || amount < 0) {
       showToast({
         type: "error",
         message: t("sales.cashClosures.validation.amountRequired"),
@@ -414,7 +409,7 @@ function CloseCashSessionDialog({ session }: { session: CashSession }) {
                   {t("sales.cashClosures.expected")}
                 </span>
                 <span className="font-medium">
-                  {money(session.openingAmount)}
+                  {formatMoney(session.openingAmount)}
                 </span>
               </div>
             </div>
@@ -422,16 +417,10 @@ function CloseCashSessionDialog({ session }: { session: CashSession }) {
               <Label htmlFor="declared-closing-amount">
                 {t("sales.cashClosures.declared")}
               </Label>
-              <Input
+              <MoneyInput
                 id="declared-closing-amount"
-                type="number"
-                min="0"
-                step="0.01"
                 value={declaredClosingAmount}
-                onChange={(event) =>
-                  setDeclaredClosingAmount(event.target.value)
-                }
-                placeholder="0.00"
+                onValueChange={setDeclaredClosingAmount}
                 disabled={isClosing}
               />
             </div>
@@ -473,9 +462,10 @@ function CloseCashSessionDialog({ session }: { session: CashSession }) {
 
 function SessionTable({ sessions }: { sessions: CashSession[] }) {
   const t = useTranslation();
+  const { formatMoney } = useCurrency();
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const columns = useMemo(() => buildColumns(t), [t]);
+  const columns = useMemo(() => buildColumns(t, formatMoney), [t, formatMoney]);
 
   const table = useReactTable({
     data: sessions ?? [],

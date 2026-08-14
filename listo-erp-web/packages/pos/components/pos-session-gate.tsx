@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
@@ -20,6 +19,8 @@ import {
 import type { CashSession } from "@/packages/cash-sessions/types";
 import type { Till } from "@/packages/till/types";
 import { queryClient } from "@/packages/config/query/client";
+import { MoneyInput } from "@/packages/currency/components/money-input";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -38,6 +39,7 @@ export function OpenPosCashSessionDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { parseMoney } = useCurrency();
   const [openingAmount, setOpeningAmount] = useState("");
   const [openingNote, setOpeningNote] = useState("");
   const [openSession, opening, error] = useOpenCashSession();
@@ -47,8 +49,8 @@ export function OpenPosCashSessionDialog({
   }, [error]);
 
   const submit = () => {
-    const amount = Number(openingAmount);
-    if (Number.isNaN(amount) || amount < 0) return;
+    const amount = parseMoney(openingAmount);
+    if (!Number.isFinite(amount) || amount < 0) return;
     openSession(
       {
         tillId: till.id,
@@ -80,14 +82,10 @@ export function OpenPosCashSessionDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="pos-opening-amount">Monto inicial</Label>
-            <Input
+            <MoneyInput
               id="pos-opening-amount"
-              type="number"
-              min="0"
-              step="0.01"
               value={openingAmount}
-              onChange={(event) => setOpeningAmount(event.target.value)}
-              placeholder="0.00"
+              onValueChange={setOpeningAmount}
               disabled={opening}
             />
           </div>
@@ -155,6 +153,7 @@ export function CloseExpiredCashSessionDialog({
 }: {
   session: CashSession;
 }) {
+  const { parseMoney } = useCurrency();
   const [declaredClosingAmount, setDeclaredClosingAmount] = useState("");
   const [closingNote, setClosingNote] = useState("");
   const [closeSession, closing, error] = useCloseCashSession(session.id);
@@ -164,8 +163,8 @@ export function CloseExpiredCashSessionDialog({
   }, [error]);
 
   const submit = () => {
-    const amount = Number(declaredClosingAmount);
-    if (Number.isNaN(amount) || amount < 0) return;
+    const amount = parseMoney(declaredClosingAmount);
+    if (!Number.isFinite(amount) || amount < 0) return;
     closeSession(
       {
         declaredClosingAmount: amount,
@@ -199,14 +198,10 @@ export function CloseExpiredCashSessionDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="pos-declared-closing-amount">Monto contado</Label>
-            <Input
+            <MoneyInput
               id="pos-declared-closing-amount"
-              type="number"
-              min="0"
-              step="0.01"
               value={declaredClosingAmount}
-              onChange={(event) => setDeclaredClosingAmount(event.target.value)}
-              placeholder="0.00"
+              onValueChange={setDeclaredClosingAmount}
               disabled={closing}
             />
           </div>

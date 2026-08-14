@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { SeriesModule, type Prisma } from '@prisma/client';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { isUniqueConstraintError } from '../common/utils/prisma-errors';
 import { AuditService } from '../audit/audit.service';
@@ -117,6 +118,38 @@ export class SeriesService {
     );
 
     return { message: 'series.success.deleted' };
+  }
+
+  async findActiveByModule(companyId: number, module: SeriesModule) {
+    return this.prisma.series.findFirst({
+      where: { companyId, module, isActive: true },
+      select: this.selectBase(),
+    });
+  }
+
+  async consumeConsecutive(
+    tx: Prisma.TransactionClient,
+    seriesId: number,
+  ): Promise<{ previousConsecutive: number; format: string }> {
+    const updated = await tx.series.update({
+      where: { id: seriesId },
+      data: { consecutive: { increment: 1 } },
+      select: { consecutive: true, format: true },
+    });
+    return {
+      previousConsecutive: updated.consecutive - 1,
+      format: updated.format,
+    };
+  }
+
+  formatNumber(format: string, consecutive: number): string {
+    const match = format.match(/\{(0+)\}/);
+    if (!match) {
+      return `${format}${consecutive}`;
+    }
+    const padding = match[1].length;
+    const padded = String(consecutive).padStart(padding, '0');
+    return format.replace(match[0], padded);
   }
 
   private selectBase() {

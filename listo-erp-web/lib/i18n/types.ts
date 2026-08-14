@@ -146,6 +146,12 @@ export interface Dictionary {
       purchase: string;
       transferIn: string;
       transferOut: string;
+      searchBalances: string;
+      filterByWarehouse: string;
+      allWarehouses: string;
+      searchMovements: string;
+      filterByType: string;
+      allTypes: string;
     };
     products: {
       title: string;
@@ -229,6 +235,9 @@ export interface Dictionary {
     primaryColorPlaceholder: string;
     secondaryColor: string;
     secondaryColorPlaceholder: string;
+    currency: string;
+    selectCurrency: string;
+    currencyDescription: string;
     saveChanges: string;
     fiscalName: string;
     fiscalNamePlaceholder: string;
@@ -793,6 +802,7 @@ export interface Dictionary {
     orders: {
       title: string;
       id: string;
+      orderNumber: string;
       date: string;
       customer: string;
       seller: string;
@@ -836,6 +846,11 @@ export interface Dictionary {
       maxStockReached: string;
       quantityAdjusted: string;
       addProducts: string;
+      noActiveSeries: string;
+      cancel: string;
+      confirmCancel: string;
+      confirmCancelMessage: string;
+      cancelled: string;
     };
   };
   administration: {
@@ -876,6 +891,58 @@ export interface Dictionary {
         descriptionRequired: string;
         formatRequired: string;
         consecutiveMin: string;
+      };
+    };
+    currencies: {
+      title: string;
+      description: string;
+      selectCurrency: string;
+      catalog: string;
+      catalogDescription: string;
+      code: string;
+      symbol: string;
+      decimals: string;
+      separators: string;
+      decimalSeparator: string;
+      thousandsSeparator: string;
+      format: string;
+      rounding: string;
+      status: string;
+      allStatuses: string;
+      active: string;
+      inactive: string;
+      activate: string;
+      deactivate: string;
+      actions: string;
+      edit: string;
+      searchCurrencies: string;
+      noCurrencies: string;
+      editCurrency: string;
+      currencyUpdated: string;
+      ratesTitle: string;
+      ratesDescription: string;
+      rateDescription: string;
+      addRate: string;
+      from: string;
+      to: string;
+      date: string;
+      rate: string;
+      noRates: string;
+      rateCreated: string;
+      rateDeleted: string;
+      deleteRate: string;
+      deleteRateMessage: string;
+      formats: {
+        symbol_before: string;
+        symbol_after: string;
+        code_before: string;
+        code_after: string;
+      };
+      roundings: {
+        half_up: string;
+        half_even: string;
+        up: string;
+        down: string;
       };
     };
   };

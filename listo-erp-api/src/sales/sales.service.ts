@@ -42,13 +42,13 @@ export class SalesService {
       throw I18nException.badRequest('sales.errors.duplicate_payment_method');
     }
 
-    const productIds = dto.items.map((item) => item.productId);
+    const productIds = (dto.items ?? []).map((item) => item.productId);
     if (new Set(productIds).size !== productIds.length) {
       throw I18nException.badRequest('sales.errors.duplicate_product');
     }
 
     const sale = await this.prisma.$transaction(async (tx) => {
-      const [cashSession, order, customer, seller, paymentMethods, products, company] =
+      const [cashSession, order, customer, seller, paymentMethods, company] =
         await Promise.all([
           tx.cashSession.findFirst({
             where: {
@@ -70,7 +70,15 @@ export class SalesService {
                   branchId: true,
                   customerId: true,
                   sellerId: true,
-                  items: { select: { productId: true, quantity: true } },
+                  items: {
+                    select: {
+                      productId: true,
+                      productPriceId: true,
+                      quantity: true,
+                      unitPrice: true,
+                      taxRate: true,
+                    },
+                  },
                 },
               })
             : Promise.resolve(null),
@@ -92,23 +100,17 @@ export class SalesService {
               isActive: true,
               ...(dto.orderId
                 ? {}
-                : { sellerUsers: { some: { userId, companyId, user: { isActive: true } } } }),
+                : {
+                    sellerUsers: {
+                      some: { userId, companyId, user: { isActive: true } },
+                    },
+                  }),
             },
             select: { id: true },
           }),
           tx.paymentMethod.findMany({
             where: { id: { in: paymentMethodIds }, companyId, isActive: true },
             select: { id: true, dianCode: true },
-          }),
-          tx.product.findMany({
-            where: { id: { in: productIds }, companyId, isActive: true },
-            select: {
-              id: true,
-              salePrice: true,
-              taxRate: true,
-              costPrice: true,
-              dianCode: true,
-            },
           }),
           tx.company.findUnique({
             where: { id: companyId },
@@ -138,6 +140,31 @@ export class SalesService {
         throw I18nException.badRequest('sales.errors.payment_method_not_found');
       }
 
+      const saleItems = order
+        ? order.items
+        : (dto.items ?? []).map((item) => ({
+            ...item,
+            unitPrice: undefined,
+            taxRate: undefined,
+          }));
+      const saleProductIds = saleItems.map((item) => item.productId);
+      const saleProductPriceIds = saleItems
+        .map((item) => item.productPriceId)
+        .filter((id): id is number => id != null);
+      const products = await tx.product.findMany({
+        where: { id: { in: saleProductIds }, companyId, isActive: true },
+        select: {
+          id: true,
+          taxRate: true,
+          costPrice: true,
+          dianCode: true,
+          prices: {
+            where: { id: { in: saleProductPriceIds }, isActive: true },
+            select: { id: true, amount: true },
+          },
+        },
+      });
+
       const paymentMethodsMap = new Map(
         paymentMethods.map((pm) => [pm.id, pm]),
       );
@@ -152,10 +179,12 @@ export class SalesService {
           select: { tillId: true },
         });
         if (!tillPaymentMethod)
-          throw I18nException.badRequest('sales.errors.payment_method_not_found');
+          throw I18nException.badRequest(
+            'sales.errors.payment_method_not_found',
+          );
       }
 
-      if (products.length !== productIds.length) {
+      if (products.length !== saleProductIds.length) {
         throw I18nException.badRequest('sales.errors.product_not_found');
       }
       const paymentReference = dto.paymentReference?.trim() || null;
@@ -199,19 +228,33 @@ export class SalesService {
       const productsById = new Map(
         products.map((product) => [product.id, product]),
       );
-      const lineItems = dto.items.map((item) => {
+      const lineItems = saleItems.map((item) => {
         const product = productsById.get(item.productId);
+        const productPrice = order
+          ? null
+          : product.prices.find((price) => price.id === item.productPriceId);
+        if (!order && !productPrice) {
+          throw I18nException.badRequest(
+            'sales.errors.product_price_not_found',
+          );
+        }
         const quantity = new Prisma.Decimal(item.quantity);
-        const taxRate = product.taxRate ?? new Prisma.Decimal(0);
+        const unitPrice = order
+          ? new Prisma.Decimal(item.unitPrice)
+          : productPrice.amount;
+        const taxRate = order
+          ? new Prisma.Decimal(item.taxRate)
+          : (product.taxRate ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;
-        const baseAmount = product.salePrice.mul(quantity);
+        const baseAmount = unitPrice.mul(quantity);
         const taxAmount = baseAmount.mul(effectiveTaxRate);
         return {
           productId: item.productId,
+          productPriceId: order ? item.productPriceId : productPrice.id,
           quantity,
-          unitPrice: product.salePrice,
+          unitPrice,
           taxRate,
           taxAmount,
           lineTotal: baseAmount.plus(taxAmount),
@@ -242,7 +285,7 @@ export class SalesService {
           warehouseId: {
             in: warehouseBranches.map((item) => item.warehouseId),
           },
-          productId: { in: productIds },
+          productId: { in: saleProductIds },
         },
         select: { warehouseId: true, productId: true, quantity: true },
       });
@@ -419,12 +462,14 @@ export class SalesService {
         select: {
           id: true,
           productId: true,
+          productPriceId: true,
           quantity: true,
           unitPrice: true,
           taxRate: true,
           taxAmount: true,
           lineTotal: true,
           product: { select: { id: true, sku: true, name: true } },
+          productPrice: { select: { id: true, name: true, amount: true } },
         },
       },
     };
@@ -441,6 +486,7 @@ export class SalesService {
         taxRate: Prisma.Decimal;
         taxAmount: Prisma.Decimal;
         lineTotal: Prisma.Decimal;
+        productPrice?: { amount: Prisma.Decimal } | null;
       }>;
     },
   >(sale: T) {
@@ -456,6 +502,12 @@ export class SalesService {
         taxRate: Number(item.taxRate),
         taxAmount: Number(item.taxAmount),
         lineTotal: Number(item.lineTotal),
+        productPrice: item.productPrice
+          ? {
+              ...item.productPrice,
+              amount: Number(item.productPrice.amount),
+            }
+          : null,
       })),
     };
   }

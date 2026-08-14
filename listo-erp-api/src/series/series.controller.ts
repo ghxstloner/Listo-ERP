@@ -9,7 +9,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role, SeriesModule } from '@prisma/client';
 import { CurrentCompanyId, CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateSeriesDto } from './dto/create-series.dto';
@@ -38,6 +38,15 @@ export class SeriesController {
   @ApiOperation({ summary: 'Obtener todas las series de la empresa' })
   findAll(@CurrentCompanyId() companyId: number) {
     return this.seriesService.findAll(companyId);
+  }
+
+  @Get('active/:module')
+  @ApiOperation({ summary: 'Obtener la serie activa para un módulo' })
+  findActiveByModule(
+    @Param('module') module: SeriesModule,
+    @CurrentCompanyId() companyId: number,
+  ) {
+    return this.seriesService.findActiveByModule(companyId, module);
   }
 
   @Get(':id')

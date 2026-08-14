@@ -8,6 +8,7 @@
     "seller_not_found": "The selected seller is not available for your user.",
     "payment_method_not_found": "The selected payment method is not available.",
     "product_not_found": "One or more products are not available.",
+    "product_price_not_found": "One or more prices do not belong to the product or are inactive.",
     "warehouse_not_found": "The cash session branch has no associated active warehouses.",
     "insufficient_stock": "There is not enough stock in the branch warehouses.",
     "product_dian_code_required": "All products must have a DIAN code to register sales in Colombia.",

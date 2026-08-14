@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Company, UpdateCompanyResponse, HierarchyConfig, UpdateHierarchyConfigRequest, CompanyRole, CompanyRoleRequest, Permission } from "./types";
 
 export const useGetCompany = ( companyId: Company['id'] ) => {
-  return useApiQuery<Company>(['company'], `companies/${companyId}`);
+  return useApiQuery<Company>(['company', companyId], `companies/${companyId}`);
 }
 
 export const useUpdateCompany = (companyId: Company['id']) => {

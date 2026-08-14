@@ -39,6 +39,7 @@ import {
 import { DotsThreeVertical, MagnifyingGlass } from "@phosphor-icons/react";
 import { ArrowUpDown, Check, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { useMemo, useState } from "react";
 import { useCancelPurchaseOrder, useReceivePurchaseOrder } from "../api";
 import type { PurchaseOrder } from "../types";
@@ -49,10 +50,6 @@ const statusClasses: Record<PurchaseOrder["status"], string> = {
   RECEIVED: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
   CANCELLED: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
 };
-
-function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 function SortableHeader({
   column,
@@ -116,7 +113,9 @@ function OrderActions({ order }: { order: PurchaseOrder }) {
   );
 }
 
-function buildColumns(): ColumnDef<PurchaseOrder>[] {
+function buildColumns(
+  formatMoney: (value: number | string | null | undefined) => string,
+): ColumnDef<PurchaseOrder>[] {
   return [
     {
       id: "id",
@@ -215,11 +214,12 @@ interface PurchaseOrdersTableProps {
 }
 
 export function PurchaseOrdersTable({ orders, isLoading, action }: PurchaseOrdersTableProps) {
+  const { formatMoney } = useCurrency();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusValue, setStatusValue] = useState<string>("");
 
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(() => buildColumns(formatMoney), [formatMoney]);
 
   const table = useReactTable({
     data: orders ?? [],

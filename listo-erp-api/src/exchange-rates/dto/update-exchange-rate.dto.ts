@@ -32,6 +32,6 @@ export class UpdateExchangeRateDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(0)
+  @Min(0.000001)
   rate?: number;
 }

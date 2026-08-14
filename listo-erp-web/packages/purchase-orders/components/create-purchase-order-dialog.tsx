@@ -26,17 +26,16 @@ import { useGetWarehouses } from "@/packages/warehouse/api";
 import { Plus, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
+import { MoneyInput } from "@/packages/currency/components/money-input";
 import { useCreatePurchaseOrder } from "../api";
 
 type DraftItem = { productId: string; quantity: string; unitCost: string };
 
 const emptyItem = (): DraftItem => ({ productId: "", quantity: "1", unitCost: "" });
 
-function formatAmount(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export function CreatePurchaseOrderDialog() {
+  const { formatMoney, parseMoney } = useCurrency();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [supplierId, setSupplierId] = useState("");
@@ -73,7 +72,7 @@ export function CreatePurchaseOrderDialog() {
     const parsedItems = items.map((item) => ({
       productId: Number(item.productId),
       quantity: Number(item.quantity),
-      unitCost: Number(item.unitCost),
+      unitCost: parseMoney(item.unitCost),
     }));
     const productIds = parsedItems.map((item) => item.productId);
 
@@ -100,7 +99,7 @@ export function CreatePurchaseOrderDialog() {
     );
   };
 
-  const total = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitCost) || 0), 0);
+  const total = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * parseMoney(item.unitCost), 0);
   const selectedProducts = new Set(items.map((item) => item.productId).filter(Boolean));
 
   return (
@@ -168,7 +167,7 @@ export function CreatePurchaseOrderDialog() {
                     </Field>
                     <Field>
                       <FieldLabel htmlFor={`purchase-cost-${index}`}>Costo unitario</FieldLabel>
-                      <Input id={`purchase-cost-${index}`} type="number" min="0" step="0.0001" placeholder="0.00" value={item.unitCost} onChange={(event) => updateItem(index, "unitCost", event.target.value)} disabled={isCreating} />
+                      <MoneyInput id={`purchase-cost-${index}`} value={item.unitCost} onValueChange={(value) => updateItem(index, "unitCost", value)} disabled={isCreating} />
                     </Field>
                     <Button type="button" size="icon" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => removeItem(index)} disabled={isCreating || items.length === 1} aria-label="Quitar producto">
                       <Trash2 className="size-4" />
@@ -178,7 +177,7 @@ export function CreatePurchaseOrderDialog() {
               </div>
               <div className="flex justify-end border-t pt-3 text-sm">
                 <span className="text-muted-foreground">Total estimado</span>
-                <span className="ml-4 font-semibold tabular-nums">{formatAmount(total)}</span>
+                <span className="ml-4 font-semibold tabular-nums">{formatMoney(total)}</span>
               </div>
             </div>
             {createError && <p className="text-sm text-destructive">{(createError as Error).message || "No fue posible crear la orden."}</p>}

@@ -1,5 +1,6 @@
 import { useTranslation } from "@/hooks/use-translation";
 import { showToast } from "@/components/ui/sonner";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 
 export interface ProductFormData {
   sku: string;
@@ -10,6 +11,7 @@ export interface ProductFormData {
 
 export function useProductValidation() {
   const t = useTranslation();
+  const { parseMoney } = useCurrency();
 
   const validateProduct = (
     data: ProductFormData,
@@ -28,11 +30,8 @@ export function useProductValidation() {
       return false;
     }
 
-    if (
-      !salePrice.trim() ||
-      isNaN(parseFloat(salePrice)) ||
-      parseFloat(salePrice) <= 0
-    ) {
+    const parsedSalePrice = parseMoney(salePrice);
+    if (!salePrice.trim() || !Number.isFinite(parsedSalePrice) || parsedSalePrice <= 0) {
       onError(t("inventory.products.validation.salePriceRequired"));
       return false;
     }

@@ -3,12 +3,37 @@ import type { SubDepartment } from "../subdepartment/types";
 import type { Category } from "../category/types";
 import type { SubCategory } from "../subcategory/types";
 
+export interface ProductPrice {
+  id: number;
+  productId: number;
+  name: string;
+  amount: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export function getProductDefaultPrice(product: Product): ProductPrice | null {
+  if (product.defaultPrice?.isActive) return product.defaultPrice;
+  if (product.defaultPriceId != null) {
+    const selected = product.prices.find(
+      (price) => price.id === product.defaultPriceId && price.isActive,
+    );
+    if (selected) return selected;
+  }
+  return product.prices.find((price) => price.isActive) ?? null;
+}
+
 export interface Product {
   id: number;
   sku: string;
   name: string;
   description: string | null;
   salePrice: number;
+  defaultPriceId: number | null;
+  prices: ProductPrice[];
+  defaultPrice: ProductPrice | null;
   costPrice: number | null;
   taxRate: number | null;
   unit: string | null;
@@ -46,7 +71,9 @@ export interface CreateProductResponse {
   data: Product;
 }
 
-export type UpdateProductRequest = Partial<CreateProductRequest>;
+export type UpdateProductRequest = Partial<CreateProductRequest> & {
+  defaultPriceId?: number | null;
+};
 
 export interface ProductsResponseMeta {
   entityName: string;

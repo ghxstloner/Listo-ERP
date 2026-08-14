@@ -35,7 +35,9 @@ import {
   toRelativePath,
 } from '../upload/upload.config';
 import { CreateProductDto } from './dto/create-product.dto';
+import { CreateProductPriceDto } from './dto/create-product-price.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateProductPriceDto } from './dto/update-product-price.dto';
 import { ProductsService } from './products.service';
 
 @ApiTags('products')
@@ -105,6 +107,86 @@ export class ProductsController {
       categoryId: parseId(categoryId),
       subcategoryId: parseId(subcategoryId),
     });
+  }
+
+  @Get(':id/prices')
+  @ApiOperation({ summary: 'Obtener los precios activos de un producto' })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    type: Boolean,
+    description: 'Incluye precios inactivos cuando es true',
+  })
+  findPrices(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentCompanyId() companyId: number,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return this.productsService.findPrices(
+      id,
+      companyId,
+      includeInactive === 'true',
+    );
+  }
+
+  @Post(':id/prices')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Crear un precio para un producto' })
+  createPrice(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateProductPriceDto,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.productsService.createPrice(id, dto, companyId, user.id);
+  }
+
+  @Patch(':id/prices/:priceId')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Actualizar un precio de producto' })
+  updatePrice(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('priceId', ParseIntPipe) priceId: number,
+    @Body() dto: UpdateProductPriceDto,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.productsService.updatePrice(
+      id,
+      priceId,
+      dto,
+      companyId,
+      user.id,
+    );
+  }
+
+  @Patch(':id/default-price/:priceId')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Definir el precio predeterminado del producto' })
+  setDefaultPrice(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('priceId', ParseIntPipe) priceId: number,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.productsService.setDefaultPrice(
+      id,
+      priceId,
+      companyId,
+      user.id,
+    );
+  }
+
+  @Delete(':id/prices/:priceId')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Eliminar un precio de producto' })
+  removePrice(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('priceId', ParseIntPipe) priceId: number,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.productsService.removePrice(id, priceId, companyId, user.id);
   }
 
   @Get(':id')

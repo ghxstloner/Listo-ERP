@@ -15,6 +15,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { showToast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { decodeId } from "@/lib/hash-id";
 import { usePageTitle } from "@/lib/page-title-context";
@@ -25,6 +26,7 @@ import {
   useUpdateProduct,
   useUploadProductImage,
 } from "@/packages/product/api";
+import { ProductPricesSection } from "@/packages/product/components/product-prices-section";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
 import type { Product, UpdateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
@@ -231,26 +233,36 @@ function Editor({
   );
   return (
     <div className="w-full p-4 space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link
-            href="/listoerp/inventory/products"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            {t("inventory.products.backToProducts")}
-          </Link>
-        </Button>
-        <Button onClick={save} disabled={updating}>
-          {updating ? t("common.saving") : t("common.save")}
-        </Button>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="min-w-0 space-y-6">
+      <Tabs defaultValue="general" className="w-full">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="shrink-0">
+            <Link
+              href="/listoerp/inventory/products"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              {t("inventory.products.backToProducts")}
+            </Link>
+          </Button>
+          <TabsList className="min-w-0 overflow-x-auto">
+            <TabsTrigger value="general" className="whitespace-nowrap">
+              {t("company.generalConfiguration")}
+            </TabsTrigger>
+            <TabsTrigger value="prices" className="whitespace-nowrap">
+              {t("inventory.products.pricingInformation")}
+            </TabsTrigger>
+          </TabsList>
+          <Button onClick={save} disabled={updating} className="ml-auto shrink-0">
+            {updating ? t("common.saving") : t("common.save")}
+          </Button>
+        </div>
+        <TabsContent value="general" className="mt-2 w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="min-w-0 space-y-6">
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
                 {t("inventory.products.basicInformation")}
@@ -411,8 +423,8 @@ function Editor({
                   : t("inventory.products.inactive")}
               </Label>
             </div>
-          </div>
-          <div className="space-y-3 border-t pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6">
+              </div>
+              <div className="space-y-3 border-t pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6">
             <h3 className="text-sm font-medium text-muted-foreground">
               {t("inventory.products.image")}
             </h3>
@@ -464,9 +476,14 @@ function Editor({
             <p className="text-center text-xs text-muted-foreground">
               {t("inventory.products.imageFormats")}
             </p>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="prices" className="mt-2 w-full">
+          <ProductPricesSection product={product} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

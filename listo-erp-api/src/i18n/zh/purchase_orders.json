@@ -7,6 +7,7 @@
     "product_not_found": "一个或多个产品不可用",
     "product_not_supplied": "所有产品必须关联到所选供应商",
     "default_currency_required": "公司必须设置默认货币才能创建采购订单",
+    "exchange_rate_required": "当前日期没有登记业务货币的汇率",
     "not_pending": "只有待处理订单可以接收或取消"
   },
   "success": {

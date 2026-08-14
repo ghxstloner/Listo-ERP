@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { X, Wallet } from "@phosphor-icons/react";
 import { getPaymentMethodImageUrl } from "@/packages/payment-methods/api";
 import type { LocalPaymentEntry, PaymentMethod } from "../types";
-import { formatAmount } from "../utils";
 
 interface PaymentSplitPanelProps {
   total: number;
@@ -23,13 +23,15 @@ export function PaymentSplitPanel({
   onRemovePayment,
   onOpenPaymentDialog,
 }: PaymentSplitPanelProps) {
+  const { formatMoney } = useCurrency();
+
   return (
     <div className="shrink-0 space-y-2">
       {payments.length === 0 && (
         <div className="space-y-2">
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Total a pagar</p>
-            <p className="text-lg font-semibold">{formatAmount(total)}</p>
+            <p className="text-lg font-semibold">{formatMoney(total)}</p>
           </div>
           <Button
             type="button"
@@ -67,7 +69,7 @@ export function PaymentSplitPanel({
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-xs font-medium">
-                      {formatAmount(payment.amount)}
+                      {formatMoney(payment.amount)}
                     </span>
                     <button
                       type="button"
@@ -85,7 +87,7 @@ export function PaymentSplitPanel({
           {remaining > 0 && (
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                Faltan <span className="font-semibold text-foreground">{formatAmount(remaining)}</span>
+                Faltan <span className="font-semibold text-foreground">{formatMoney(remaining)}</span>
               </span>
               <Button
                 type="button"

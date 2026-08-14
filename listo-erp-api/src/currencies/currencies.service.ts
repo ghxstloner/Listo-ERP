@@ -54,12 +54,36 @@ export class CurrenciesService {
     }
   }
 
-  async findAll() {
+  async findAll(companyId: number) {
     const currencies = await this.prisma.currency.findMany({
-      select: this.selectBase(),
+      select: {
+        ...this.selectBase(),
+        companySettings: {
+          where: { companyId },
+          select: {
+            isActive: true,
+            symbol: true,
+            decimalPlaces: true,
+            decimalSeparator: true,
+            thousandsSeparator: true,
+            format: true,
+            rounding: true,
+          },
+        },
+      },
       orderBy: { code: 'asc' },
     });
-    return currencies;
+    return currencies.map(({ companySettings, ...currency }) => ({
+      ...currency,
+      ...(companySettings[0] ?? {
+        isActive: false,
+        decimalPlaces: 2,
+        decimalSeparator: '.',
+        thousandsSeparator: ',',
+        format: 'symbol_before',
+        rounding: 'half_up',
+      }),
+    }));
   }
 
   async findOne(id: number) {
@@ -79,7 +103,25 @@ export class CurrenciesService {
     userId: number,
   ) {
     await this.findOne(id);
-    const data: UpdateCurrencyDto = { ...updateCurrencyDto };
+    const configKeys = new Set([
+      'isActive',
+      'decimalPlaces',
+      'decimalSeparator',
+      'thousandsSeparator',
+      'format',
+      'rounding',
+    ]);
+    const data = Object.fromEntries(
+      Object.entries(updateCurrencyDto).filter(([key]) => !configKeys.has(key)),
+    ) as Omit<
+      UpdateCurrencyDto,
+      | 'isActive'
+      | 'decimalPlaces'
+      | 'decimalSeparator'
+      | 'thousandsSeparator'
+      | 'format'
+      | 'rounding'
+    >;
     if (updateCurrencyDto.code != null) {
       const code = updateCurrencyDto.code.trim().toUpperCase();
       if (code === '') {
@@ -118,6 +160,80 @@ export class CurrenciesService {
       }
       throw e;
     }
+  }
+
+  async updateConfig(
+    currencyId: number,
+    dto: UpdateCurrencyDto,
+    companyId: number,
+    userId: number,
+  ) {
+    const currency = await this.prisma.currency.findUnique({
+      where: { id: currencyId },
+      select: this.selectBase(),
+    });
+    if (!currency) {
+      throw I18nException.notFound('currencies.errors.not_found');
+    }
+
+    const current = await this.prisma.companyCurrency.findUnique({
+      where: { companyId_currencyId: { companyId, currencyId } },
+    });
+    const isActive = dto.isActive ?? current?.isActive ?? false;
+    if (!isActive) {
+      const company = await this.prisma.company.findUnique({
+        where: { id: companyId },
+        select: { defaultCurrencyId: true },
+      });
+      if (company?.defaultCurrencyId === currencyId) {
+        throw I18nException.badRequest(
+          'currencies.errors.cannot_disable_default',
+        );
+      }
+    }
+
+    const settings = await this.prisma.companyCurrency.upsert({
+      where: { companyId_currencyId: { companyId, currencyId } },
+      create: {
+        companyId,
+        currencyId,
+        isActive,
+        symbol: dto.symbol?.trim() || currency.symbol,
+        decimalPlaces: dto.decimalPlaces ?? 2,
+        decimalSeparator: dto.decimalSeparator ?? '.',
+        thousandsSeparator: dto.thousandsSeparator ?? ',',
+        format: dto.format ?? 'symbol_before',
+        rounding: dto.rounding ?? 'half_up',
+      },
+      update: {
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.symbol !== undefined && { symbol: dto.symbol.trim() }),
+        ...(dto.decimalPlaces !== undefined && {
+          decimalPlaces: dto.decimalPlaces,
+        }),
+        ...(dto.decimalSeparator !== undefined && {
+          decimalSeparator: dto.decimalSeparator,
+        }),
+        ...(dto.thousandsSeparator !== undefined && {
+          thousandsSeparator: dto.thousandsSeparator,
+        }),
+        ...(dto.format !== undefined && { format: dto.format }),
+        ...(dto.rounding !== undefined && { rounding: dto.rounding }),
+      },
+    });
+
+    await this.auditService.logUpdate(
+      userId,
+      companyId,
+      'currencies',
+      'Configuración de moneda',
+      settings.id,
+    );
+
+    return {
+      message: 'currencies.success.updated',
+      data: { ...currency, ...settings },
+    };
   }
 
   async remove(id: number, userId: number) {

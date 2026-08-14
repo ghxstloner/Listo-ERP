@@ -13,6 +13,7 @@ import { Role } from '@prisma/client';
 import {
   CurrentUser,
   CurrentUserPayload,
+  CurrentCompanyId,
 } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
@@ -37,8 +38,8 @@ export class CurrenciesController {
 
   @Get()
   @ApiOperation({ summary: 'Obtener todas las monedas' })
-  findAll() {
-    return this.currenciesService.findAll();
+  findAll(@CurrentCompanyId() companyId: number) {
+    return this.currenciesService.findAll(companyId);
   }
 
   @Get(':id')
@@ -56,6 +57,23 @@ export class CurrenciesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.currenciesService.update(id, updateCurrencyDto, user.id);
+  }
+
+  @Patch(':id/config')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Actualizar la configuración de una moneda' })
+  async updateConfig(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateCurrencyDto: UpdateCurrencyDto,
+    @CurrentCompanyId() companyId: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.currenciesService.updateConfig(
+      id,
+      updateCurrencyDto,
+      companyId,
+      user.id,
+    );
   }
 
   @Delete(':id')

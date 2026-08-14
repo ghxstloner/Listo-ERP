@@ -1,6 +1,10 @@
 "use client";
 
-import { AppSidebar, SidebarNavGroup, SidebarNavItem } from "@/components/app-sidebar";
+import {
+  AppSidebar,
+  SidebarNavGroup,
+  SidebarNavItem,
+} from "@/components/app-sidebar";
 import { CompanySelector } from "@/components/company-selector";
 import { PageLoading } from "@/components/page-loading";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -16,6 +20,7 @@ import { PageTitleProvider, usePageTitle } from "@/lib/page-title-context";
 import { useCompanyTheme } from "@/lib/use-company-theme";
 import { useSessionPermissions } from "@/packages/auth/api";
 import { useGetCompany } from "@/packages/company/api";
+import { CurrencyProvider } from "@/packages/currency/components/currency-provider";
 import { getApiCompanyId, getApiPermissions, setApiPermissions } from "@config";
 import {
   AddressBook,
@@ -92,12 +97,12 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
               },
               {
                 title: t("navigation.seriesAndNumbering"),
-                href: "/listoerp/administracion/series",
+                href: "/listoerp/company/series",
                 icon: Hash,
               },
               {
                 title: t("navigation.currencyManagement"),
-                href: "/listoerp/administracion/monedas",
+                href: "/listoerp/company/currencies",
                 icon: CurrencyDollar,
               },
               {
@@ -142,7 +147,11 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
             title: t("navigation.purchases"),
             icon: ShoppingCart,
             items: [
-              { title: t("navigation.suppliers"), href: "/listoerp/purchases", icon: Truck },
+              {
+                title: t("navigation.suppliers"),
+                href: "/listoerp/purchases",
+                icon: Truck,
+              },
               {
                 title: t("navigation.purchaseOrders"),
                 href: "/listoerp/purchases/orders",
@@ -277,8 +286,8 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
     "/listoerp/dashboard": "dashboard",
     "/listoerp/company": "administration.general",
     "/listoerp/company/branches": "administration.branches",
-    "/listoerp/administracion/series": "administration.series",
-    "/listoerp/administracion/monedas": "administration.currencies",
+    "/listoerp/company/series": "administration.series",
+    "/listoerp/company/currencies": "administration.currencies",
     "/listoerp/company/tills": "administration.tills",
     "/listoerp/inventory": "inventory.catalogs",
     "/listoerp/inventory/products": "inventory.products",
@@ -314,7 +323,10 @@ function useNavigation(permissions: Set<string>): SidebarNavGroup[] {
         if (permissions.has(permissionByPath[item.href])) items.push(item);
         return;
       }
-      const allowedItems = item.items?.filter((subItem) => permissions.has(permissionByPath[subItem.href])) ?? [];
+      const allowedItems =
+        item.items?.filter((subItem) =>
+          permissions.has(permissionByPath[subItem.href]),
+        ) ?? [];
       if (allowedItems.length > 0) items.push({ ...item, items: allowedItems });
     });
     if (items.length > 0) groups.push({ ...group, items });
@@ -327,7 +339,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [company, isLoading] = useGetCompany(companyId ? Number(companyId) : 0);
   const [session] = useSessionPermissions(companyId);
   const { title } = usePageTitle();
-  const [permissions, setPermissions] = useState(() => new Set(getApiPermissions()));
+  const [permissions, setPermissions] = useState(
+    () => new Set(getApiPermissions()),
+  );
   const navigation = useNavigation(permissions);
   const t = useTranslation();
   const [themeApplied, setThemeApplied] = useState(false);
@@ -374,25 +388,27 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar
-        company={company}
-        isLoading={isLoading}
-        navigation={navigation}
-      />
-      <SidebarInset>
-        <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-t-2 border-primary px-4 bg-card">
-          <SidebarTrigger />
-          {title && <h1 className="text-lg font-semibold ml-2">{title}</h1>}
-          <div className="ml-auto flex items-center gap-2">
-            <CompanySelector />
-            <LanguageToggle />
-            <ThemeToggle />
-          </div>
-        </header>
-        <main className="flex-1 p-4">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <CurrencyProvider currency={company.defaultCurrency}>
+      <SidebarProvider>
+        <AppSidebar
+          company={company}
+          isLoading={isLoading}
+          navigation={navigation}
+        />
+        <SidebarInset>
+          <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center gap-2 border-t-2 border-primary px-4 bg-card">
+            <SidebarTrigger />
+            {title && <h1 className="text-lg font-semibold ml-2">{title}</h1>}
+            <div className="ml-auto flex items-center gap-2">
+              <CompanySelector />
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
+          </header>
+          <main className="flex-1 p-4">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </CurrencyProvider>
   );
 }
 

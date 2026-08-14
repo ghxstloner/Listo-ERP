@@ -14,7 +14,7 @@ export class ExchangeRatesService {
     private auditService: AuditService,
   ) {}
 
-  private async ensureCurrencyExists(currencyId: number) {
+  private async ensureCurrencyExists(currencyId: number, companyId?: number) {
     const currency = await this.prisma.currency.findUnique({
       where: { id: currencyId },
     });
@@ -26,6 +26,15 @@ export class ExchangeRatesService {
         },
       );
     }
+    if (companyId != null) {
+      const setting = await this.prisma.companyCurrency.findUnique({
+        where: { companyId_currencyId: { companyId, currencyId } },
+        select: { isActive: true },
+      });
+      if (!setting?.isActive) {
+        throw I18nException.badRequest('currencies.errors.inactive');
+      }
+    }
     return currency;
   }
 
@@ -34,8 +43,14 @@ export class ExchangeRatesService {
     companyId: number,
     userId: number,
   ) {
-    await this.ensureCurrencyExists(createExchangeRateDto.fromCurrencyId);
-    await this.ensureCurrencyExists(createExchangeRateDto.toCurrencyId);
+    await this.ensureCurrencyExists(
+      createExchangeRateDto.fromCurrencyId,
+      companyId,
+    );
+    await this.ensureCurrencyExists(
+      createExchangeRateDto.toCurrencyId,
+      companyId,
+    );
     if (
       createExchangeRateDto.fromCurrencyId ===
       createExchangeRateDto.toCurrencyId
@@ -126,10 +141,16 @@ export class ExchangeRatesService {
   ) {
     const current = await this.findOne(id, companyId);
     if (updateExchangeRateDto.fromCurrencyId != null) {
-      await this.ensureCurrencyExists(updateExchangeRateDto.fromCurrencyId);
+      await this.ensureCurrencyExists(
+        updateExchangeRateDto.fromCurrencyId,
+        companyId,
+      );
     }
     if (updateExchangeRateDto.toCurrencyId != null) {
-      await this.ensureCurrencyExists(updateExchangeRateDto.toCurrencyId);
+      await this.ensureCurrencyExists(
+        updateExchangeRateDto.toCurrencyId,
+        companyId,
+      );
     }
     const fromId =
       updateExchangeRateDto.fromCurrencyId ?? current.fromCurrencyId;

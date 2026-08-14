@@ -66,6 +66,7 @@ model Company {
   defaultCustomer                       Customer?                              @relation("CompanyDefaultCustomer", fields: [defaultCustomerId], references: [id], onDelete: SetNull)
   defaultSeller                         Seller?                                @relation("CompanyDefaultSeller", fields: [defaultSellerId], references: [id], onDelete: SetNull)
   defaultCurrency                       Currency?                              @relation("CompanyDefaultCurrency", fields: [defaultCurrencyId], references: [id])
+  currencySettings                      CompanyCurrency[]
   exchangeRates                         ExchangeRate[]
   paymentMethods                        PaymentMethod[]
   country                               Country?                               @relation(fields: [countryId], references: [id])
@@ -297,6 +298,7 @@ model Currency {
   name              String
   symbol            String
   companiesDefault  Company[]         @relation("CompanyDefaultCurrency")
+  companySettings   CompanyCurrency[]
   branches          branch[]
   exchangeRatesFrom ExchangeRate[]    @relation("ExchangeRateFrom")
   exchangeRatesTo   ExchangeRate[]    @relation("ExchangeRateTo")
@@ -304,6 +306,27 @@ model Currency {
   purchaseOrders    PurchaseOrder[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+}
+
+model CompanyCurrency {
+  id                 Int      @id @default(autoincrement())
+  companyId          Int
+  currencyId         Int
+  isActive           Boolean  @default(true)
+  symbol             String
+  decimalPlaces      Int      @default(2)
+  decimalSeparator   String   @default(".")
+  thousandsSeparator String   @default(",")
+  format             String   @default("symbol_before")
+  rounding           String   @default("half_up")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  currency Currency @relation(fields: [currencyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, currencyId])
+  @@index([companyId, isActive])
 }
 
 model ExchangeRate {
@@ -504,6 +527,7 @@ model Product {
   name               String
   description        String?
   salePrice          Decimal                 @db.Decimal(18, 4)
+  defaultPriceId     Int?                    @unique
   costPrice          Decimal?                @db.Decimal(18, 4)
   taxRate            Decimal?                @db.Decimal(5, 4)
   isActive           Boolean                 @default(true)
@@ -520,6 +544,8 @@ model Product {
   subdepartment      Subdepartment?          @relation(fields: [subdepartmentId], references: [id])
   category           Category?               @relation(fields: [categoryId], references: [id])
   subcategory        Subcategory?            @relation(fields: [subcategoryId], references: [id])
+  prices             ProductPrice[]          @relation("ProductPrices")
+  defaultPrice       ProductPrice?           @relation("ProductDefaultPrice", fields: [defaultPriceId], references: [id], onDelete: SetNull)
   supplierProducts   SupplierProduct[]
   purchaseOrderItems PurchaseOrderItem[]
   inventoryBalances  InventoryBalance[]
@@ -531,6 +557,24 @@ model Product {
   updatedAt          DateTime                @updatedAt
 
   @@unique([companyId, sku])
+}
+
+model ProductPrice {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  name      String
+  amount    Decimal  @db.Decimal(18, 4)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product    Product     @relation("ProductPrices", fields: [productId], references: [id], onDelete: Cascade)
+  defaultFor Product?    @relation("ProductDefaultPrice")
+  saleItems  SaleItem[]
+  orderItems OrderItem[]
+
+  @@index([productId, isActive, sortOrder])
 }
 
 model SupplierProduct {
@@ -923,19 +967,21 @@ model SalePayment {
 }
 
 model SaleItem {
-  id        Int      @id @default(autoincrement())
-  saleId    Int
-  productId Int
-  quantity  Decimal  @db.Decimal(18, 4)
-  unitPrice Decimal  @db.Decimal(18, 4)
-  taxRate   Decimal  @db.Decimal(5, 4)
-  taxAmount Decimal  @db.Decimal(18, 4)
-  lineTotal Decimal  @db.Decimal(18, 4)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  saleId         Int
+  productId      Int
+  productPriceId Int?
+  quantity       Decimal  @db.Decimal(18, 4)
+  unitPrice      Decimal  @db.Decimal(18, 4)
+  taxRate        Decimal  @db.Decimal(5, 4)
+  taxAmount      Decimal  @db.Decimal(18, 4)
+  lineTotal      Decimal  @db.Decimal(18, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   sale               Sale                @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product            Product             @relation(fields: [productId], references: [id])
+  productPrice       ProductPrice?       @relation(fields: [productPriceId], references: [id], onDelete: SetNull)
   inventoryMovements InventoryMovement[]
 
   @@unique([saleId, productId])
@@ -952,19 +998,22 @@ model Order {
   status          OrderStatus @default(PENDING)
   notes           String?
   saleId          Int?        @unique
+  orderNumber     String?
+  seriesId        Int?
   subtotal        Decimal     @db.Decimal(18, 4)
   taxAmount       Decimal     @db.Decimal(18, 4)
   total           Decimal     @db.Decimal(18, 4)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  company     Company     @relation(fields: [companyId], references: [id])
-  branch      branch?     @relation(fields: [branchId], references: [id])
-  customer    Customer    @relation(fields: [customerId], references: [id])
-  seller      Seller?     @relation(fields: [sellerId], references: [id])
-  createdByUser User      @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
-  sale        Sale?       @relation(fields: [saleId], references: [id])
-  items       OrderItem[]
+  company       Company     @relation(fields: [companyId], references: [id])
+  branch        branch?     @relation(fields: [branchId], references: [id])
+  customer      Customer    @relation(fields: [customerId], references: [id])
+  seller        Seller?     @relation(fields: [sellerId], references: [id])
+  createdByUser User        @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
+  sale          Sale?       @relation(fields: [saleId], references: [id])
+  series        Series?     @relation(fields: [seriesId], references: [id])
+  items         OrderItem[]
 
   @@index([companyId, status])
   @@index([companyId, createdAt])
@@ -973,19 +1022,21 @@ model Order {
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
-  orderId   Int
-  productId Int
-  quantity  Decimal  @db.Decimal(18, 4)
-  unitPrice Decimal  @db.Decimal(18, 4)
-  taxRate   Decimal  @db.Decimal(5, 4)
-  taxAmount Decimal  @db.Decimal(18, 4)
-  lineTotal Decimal  @db.Decimal(18, 4)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  orderId        Int
+  productId      Int
+  productPriceId Int?
+  quantity       Decimal  @db.Decimal(18, 4)
+  unitPrice      Decimal  @db.Decimal(18, 4)
+  taxRate        Decimal  @db.Decimal(5, 4)
+  taxAmount      Decimal  @db.Decimal(18, 4)
+  lineTotal      Decimal  @db.Decimal(18, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   order              Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product            Product             @relation(fields: [productId], references: [id])
+  productPrice       ProductPrice?       @relation(fields: [productPriceId], references: [id], onDelete: SetNull)
   inventoryMovements InventoryMovement[]
 
   @@unique([orderId, productId])
@@ -1018,6 +1069,7 @@ model Series {
   updatedAt   DateTime     @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orders  Order[]
 
   @@unique([companyId, module])
   @@index([companyId])

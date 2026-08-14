@@ -3,6 +3,7 @@
 import { PageLoading } from "@/components/page-loading";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/use-translation";
+import { decodeId } from "@/lib/hash-id";
 import { usePageTitle } from "@/lib/page-title-context";
 import { useGetSeriesById } from "@/packages/series/api";
 import { SeriesForm } from "@/packages/series/components/series-form";
@@ -15,8 +16,9 @@ export default function SeriesEditPage() {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
   const params = useParams();
-  const seriesId = Number(params.id);
-  const [series, isLoading, error] = useGetSeriesById(seriesId);
+  const hash = params.id as string;
+  const seriesId = hash ? decodeId(hash) : null;
+  const [series, isLoading, error] = useGetSeriesById(seriesId ?? 0);
 
   useEffect(() => {
     if (series) {
@@ -34,15 +36,16 @@ export default function SeriesEditPage() {
     );
   }
 
-  if (error || !series) {
+  if (error || !series || !seriesId) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <p className="text-destructive">
           {t("common.error")}:{" "}
-          {(error as Error)?.message ?? t("administration.series.seriesNotFound")}
+          {(error as Error)?.message ??
+            t("administration.series.seriesNotFound")}
         </p>
         <Button variant="outline" asChild>
-          <Link href="/listoerp/administracion/series">
+          <Link href="/listoerp/company/series">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t("administration.series.title")}
           </Link>
@@ -56,7 +59,7 @@ export default function SeriesEditPage() {
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
           <Link
-            href="/listoerp/administracion/series"
+            href="/listoerp/company/series"
             className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />

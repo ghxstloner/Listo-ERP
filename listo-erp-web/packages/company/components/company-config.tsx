@@ -16,6 +16,7 @@ import {
 import { useTranslation } from "@/hooks/use-translation";
 import { useGetCustomers } from "@/packages/customers/api";
 import { useGetSellers } from "@/packages/sellers/api";
+import { useGetCurrencies } from "@/packages/currency/api";
 import { Camera, Spinner } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 import { useGetCountries } from "../../country/api";
@@ -29,7 +30,12 @@ interface CompanyConfigProps {
   isUpdating?: boolean;
 }
 
-export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }: CompanyConfigProps) {
+export function CompanyConfig({
+  company,
+  onUpdate,
+  onLogoUploaded,
+  isUpdating,
+}: CompanyConfigProps) {
   const t = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [countries, isLoadingCountries] = useGetCountries();
@@ -42,22 +48,43 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
   const [phone2, setPhone2] = useState(company.phone2 || "");
   const [email1, setEmail1] = useState(company.email1 || "");
   const [email2, setEmail2] = useState(company.email2 || "");
-  const [countryId, setCountryId] = useState<number | null>(company.countryId || null);
-  const [taxDocumentType, setTaxDocumentType] = useState(company.taxDocumentType || "");
-  const [taxDocumentNumber, setTaxDocumentNumber] = useState(company.taxDocumentNumber || "");
-  const [taxCheckDigit, setTaxCheckDigit] = useState(company.taxCheckDigit || "");
+  const [countryId, setCountryId] = useState<number | null>(
+    company.countryId || null,
+  );
+  const [taxDocumentType, setTaxDocumentType] = useState(
+    company.taxDocumentType || "",
+  );
+  const [taxDocumentNumber, setTaxDocumentNumber] = useState(
+    company.taxDocumentNumber || "",
+  );
+  const [taxCheckDigit, setTaxCheckDigit] = useState(
+    company.taxCheckDigit || "",
+  );
   const [fiscalName, setFiscalName] = useState(company.fiscalName || "");
-  const [defaultCustomerId, setDefaultCustomerId] = useState<number | null>(company.defaultCustomerId);
-  const [defaultSellerId, setDefaultSellerId] = useState<number | null>(company.defaultSellerId);
+  const [defaultCurrencyId, setDefaultCurrencyId] = useState<number | null>(
+    company.defaultCurrencyId,
+  );
+  const [defaultCustomerId, setDefaultCustomerId] = useState<number | null>(
+    company.defaultCustomerId,
+  );
+  const [defaultSellerId, setDefaultSellerId] = useState<number | null>(
+    company.defaultSellerId,
+  );
   const [uploadLogo, isUploadingLogo] = useUploadCompanyLogo(company.id);
   const [customersResponse] = useGetCustomers();
   const [sellersResponse] = useGetSellers();
+  const [currencies] = useGetCurrencies();
   const selectedCountry = countries?.find((c) => c.id === countryId);
   const selectedDocumentType = selectedCountry?.taxDocumentTypes.find(
     (documentType) => documentType.code === taxDocumentType,
   );
-  const customers = (customersResponse ?? []).filter((customer) => customer.isActive);
+  const customers = (customersResponse ?? []).filter(
+    (customer) => customer.isActive,
+  );
   const sellers = (sellersResponse ?? []).filter((seller) => seller.isActive);
+  const availableCurrencies = (currencies ?? []).filter(
+    (currency) => currency.isActive || currency.id === defaultCurrencyId,
+  );
 
   const handleCountryChange = (value: string) => {
     const newCountryId = value ? Number(value) : null;
@@ -103,6 +130,7 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
         taxDocumentNumber,
         taxCheckDigit,
         fiscalName,
+        defaultCurrencyId,
         defaultCustomerId,
         defaultSellerId,
       });
@@ -177,7 +205,9 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="primaryColor">{t("company.primaryColor")}</Label>
+                <Label htmlFor="primaryColor">
+                  {t("company.primaryColor")}
+                </Label>
                 <ColorSelect
                   value={primaryColor}
                   onValueChange={setPrimaryColor}
@@ -186,7 +216,9 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="secondaryColor">{t("company.secondaryColor")}</Label>
+                <Label htmlFor="secondaryColor">
+                  {t("company.secondaryColor")}
+                </Label>
                 <ColorSelect
                   value={secondaryColor}
                   onValueChange={setSecondaryColor}
@@ -197,7 +229,9 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
 
             {/* Sección de información fiscal */}
             <div className="border-t pt-6">
-              <h3 className="text-lg font-medium mb-4">{t("company.taxInfo")}</h3>
+              <h3 className="text-lg font-medium mb-4">
+                {t("company.taxInfo")}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="country">{t("company.country")}</Label>
@@ -239,78 +273,101 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
                   />
                 </div>
 
-                {selectedCountry && selectedCountry.taxDocumentTypes.length > 0 && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="taxDocumentType">
-                        {t("company.selectTaxDocumentType")}
-                      </Label>
-                      <Select
-                        value={taxDocumentType}
-                        onValueChange={(value) => {
-                          setTaxDocumentType(value);
-                          if (!selectedCountry.taxDocumentTypes.find((documentType) => documentType.code === value)?.hasCheckDigit) {
-                            setTaxCheckDigit("");
-                          }
-                        }}
-                      >
-                        <SelectTrigger id="taxDocumentType" className="w-full">
-                          <SelectValue placeholder={t("company.selectTaxDocumentType")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {selectedCountry.taxDocumentTypes.map((documentType) => (
-                            <SelectItem key={documentType.code} value={documentType.code}>
-                              {documentType.name} ({documentType.code})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {selectedDocumentType && (
-                      <>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="taxDocumentNumber"
-                            className="flex items-baseline gap-2"
+                {selectedCountry &&
+                  selectedCountry.taxDocumentTypes.length > 0 && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="taxDocumentType">
+                          {t("company.selectTaxDocumentType")}
+                        </Label>
+                        <Select
+                          value={taxDocumentType}
+                          onValueChange={(value) => {
+                            setTaxDocumentType(value);
+                            if (
+                              !selectedCountry.taxDocumentTypes.find(
+                                (documentType) => documentType.code === value,
+                              )?.hasCheckDigit
+                            ) {
+                              setTaxCheckDigit("");
+                            }
+                          }}
+                        >
+                          <SelectTrigger
+                            id="taxDocumentType"
+                            className="w-full"
                           >
-                            {selectedDocumentType.name}
-                            <span className="text-sm text-muted-foreground">
-                              ({selectedDocumentType.code})
-                            </span>
-                          </Label>
-                          <Input
-                            id="taxDocumentNumber"
-                            value={taxDocumentNumber}
-                            onChange={(e) => setTaxDocumentNumber(e.target.value)}
-                            placeholder={`${t("company.taxDocumentNumberPlaceholder")} ${selectedDocumentType.name}`}
-                          />
-                        </div>
+                            <SelectValue
+                              placeholder={t("company.selectTaxDocumentType")}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {selectedCountry.taxDocumentTypes.map(
+                              (documentType) => (
+                                <SelectItem
+                                  key={documentType.code}
+                                  value={documentType.code}
+                                >
+                                  {documentType.name} ({documentType.code})
+                                </SelectItem>
+                              ),
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        {selectedDocumentType.hasCheckDigit && (
+                      {selectedDocumentType && (
+                        <>
                           <div className="space-y-2">
-                            <Label htmlFor="taxCheckDigit">
-                              {t("company.taxCheckDigit")}
+                            <Label
+                              htmlFor="taxDocumentNumber"
+                              className="flex items-baseline gap-2"
+                            >
+                              {selectedDocumentType.name}
+                              <span className="text-sm text-muted-foreground">
+                                ({selectedDocumentType.code})
+                              </span>
                             </Label>
                             <Input
-                              id="taxCheckDigit"
-                              value={taxCheckDigit}
-                              onChange={(e) => setTaxCheckDigit(e.target.value)}
-                              placeholder={t("company.taxCheckDigitPlaceholder")}
-                              maxLength={1}
+                              id="taxDocumentNumber"
+                              value={taxDocumentNumber}
+                              onChange={(e) =>
+                                setTaxDocumentNumber(e.target.value)
+                              }
+                              placeholder={`${t("company.taxDocumentNumberPlaceholder")} ${selectedDocumentType.name}`}
                             />
                           </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                )}
+
+                          {selectedDocumentType.hasCheckDigit && (
+                            <div className="space-y-2">
+                              <Label htmlFor="taxCheckDigit">
+                                {t("company.taxCheckDigit")}
+                              </Label>
+                              <Input
+                                id="taxCheckDigit"
+                                value={taxCheckDigit}
+                                onChange={(e) =>
+                                  setTaxCheckDigit(e.target.value)
+                                }
+                                placeholder={t(
+                                  "company.taxCheckDigitPlaceholder",
+                                )}
+                                maxLength={1}
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
               </div>
             </div>
 
             {/* Sección de contacto */}
             <div className="border-t pt-6">
-              <h3 className="text-lg font-medium mb-4">{t("company.contactInfo")}</h3>
+              <h3 className="text-lg font-medium mb-4">
+                {t("company.contactInfo")}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="phone1">{t("company.phone1")}</Label>
@@ -359,22 +416,66 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
             </div>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-medium mb-4">Valores predeterminados POS</h3>
+              <h3 className="mb-4 text-lg font-medium">
+                {t("company.currency")}
+              </h3>
+              <div className="max-w-md space-y-2">
+                <Label htmlFor="defaultCurrency">
+                  {t("company.selectCurrency")}
+                </Label>
+                <Select
+                  value={defaultCurrencyId ? String(defaultCurrencyId) : ""}
+                  onValueChange={(value) => setDefaultCurrencyId(Number(value))}
+                >
+                  <SelectTrigger id="defaultCurrency">
+                    <SelectValue placeholder={t("company.selectCurrency")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCurrencies.map((currency) => (
+                      <SelectItem key={currency.id} value={String(currency.id)}>
+                        {currency.code} · {currency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-medium mb-4">
+                Valores predeterminados POS
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="defaultCustomer">Cliente predeterminado</Label>
+                  <Label htmlFor="defaultCustomer">
+                    Cliente predeterminado
+                  </Label>
                   <Select
-                    value={defaultCustomerId ? String(defaultCustomerId) : "none"}
-                    onValueChange={(value) => setDefaultCustomerId(value === "none" ? null : Number(value))}
+                    value={
+                      defaultCustomerId ? String(defaultCustomerId) : "none"
+                    }
+                    onValueChange={(value) =>
+                      setDefaultCustomerId(
+                        value === "none" ? null : Number(value),
+                      )
+                    }
                   >
                     <SelectTrigger id="defaultCustomer" className="w-full">
                       <SelectValue placeholder="Sin cliente predeterminado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Sin cliente predeterminado</SelectItem>
+                      <SelectItem value="none">
+                        Sin cliente predeterminado
+                      </SelectItem>
                       {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={String(customer.id)}>
-                          {customer.name}{customer.isFinalConsumer ? " (Consumidor Final)" : ""}
+                        <SelectItem
+                          key={customer.id}
+                          value={String(customer.id)}
+                        >
+                          {customer.name}
+                          {customer.isFinalConsumer
+                            ? " (Consumidor Final)"
+                            : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -384,13 +485,19 @@ export function CompanyConfig({ company, onUpdate, onLogoUploaded, isUpdating }:
                   <Label htmlFor="defaultSeller">Vendedor predeterminado</Label>
                   <Select
                     value={defaultSellerId ? String(defaultSellerId) : "none"}
-                    onValueChange={(value) => setDefaultSellerId(value === "none" ? null : Number(value))}
+                    onValueChange={(value) =>
+                      setDefaultSellerId(
+                        value === "none" ? null : Number(value),
+                      )
+                    }
                   >
                     <SelectTrigger id="defaultSeller" className="w-full">
                       <SelectValue placeholder="Sin vendedor predeterminado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Sin vendedor predeterminado</SelectItem>
+                      <SelectItem value="none">
+                        Sin vendedor predeterminado
+                      </SelectItem>
                       {sellers.map((seller) => (
                         <SelectItem key={seller.id} value={String(seller.id)}>
                           {seller.name}

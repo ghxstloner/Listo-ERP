@@ -1,4 +1,4 @@
-import { formatAmount } from "../utils";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 
 interface TicketSummaryProps {
   subtotal: number;
@@ -8,11 +8,13 @@ interface TicketSummaryProps {
 }
 
 export function TicketSummary({ subtotal, tax, total, className }: TicketSummaryProps) {
+  const { formatMoney } = useCurrency();
+
   return (
     <div className={`shrink-0 space-y-2 text-sm ${className ?? ""}`}>
-      <div className="text-muted-foreground flex justify-between"><span>Subtotal</span><span>{formatAmount(subtotal)}</span></div>
-      <div className="text-muted-foreground flex justify-between"><span>Impuestos</span><span>{formatAmount(tax)}</span></div>
-      <div className="flex justify-between border-t pt-3 text-base font-bold"><span>Total</span><span>{formatAmount(total)}</span></div>
+      <div className="text-muted-foreground flex justify-between"><span>Subtotal</span><span>{formatMoney(subtotal)}</span></div>
+      <div className="text-muted-foreground flex justify-between"><span>Impuestos</span><span>{formatMoney(tax)}</span></div>
+      <div className="flex justify-between border-t pt-3 text-base font-bold"><span>Total</span><span>{formatMoney(total)}</span></div>
     </div>
   );
 }

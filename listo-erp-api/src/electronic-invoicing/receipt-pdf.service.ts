@@ -8,6 +8,16 @@ interface ReceiptPdfInput {
   payload: TheFactoryInvoicePayload;
   cufe: string;
   qr: string | null;
+  currency: ReceiptCurrency;
+}
+
+export interface ReceiptCurrency {
+  code: string;
+  symbol: string;
+  decimalPlaces: number;
+  decimalSeparator: string;
+  thousandsSeparator: string;
+  format: string;
 }
 
 const RECEIPT_WIDTH = 226.77; // 80 mm in PostScript points.
@@ -15,7 +25,7 @@ const MARGIN = 12;
 
 @Injectable()
 export class ReceiptPdfService {
-  async create({ payload, cufe, qr }: ReceiptPdfInput): Promise<Buffer> {
+  async create({ payload, cufe, qr, currency }: ReceiptPdfInput): Promise<Buffer> {
     const invoice = payload.factura;
     const height = this.estimateHeight(invoice.detalleDeFactura);
     const document = new PDFDocument({
@@ -70,7 +80,7 @@ export class ReceiptPdfService {
       const y = document.y + 3;
       document.text(item.cantidadUnidades, MARGIN, y, { width: 30 });
       document.text(item.descripcion, MARGIN + 32, y, { width: 94 });
-      document.text(this.money(item.precioTotal), MARGIN + 128, y, {
+      document.text(this.money(item.precioTotal, currency), MARGIN + 128, y, {
         width: 74,
         align: 'right',
       });
@@ -81,12 +91,12 @@ export class ReceiptPdfService {
     }
     this.rule(document);
 
-    this.total(document, 'Subtotal', invoice.totalSinImpuestos);
+    this.total(document, 'Subtotal', invoice.totalSinImpuestos, currency);
     for (const tax of invoice.impuestosTotales) {
-      this.total(document, this.taxLabel(tax.codigoTOTALImp), tax.montoTotal);
+      this.total(document, this.taxLabel(tax.codigoTOTALImp), tax.montoTotal, currency);
     }
     document.font('Helvetica-Bold');
-    this.total(document, 'TOTAL', invoice.totalMonto, 9);
+    this.total(document, 'TOTAL', invoice.totalMonto, currency, 9);
     this.rule(document);
 
     const qrImage = await this.qrImage(qr);
@@ -116,12 +126,13 @@ export class ReceiptPdfService {
     document: PDFKit.PDFDocument,
     label: string,
     value: string,
+    currency: ReceiptCurrency,
     size = 7,
   ) {
     document.fontSize(size).text(label, MARGIN, document.y + 2, {
       width: 96,
     });
-    document.text(this.money(value), MARGIN + 98, document.y, {
+    document.text(this.money(value, currency), MARGIN + 98, document.y, {
       width: 104,
       align: 'right',
     });
@@ -141,12 +152,26 @@ export class ReceiptPdfService {
     return RECEIPT_WIDTH - MARGIN * 2;
   }
 
-  private money(value: string) {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 2,
-    }).format(Number(value));
+  private money(value: string, currency: ReceiptCurrency) {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return '-';
+    const fixed = Math.abs(amount).toFixed(currency.decimalPlaces);
+    const [integer, decimals] = fixed.split('.');
+    const grouped = integer.replace(
+      /\B(?=(\d{3})+(?!\d))/g,
+      currency.thousandsSeparator,
+    );
+    const number = decimals
+      ? `${grouped}${currency.decimalSeparator}${decimals}`
+      : grouped;
+    const sign = amount < 0 ? '-' : '';
+    const token = currency.format.startsWith('code')
+      ? currency.code
+      : currency.symbol;
+
+    return currency.format.endsWith('before')
+      ? `${sign}${token} ${number}`
+      : `${sign}${number} ${token}`;
   }
 
   private taxLabel(code: string) {

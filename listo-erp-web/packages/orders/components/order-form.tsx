@@ -5,18 +5,21 @@ import { useTranslation } from "@/hooks/use-translation";
 import { useGetCustomers } from "@/packages/customers/api";
 import { useGetDepartments } from "@/packages/department/api";
 import { useGetProducts } from "@/packages/product/api";
-import type { Product } from "@/packages/product/types";
+import { getProductDefaultPrice } from "@/packages/product/types";
+import type { Product, ProductPrice } from "@/packages/product/types";
 import { useGetInventoryBalances } from "@/packages/inventory/api";
 import { useCreateOrder, useUpdateOrder, useGetOrder } from "@/packages/orders/api";
 import type { CartItem } from "@/packages/orders/types";
 import { useGetBranches } from "@/packages/branch/api";
 import { useGetSellers } from "@/packages/sellers/api";
+import { useGetActiveSeries } from "@/packages/series/api";
+import { formatSeriesNumber } from "@/packages/series/constants";
 import { ProductCatalog } from "@/packages/pos/components/product-catalog";
 import { CatalogPagination } from "@/packages/pos/components/catalog-pagination";
 import { TicketItem } from "@/packages/pos/components/ticket-item";
 import { TicketSummary } from "@/packages/pos/components/ticket-summary";
 import { TicketSelector } from "@/packages/pos/components/ticket-selector";
-import { formatAmount } from "@/packages/pos/utils";
+import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +38,7 @@ interface OrderFormProps {
 }
 
 export function OrderForm({ orderId }: OrderFormProps) {
+  const { formatMoney } = useCurrency();
   const t = useTranslation();
   const router = useRouter();
 
@@ -57,9 +61,14 @@ export function OrderForm({ orderId }: OrderFormProps) {
   const [branchesResponse] = useGetBranches();
   const [sellersResponse] = useGetSellers();
   const [inventoryBalances] = useGetInventoryBalances();
+  const [activeSeries] = useGetActiveSeries("ORDERS");
 
   const [createOrder, creating, createError] = useCreateOrder();
   const [updateOrder, updating, updateError] = useUpdateOrder(orderId ?? 0);
+
+  const nextOrderNumber = activeSeries
+    ? formatSeriesNumber(activeSeries.format, activeSeries.consecutive)
+    : null;
 
   useEffect(() => {
     if (existingOrder && orderId) {
@@ -68,19 +77,67 @@ export function OrderForm({ orderId }: OrderFormProps) {
       setSellerId(existingOrder.sellerId ?? undefined);
       setNotes(existingOrder.notes ?? "");
       setCart(
-        existingOrder.items.map((item) => ({
-          product: {
+        existingOrder.items.map((item) => {
+          const catalogProduct = (Array.isArray(products) ? products : products?.data ?? [])
+            .find((product) => product.id === item.productId);
+          const legacyPrice: ProductPrice = {
+            id: 0,
+            productId: item.productId,
+            name: item.productPrice?.name ?? "Precio del pedido",
+            amount: Number(item.unitPrice),
+            isActive: true,
+            sortOrder: Number.MAX_SAFE_INTEGER,
+          };
+          const orderPrice: ProductPrice = {
+            id: item.productPriceId ?? legacyPrice.id,
+            productId: item.productId,
+            name: item.productPrice?.name ?? "Precio del pedido",
+            amount: item.productPrice?.amount ?? Number(item.unitPrice),
+            isActive: true,
+            sortOrder: 0,
+          };
+          const product = catalogProduct
+            ? item.productPriceId == null
+              ? { ...catalogProduct, prices: [...catalogProduct.prices, legacyPrice] }
+              : catalogProduct
+            : {
             id: item.productId,
             sku: item.product.sku,
             name: item.product.name,
             salePrice: Number(item.unitPrice),
+            defaultPriceId: item.productPriceId,
+            prices: [orderPrice],
+            defaultPrice: orderPrice,
+            description: null,
+            costPrice: null,
             taxRate: Number(item.taxRate),
-          } as Product,
+            unit: null,
+            dianCode: null,
+            image: null,
+            isActive: true,
+            companyId: 0,
+            departmentId: 0,
+            subdepartmentId: null,
+            categoryId: null,
+            subcategoryId: null,
+            department: { id: 0, name: "", code: "" },
+            subdepartment: null,
+            category: null,
+            subcategory: null,
+            createdAt: "",
+            updatedAt: "",
+          } as Product;
+          return {
+          product,
+          productPriceId: item.productPriceId ?? legacyPrice.id,
+          unitPrice: Number(item.unitPrice),
+          priceName: item.productPrice?.name,
           quantity: Number(item.quantity),
-        }))
+          };
+        })
       );
     }
-  }, [existingOrder, orderId]);
+  }, [existingOrder, orderId, products]);
 
   const departmentList = departments?.data?.filter((d) => d.isActive) ?? [];
   const productList = (Array.isArray(products) ? products : products?.data ?? []).filter((p) => p.isActive);
@@ -127,12 +184,12 @@ export function OrderForm({ orderId }: OrderFormProps) {
   );
 
   const subtotal = cart.reduce(
-    (sum, item) => sum + item.product.salePrice * item.quantity,
+    (sum, item) => sum + item.unitPrice * item.quantity,
     0
   );
   const tax = cart.reduce(
     (sum, item) =>
-      sum + item.product.salePrice * item.quantity * (Number(item.product.taxRate ?? 0) > 1 ? Number(item.product.taxRate) / 100 : Number(item.product.taxRate ?? 0)),
+       sum + item.unitPrice * item.quantity * (Number(item.product.taxRate ?? 0) > 1 ? Number(item.product.taxRate) / 100 : Number(item.product.taxRate ?? 0)),
     0
   );
   const total = subtotal + tax;
@@ -157,6 +214,11 @@ export function OrderForm({ orderId }: OrderFormProps) {
   }, [loading]);
 
   const addProduct = (product: Product) => {
+    const price = getProductDefaultPrice(product);
+    if (!price) {
+      showToast({ type: "error", message: "Este producto no tiene un precio activo." });
+      return;
+    }
     const availableStock = stockByProduct.get(product.id) ?? 0;
     if (availableStock <= 0) {
       showToast({
@@ -165,8 +227,10 @@ export function OrderForm({ orderId }: OrderFormProps) {
       });
       return;
     }
-    const existingItem = cart.find((item) => item.product.id === product.id);
-    if (existingItem && existingItem.quantity >= availableStock) {
+    const currentQuantity = cart
+      .filter((item) => item.product.id === product.id)
+      .reduce((sum, item) => sum + item.quantity, 0);
+    if (currentQuantity >= availableStock) {
       showToast({
         type: "warning",
         message: t("sales.orders.maxStockReached"),
@@ -175,25 +239,31 @@ export function OrderForm({ orderId }: OrderFormProps) {
     }
     setCart((current) => {
       const item = current.find((line) => line.product.id === product.id);
-      if (!item) return [...current, { product, quantity: 1 }];
+      if (!item) return [...current, { product, productPriceId: price.id, unitPrice: price.amount, priceName: price.name, quantity: 1 }];
       return current.map((line) =>
-        line.product.id === product.id
+        line === item
           ? { ...line, quantity: line.quantity + 1 }
           : line
       );
     });
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productPriceId: number, quantity: number) => {
     if (!Number.isFinite(quantity)) return;
+    const item = cart.find((line) => line.productPriceId === productPriceId);
+    if (!item) return;
+    const productId = item.product.id;
     if (quantity <= 0) {
       setCart((current) =>
-        current.filter((item) => item.product.id !== productId)
+        current.filter((item) => item.productPriceId !== productPriceId)
       );
       return;
     }
     const availableStock = stockByProduct.get(productId) ?? 0;
-    const nextQuantity = Math.min(quantity, availableStock);
+    const otherQuantity = cart
+      .filter((line) => line.product.id === productId && line.productPriceId !== productPriceId)
+      .reduce((sum, line) => sum + line.quantity, 0);
+    const nextQuantity = Math.min(quantity, Math.max(0, availableStock - otherQuantity));
     if (quantity > availableStock) {
       showToast({
         type: "warning",
@@ -202,13 +272,48 @@ export function OrderForm({ orderId }: OrderFormProps) {
     }
     setCart((current) =>
       nextQuantity <= 0
-        ? current.filter((item) => item.product.id !== productId)
+        ? current.filter((item) => item.productPriceId !== productPriceId)
         : current.map((item) =>
-            item.product.id === productId
+            item.productPriceId === productPriceId
               ? { ...item, quantity: nextQuantity }
               : item
           )
     );
+  };
+
+  const updatePrice = (productPriceId: number, price: ProductPrice) => {
+    setCart((current) => {
+      const currentItem = current.find((item) => item.productPriceId === productPriceId);
+      const existingTarget = current.find((item) => item.productPriceId === price.id);
+      if (!currentItem || (existingTarget && existingTarget !== currentItem)) {
+        if (!currentItem || !existingTarget) return current;
+        const maxStock = stockByProduct.get(currentItem.product.id) ?? Number.MAX_SAFE_INTEGER;
+        const otherQuantity = current
+          .filter(
+            (item) =>
+              item.product.id === currentItem.product.id &&
+              item !== currentItem &&
+              item !== existingTarget,
+          )
+          .reduce((sum, item) => sum + item.quantity, 0);
+        const mergedQuantity = Math.min(
+          maxStock - otherQuantity,
+          existingTarget.quantity + currentItem.quantity,
+        );
+        return current
+          .filter((item) => item !== currentItem)
+          .map((item) =>
+            item === existingTarget
+              ? { ...item, quantity: Math.max(0, mergedQuantity) }
+              : item,
+          );
+      }
+      return current.map((item) =>
+        item === currentItem
+          ? { ...item, productPriceId: price.id, unitPrice: price.amount, priceName: price.name }
+          : item,
+      );
+    });
   };
 
   const handleSubmit = () => {
@@ -221,15 +326,28 @@ export function OrderForm({ orderId }: OrderFormProps) {
       return;
     }
 
+    const items = cart.map((item) => {
+      const productPriceId = item.productPriceId || getProductDefaultPrice(item.product)?.id;
+      if (!productPriceId) {
+        showToast({
+          type: "error",
+          message: "Cada producto debe tener un precio activo.",
+        });
+        return null;
+      }
+      return {
+        productId: item.product.id,
+        productPriceId,
+        quantity: item.quantity,
+      };
+    });
+    if (items.some((item) => item === null)) return;
     const payload = {
       customerId,
       branchId: branchId || undefined,
       sellerId: sellerId || undefined,
       notes: notes || undefined,
-      items: cart.map((item) => ({
-        productId: item.product.id,
-        quantity: item.quantity,
-      })),
+      items: items.filter((item): item is NonNullable<typeof item> => item !== null),
     };
 
     if (orderId) {
@@ -333,6 +451,16 @@ export function OrderForm({ orderId }: OrderFormProps) {
             <div className="border-b px-5 py-4">
               <h3 className="text-base font-semibold">Resumen del pedido</h3>
               <p className="text-muted-foreground text-xs">{itemCount} artículos</p>
+              {!orderId && nextOrderNumber && (
+                <p className="mt-1 text-xs font-medium text-primary">
+                  {t("sales.orders.orderNumber")}: {nextOrderNumber}
+                </p>
+              )}
+              {!orderId && !activeSeries && (
+                <p className="mt-1 text-xs text-amber-600">
+                  {t("sales.orders.noActiveSeries")}
+                </p>
+              )}
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-5">
               <div className="shrink-0 grid gap-3">
@@ -374,10 +502,11 @@ export function OrderForm({ orderId }: OrderFormProps) {
                 ) : (
                   cart.map((item) => (
                     <TicketItem
-                      key={item.product.id}
+                       key={item.productPriceId}
                       item={item}
                       availableStock={stockByProduct.get(item.product.id) ?? 0}
                       onQuantityChange={updateQuantity}
+                      onPriceChange={updatePrice}
                     />
                   ))
                 )}
@@ -385,7 +514,7 @@ export function OrderForm({ orderId }: OrderFormProps) {
               <TicketSummary subtotal={subtotal} tax={tax} total={total} className="shrink-0" />
               <div className="shrink-0 space-y-2">
                 <p className="text-center text-sm font-semibold">
-                  Total a pagar: {formatAmount(total)}
+                  Total a pagar: {formatMoney(total)}
                 </p>
                 <Button
                   className="w-full"
