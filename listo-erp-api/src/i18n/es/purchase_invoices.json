@@ -1,0 +1,20 @@
+{
+  "errors": {
+    "not_found": "Factura de proveedor no encontrada",
+    "duplicate_product": "No se puede repetir un producto dentro de la factura",
+    "supplier_invoice_exists": "Ya existe una factura con ese número para el proveedor",
+    "supplier_not_found": "Proveedor activo no encontrado",
+    "warehouse_not_found": "Almacén activo no encontrado",
+    "product_not_found": "Uno o más productos no están disponibles",
+    "series_required": "Debes configurar una serie activa para facturas de proveedores",
+    "default_currency_required": "La empresa debe tener una moneda base configurada",
+    "purchase_order_not_found": "La orden de compra no fue encontrada",
+    "purchase_order_not_pending": "La orden de compra ya fue recibida o cancelada",
+    "purchase_order_changed": "El proveedor o almacén no coincide con la orden de compra",
+    "purchase_order_items_changed": "Los productos o cantidades no coinciden con la orden de compra",
+    "receipt_not_available": "El recibo de la factura no está disponible"
+  },
+  "success": {
+    "created": "Factura de proveedor registrada exitosamente"
+  }
+}

@@ -36,6 +36,20 @@ export class UpdateProductDto {
   @Min(0)
   salePrice?: number;
 
+  @ApiPropertyOptional({ description: 'Precio de costo del producto' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  costPrice?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Indica si el producto está exento de impuesto',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isExempt?: boolean;
+
   @ApiPropertyOptional({
     description: 'ID del precio predeterminado del producto; null lo desasigna',
   })

@@ -1,86 +1,50 @@
 "use client";
 
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { showToast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getPaymentMethodImageUrl, useGetPaymentMethods } from "@/packages/payment-methods/api";
 import { useUpdateTill } from "@/packages/till/api";
 import type { Till } from "@/packages/till/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { type Column, type ColumnDef, getCoreRowModel, getPaginationRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
-interface TillPaymentMethodsProps {
-  till: Till;
+interface TillPaymentMethodsProps { till: Till; }
+
+function SortableHeader({ column, children }: { column: Column<NonNullable<ReturnType<typeof useGetPaymentMethods>[0]>[number], unknown>; children: React.ReactNode }) {
+  return <span className="inline-flex items-center"><button type="button" className="inline-flex h-8 items-center rounded-md px-2 text-sm font-medium hover:bg-muted" onClick={column.getToggleSortingHandler()}>{children}<ArrowUpDown className="ml-2 h-4 w-4" /></button></span>;
 }
 
 export function TillPaymentMethods({ till }: TillPaymentMethodsProps) {
   const queryClient = useQueryClient();
   const [paymentMethods, isLoading, error] = useGetPaymentMethods();
-  const [selectedIds, setSelectedIds] = useState(() =>
-    (till.paymentMethods ?? []).map(({ paymentMethod }) => paymentMethod.id),
-  );
+  const [selectedIds, setSelectedIds] = useState(() => (till.paymentMethods ?? []).map(({ paymentMethod }) => paymentMethod.id));
   const [updateTill, isUpdating, updateError] = useUpdateTill(till.id);
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["tills"] });
-    queryClient.invalidateQueries({ queryKey: ["tills", till.id] });
-  };
-
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const invalidate = () => { queryClient.invalidateQueries({ queryKey: ["tills"] }); queryClient.invalidateQueries({ queryKey: ["tills", till.id] }); };
   const toggleMethod = (id: number) => {
-    const nextSelectedIds = selectedIds.includes(id)
-      ? selectedIds.filter((currentId) => currentId !== id)
-      : [...selectedIds, id];
-
-    updateTill({ paymentMethodIds: nextSelectedIds }, () => {
-      setSelectedIds(nextSelectedIds);
-      invalidate();
-      showToast({ type: "success", message: "Métodos de pago actualizados." });
-    });
+    const nextSelectedIds = selectedIds.includes(id) ? selectedIds.filter((currentId) => currentId !== id) : [...selectedIds, id];
+    updateTill({ paymentMethodIds: nextSelectedIds }, () => { setSelectedIds(nextSelectedIds); invalidate(); showToast({ type: "success", message: "Métodos de pago actualizados." }); });
   };
-
-  useEffect(() => {
-    if (updateError) showToast({ type: "error", message: updateError.message });
-  }, [updateError]);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Métodos de pago</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-muted-foreground text-sm">
-          Activa los métodos de pago disponibles para esta caja.
-        </p>
-        {error && <p className="text-destructive text-sm">{error.message}</p>}
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow>
-                <TableHead className="w-14">Imagen</TableHead>
-                <TableHead>Método de pago</TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Estado global</TableHead>
-                <TableHead className="w-28">En esta caja</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(paymentMethods ?? []).map((method) => (
-                <TableRow key={method.id}>
-                  <TableCell>
-                    {method.image ? <img src={getPaymentMethodImageUrl(method.image)} alt="" className="h-9 w-9 rounded object-contain" /> : <div className="flex h-9 w-9 items-center justify-center rounded bg-muted text-xs font-semibold">{method.code.slice(0, 2)}</div>}
-                  </TableCell>
-                  <TableCell className="font-medium">{method.name}</TableCell>
-                  <TableCell className="font-mono text-xs">{method.code}</TableCell>
-                  <TableCell>{method.isActive ? "Activo" : "Inactivo"}</TableCell>
-                  <TableCell><Switch checked={selectedIds.includes(method.id)} onCheckedChange={() => toggleMethod(method.id)} disabled={isUpdating} aria-label={`${selectedIds.includes(method.id) ? "Desactivar" : "Activar"} ${method.name} para esta caja`} /></TableCell>
-                </TableRow>
-              ))}
-              {!isLoading && paymentMethods?.length === 0 && <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No hay métodos de pago configurados.</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  useEffect(() => { if (updateError) showToast({ type: "error", message: updateError.message }); }, [updateError]);
+  type PaymentMethodRow = NonNullable<typeof paymentMethods>[number];
+  const columns = useMemo<ColumnDef<PaymentMethodRow>[]>(() => [
+    { id: "image", accessorFn: (row) => row.image ?? "", header: ({ column }) => <SortableHeader column={column}>Imagen</SortableHeader>, cell: ({ row }) => row.original.image ? <img src={getPaymentMethodImageUrl(row.original.image)} alt="" className="h-9 w-9 rounded object-contain" /> : <div className="flex h-9 w-9 items-center justify-center rounded bg-muted text-xs font-semibold">{row.original.code.slice(0, 2)}</div> },
+    { id: "name", accessorKey: "name", header: ({ column }) => <SortableHeader column={column}>Método de pago</SortableHeader>, cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+    { id: "code", accessorKey: "code", header: ({ column }) => <SortableHeader column={column}>Código</SortableHeader>, cell: ({ row }) => <span className="font-mono text-xs">{row.original.code}</span> },
+    { id: "status", accessorFn: (row) => (row.isActive ? "ACTIVE" : "INACTIVE"), header: ({ column }) => <SortableHeader column={column}>Estado global</SortableHeader>, cell: ({ row }) => row.original.isActive ? "Activo" : "Inactivo" },
+    { id: "enabled", header: () => "En esta caja", cell: ({ row }) => <Switch checked={selectedIds.includes(row.original.id)} onCheckedChange={() => toggleMethod(row.original.id)} disabled={isUpdating} aria-label={`${selectedIds.includes(row.original.id) ? "Desactivar" : "Activar"} ${row.original.name} para esta caja`} />, enableSorting: false },
+  ], [isUpdating, selectedIds, toggleMethod]);
+  const table = useReactTable({ data: paymentMethods ?? [], columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 10 } } });
+  return <Card>
+    <CardHeader><CardTitle>Métodos de pago</CardTitle></CardHeader>
+    <CardContent className="space-y-4">
+      <p className="text-muted-foreground text-sm">Activa los métodos de pago disponibles para esta caja.</p>
+      <DataTable table={table} loading={isLoading} loadingMessage="Cargando métodos de pago..." error={error?.message} emptyMessage="No hay métodos de pago configurados." />
+      <DataTablePagination table={table} pageLabel="Página" previousLabel="Anterior" nextLabel="Siguiente" />
+    </CardContent>
+  </Card>;
 }

@@ -1,7 +1,10 @@
-export const SERIES_MODULES = ["ORDERS"] as const;
+export const SERIES_MODULES = ["ORDERS", "PURCHASE_INVOICES"] as const;
 export type SeriesModule = (typeof SERIES_MODULES)[number];
 
-export function formatSeriesNumber(format: string, consecutive: number): string {
+export function formatSeriesNumber(
+  format: string,
+  consecutive: number,
+): string {
   const match = format.match(/\{(0+)\}/);
   if (!match) {
     return `${format}${consecutive}`;

@@ -27,6 +27,10 @@ import {
   useUploadProductImage,
 } from "@/packages/product/api";
 import { ProductPricesSection } from "@/packages/product/components/product-prices-section";
+import { ProductKardexTab } from "@/packages/product/components/product-kardex-tab";
+import { ProductOrdersTab } from "@/packages/product/components/product-orders-tab";
+import { ProductPurchasesTab } from "@/packages/product/components/product-purchases-tab";
+import { ProductSalesTab } from "@/packages/product/components/product-sales-tab";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
 import type { Product, UpdateProductRequest } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
@@ -41,8 +45,9 @@ import { use, useEffect, useRef, useState, type ChangeEvent } from "react";
 interface FormState {
   sku: string;
   name: string;
-  salePrice: string;
+  costPrice: string;
   taxRate: string;
+  isExempt: boolean;
   dianCode: string;
   usesUnit: boolean;
   isActive: boolean;
@@ -56,8 +61,9 @@ interface FormState {
 const toForm = (product: Product): FormState => ({
   sku: product.sku,
   name: product.name,
-  salePrice: String(product.salePrice),
+  costPrice: product.costPrice != null ? String(product.costPrice) : "",
   taxRate: product.taxRate != null ? String(product.taxRate * 100) : "",
+  isExempt: product.isExempt,
   dianCode: product.dianCode === "ZZ" ? "" : (product.dianCode ?? ""),
   usesUnit: Boolean(product.dianCode && product.dianCode !== "ZZ"),
   isActive: product.isActive,
@@ -161,7 +167,7 @@ function Editor({
       !validateProductFields(
         form.sku,
         form.name,
-        form.salePrice,
+        String(product.salePrice),
         form.departmentId,
       )
     )
@@ -173,11 +179,14 @@ function Editor({
       });
       return;
     }
+    const costPrice = form.costPrice ?? "";
+    const taxRate = form.taxRate ?? "";
     const request: UpdateProductRequest = {
       sku: form.sku.trim(),
       name: form.name.trim(),
-      salePrice: Number(form.salePrice),
-      taxRate: form.taxRate ? Number(form.taxRate) / 100 : undefined,
+      costPrice: costPrice.trim() ? Number(costPrice) : null,
+      taxRate: taxRate.trim() ? Number(taxRate) / 100 : null,
+      isExempt: form.isExempt,
       departmentId: form.departmentId!,
       subdepartmentId: form.subdepartmentId,
       categoryId: form.categoryId,
@@ -251,6 +260,18 @@ function Editor({
             <TabsTrigger value="prices" className="whitespace-nowrap">
               {t("inventory.products.pricingInformation")}
             </TabsTrigger>
+            <TabsTrigger value="kardex" className="whitespace-nowrap">
+              {t("inventory.products.kardex.title")}
+            </TabsTrigger>
+            <TabsTrigger value="purchases" className="whitespace-nowrap">
+              {t("inventory.products.purchases")}
+            </TabsTrigger>
+            <TabsTrigger value="sales" className="whitespace-nowrap">
+              {t("inventory.products.sales")}
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="whitespace-nowrap">
+              {t("inventory.products.orders")}
+            </TabsTrigger>
           </TabsList>
           <Button onClick={save} disabled={updating} className="ml-auto shrink-0">
             {updating ? t("common.saving") : t("common.save")}
@@ -297,34 +318,9 @@ function Editor({
             <Separator />
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-muted-foreground">
-                {t("inventory.products.pricingInformation")}
+                {t("inventory.products.additionalInformation")}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="salePrice">
-                    {t("inventory.products.salePrice")}{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="salePrice"
-                    type="number"
-                    value={form.salePrice}
-                    onChange={(event) => field("salePrice", event.target.value)}
-                    disabled={updating}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="taxRate">
-                    {t("inventory.products.taxRate")}
-                  </Label>
-                  <Input
-                    id="taxRate"
-                    type="number"
-                    value={form.taxRate}
-                    onChange={(event) => field("taxRate", event.target.value)}
-                    disabled={updating}
-                  />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="uses-unit">Usa unidad de medida</Label>
                   <Switch
@@ -481,7 +477,53 @@ function Editor({
           </Card>
         </TabsContent>
         <TabsContent value="prices" className="mt-2 w-full">
-          <ProductPricesSection product={product} />
+          <ProductPricesSection
+            product={product}
+            costPrice={form.costPrice ?? ""}
+            taxRate={form.taxRate ?? ""}
+            isExempt={form.isExempt ?? false}
+            onCostFieldChange={field}
+          />
+        </TabsContent>
+        <TabsContent value="kardex" className="mt-2 w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("inventory.products.kardex.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProductKardexTab productId={productId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="purchases" className="mt-2 w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("inventory.products.purchases")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProductPurchasesTab productId={productId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="sales" className="mt-2 w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("inventory.products.sales")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProductSalesTab productId={productId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="orders" className="mt-2 w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("inventory.products.orders")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProductOrdersTab productId={productId} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

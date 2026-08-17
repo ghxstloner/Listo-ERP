@@ -1,0 +1,20 @@
+{
+  "errors": {
+    "not_found": "未找到供应商发票",
+    "duplicate_product": "发票中不能重复产品",
+    "supplier_invoice_exists": "该供应商已存在相同编号的发票",
+    "supplier_not_found": "未找到有效供应商",
+    "warehouse_not_found": "未找到有效仓库",
+    "product_not_found": "一个或多个产品不可用",
+    "series_required": "请配置供应商发票的有效系列",
+    "default_currency_required": "公司必须配置基础货币",
+    "purchase_order_not_found": "未找到采购订单",
+    "purchase_order_not_pending": "采购订单已接收或取消",
+    "purchase_order_changed": "供应商或仓库与采购订单不匹配",
+    "purchase_order_items_changed": "产品或数量与采购订单不匹配",
+    "receipt_not_available": "发票收据不可用"
+  },
+  "success": {
+    "created": "供应商发票已成功登记"
+  }
+}

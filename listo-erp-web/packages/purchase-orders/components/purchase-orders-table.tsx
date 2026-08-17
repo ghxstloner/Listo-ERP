@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import { ConfirmDialog } from "@/components/ui/use-confirm";
 import {
   DropdownMenu,
@@ -18,17 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   type Column,
   type ColumnDef,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -37,18 +29,25 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { DotsThreeVertical, MagnifyingGlass } from "@phosphor-icons/react";
-import { ArrowUpDown, Check, X } from "lucide-react";
+import { ArrowUpDown, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { useMemo, useState } from "react";
-import { useCancelPurchaseOrder, useReceivePurchaseOrder } from "../api";
+import { useCancelPurchaseOrder } from "../api";
 import type { PurchaseOrder } from "../types";
 
-const statusLabels: Record<PurchaseOrder["status"], string> = { PENDING: "Pendiente", RECEIVED: "Recibida", CANCELLED: "Cancelada" };
+const statusLabels: Record<PurchaseOrder["status"], string> = {
+  PENDING: "Pendiente",
+  RECEIVED: "Recibida",
+  CANCELLED: "Cancelada",
+};
 const statusClasses: Record<PurchaseOrder["status"], string> = {
-  PENDING: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300",
-  RECEIVED: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
-  CANCELLED: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+  PENDING:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300",
+  RECEIVED:
+    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
+  CANCELLED:
+    "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
 };
 
 function SortableHeader({
@@ -73,10 +72,9 @@ function SortableHeader({
 
 function OrderActions({ order }: { order: PurchaseOrder }) {
   const queryClient = useQueryClient();
-  const [confirmation, setConfirmation] = useState<"receive" | "cancel" | null>(null);
-  const [receive, isReceiving] = useReceivePurchaseOrder(order.id);
+  const [confirmation, setConfirmation] = useState<"cancel" | null>(null);
   const [cancel, isCancelling] = useCancelPurchaseOrder(order.id);
-  const isMutating = isReceiving || isCancelling;
+  const isMutating = isCancelling;
 
   const complete = (message: string) => {
     queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
@@ -90,23 +88,34 @@ function OrderActions({ order }: { order: PurchaseOrder }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label={`Acciones para orden ${order.id}`} disabled={isMutating}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Acciones para orden ${order.id}`}
+            disabled={isMutating}
+          >
             <DotsThreeVertical className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setConfirmation("receive")}><Check className="size-4" /> Recibir orden</DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onSelect={() => setConfirmation("cancel")}><X className="size-4" /> Cancelar orden</DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => setConfirmation("cancel")}
+          >
+            <X className="size-4" /> Cancelar orden
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <ConfirmDialog
         open={confirmation !== null}
         onOpenChange={(open) => !open && setConfirmation(null)}
-        onConfirm={() => confirmation === "receive" ? receive(undefined, () => complete("Orden recibida e ingresada al inventario.")) : cancel(undefined, () => complete("Orden de compra cancelada."))}
-        title={confirmation === "receive" ? "¿Recibir esta orden?" : "¿Cancelar esta orden?"}
-        description={confirmation === "receive" ? "Se actualizará el inventario con las cantidades recibidas. Esta acción no se puede deshacer." : "La orden dejará de estar disponible para recepción. Esta acción no se puede deshacer."}
-        confirmText={confirmation === "receive" ? "Recibir orden" : "Cancelar orden"}
-        severity={confirmation === "cancel" ? "destructive" : "warning"}
+        onConfirm={() =>
+          cancel(undefined, () => complete("Orden de compra cancelada."))
+        }
+        title="¿Cancelar orden?"
+        description="La orden dejará de estar disponible para facturación. Esta acción no se puede deshacer."
+        confirmText="Cancelar orden"
+        severity="destructive"
         isLoading={isMutating}
       />
     </>
@@ -150,18 +159,32 @@ function buildColumns(
         <SortableHeader column={column}>Productos</SortableHeader>
       ),
       accessorFn: (row) => {
-        const totalQuantity = row.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-        const total = row.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0);
+        const totalQuantity = row.items.reduce(
+          (sum, item) => sum + Number(item.quantity),
+          0,
+        );
+        const total = row.items.reduce(
+          (sum, item) => sum + Number(item.quantity) * Number(item.unitCost),
+          0,
+        );
         return `${totalQuantity} ${formatMoney(total)}`;
       },
       cell: ({ row }) => {
-        const totalQuantity = row.original.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-        const total = row.original.items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitCost), 0);
+        const totalQuantity = row.original.items.reduce(
+          (sum, item) => sum + Number(item.quantity),
+          0,
+        );
+        const total = row.original.items.reduce(
+          (sum, item) => sum + Number(item.quantity) * Number(item.unitCost),
+          0,
+        );
         return (
           <>
             <span className="font-medium">{totalQuantity}</span>{" "}
             <span className="text-muted-foreground">unidades</span>
-            <span className="ml-2 hidden text-muted-foreground lg:inline">{formatMoney(total)}</span>
+            <span className="ml-2 hidden text-muted-foreground lg:inline">
+              {formatMoney(total)}
+            </span>
           </>
         );
       },
@@ -186,7 +209,9 @@ function buildColumns(
       ),
       accessorFn: (row) => row.status,
       cell: ({ row }) => (
-        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusClasses[row.original.status]}`}>
+        <span
+          className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusClasses[row.original.status]}`}
+        >
           {statusLabels[row.original.status]}
         </span>
       ),
@@ -197,9 +222,15 @@ function buildColumns(
     },
     {
       id: "actions",
-      header: () => <div className="text-right"><span className="sr-only">Acciones</span></div>,
+      header: () => (
+        <div className="text-right">
+          <span className="sr-only">Acciones</span>
+        </div>
+      ),
       cell: ({ row }) => (
-        <div className="flex justify-end pr-4"><OrderActions order={row.original} /></div>
+        <div className="flex justify-end pr-4">
+          <OrderActions order={row.original} />
+        </div>
       ),
       enableSorting: false,
       enableHiding: false,
@@ -213,7 +244,11 @@ interface PurchaseOrdersTableProps {
   action?: React.ReactNode;
 }
 
-export function PurchaseOrdersTable({ orders, isLoading, action }: PurchaseOrdersTableProps) {
+export function PurchaseOrdersTable({
+  orders,
+  isLoading,
+  action,
+}: PurchaseOrdersTableProps) {
   const { formatMoney } = useCurrency();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -228,7 +263,9 @@ export function PurchaseOrdersTable({ orders, isLoading, action }: PurchaseOrder
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue ?? "").trim().toLowerCase();
+      const q = String(filterValue ?? "")
+        .trim()
+        .toLowerCase();
       if (!q) return true;
       return [
         String(row.original.id),
@@ -286,69 +323,25 @@ export function PurchaseOrdersTable({ orders, isLoading, action }: PurchaseOrder
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center justify-between gap-3 sm:justify-end">{action}</div>
-      </div>
-
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted/40">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center text-muted-foreground">
-                  {orders.length === 0 ? "Aún no hay órdenes de compra." : "No hay órdenes que coincidan con los filtros."}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-muted-foreground text-sm">
-          Página {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Siguiente
-          </Button>
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          {action}
         </div>
       </div>
+
+      <DataTable
+        table={table}
+        emptyMessage={
+          orders.length === 0
+            ? "Aún no hay órdenes de compra."
+            : "No hay órdenes que coincidan con los filtros."
+        }
+      />
+      <DataTablePagination
+        table={table}
+        pageLabel="Página"
+        previousLabel="Anterior"
+        nextLabel="Siguiente"
+      />
     </div>
   );
 }

@@ -157,6 +157,7 @@ export class SalesService {
           id: true,
           taxRate: true,
           costPrice: true,
+          isExempt: true,
           dianCode: true,
           prices: {
             where: { id: { in: saleProductPriceIds }, isActive: true },
@@ -244,7 +245,9 @@ export class SalesService {
           : productPrice.amount;
         const taxRate = order
           ? new Prisma.Decimal(item.taxRate)
-          : (product.taxRate ?? new Prisma.Decimal(0));
+          : product.isExempt
+            ? new Prisma.Decimal(0)
+            : (product.taxRate ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;
@@ -566,6 +569,78 @@ export class SalesService {
           }
         : null,
     }));
+  }
+
+  async findProductSales(
+    companyId: number,
+    productId: number,
+    filters: {
+      branchId?: number;
+      status?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+  ) {
+    const where: Prisma.SaleWhereInput = {
+      companyId,
+      items: { some: { productId } },
+    };
+    if (filters.branchId != null) where.branchId = filters.branchId;
+    if (filters.status && filters.status !== 'all') {
+      where.electronicInvoice = {
+        status: filters.status as import('@prisma/client').ElectronicInvoiceStatus,
+      };
+    }
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endDate;
+      }
+    }
+
+    const sales = await this.prisma.sale.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        createdAt: true,
+        customer: { select: { id: true, name: true, taxId: true } },
+        seller: { select: { id: true, name: true } },
+        branch: { select: { id: true, name: true } },
+        electronicInvoice: {
+          select: { id: true, status: true, consecutive: true },
+        },
+        items: {
+          where: { productId },
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            taxAmount: true,
+            lineTotal: true,
+          },
+        },
+      },
+    });
+
+    return sales.flatMap((sale) =>
+      sale.items.map((item) => ({
+        id: sale.id,
+        itemId: item.id,
+        createdAt: sale.createdAt,
+        customer: sale.customer,
+        seller: sale.seller,
+        branch: sale.branch,
+        electronicInvoice: sale.electronicInvoice,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        taxAmount: Number(item.taxAmount),
+        total: Number(item.lineTotal),
+      })),
+    );
   }
 
   private hasColombiaFiscalData(customer: {

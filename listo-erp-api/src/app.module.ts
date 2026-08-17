@@ -20,6 +20,7 @@ import { DepartmentsModule } from './departments/departments.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { PurchaseInvoicesModule } from './purchase-invoices/purchase-invoices.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductsModule } from './products/products.module';
 import { SellersModule } from './sellers/sellers.module';
@@ -91,6 +92,7 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     ExchangeRatesModule,
     PaymentMethodsModule,
     PurchaseOrdersModule,
+    PurchaseInvoicesModule,
     WarehouseModule,
     WarehouseBranchModule,
   ],

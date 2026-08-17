@@ -175,6 +175,7 @@ export interface Dictionary {
       salePricePlaceholder: string;
       costPrice: string;
       costPricePlaceholder: string;
+      isExempt: string;
       taxRate: string;
       taxRatePlaceholder: string;
       unit: string;
@@ -219,6 +220,62 @@ export interface Dictionary {
       uploadImage: string;
       changeImage: string;
       imageFormats: string;
+      purchases: string;
+      sales: string;
+      orders: string;
+      kardex: {
+        title: string;
+        search: string;
+        warehouse: string;
+        allWarehouses: string;
+        dateFrom: string;
+        dateTo: string;
+        dateRange: string;
+        clearFilters: string;
+        date: string;
+        type: string;
+        quantity: string;
+        unitCost: string;
+        resultingStock: string;
+        purchase: string;
+        entry: string;
+        adjustment: string;
+        transferIn: string;
+        transferOut: string;
+        sale: string;
+        orderReserve: string;
+        orderCancel: string;
+        empty: string;
+      };
+      history: {
+        document: string;
+        date: string;
+        supplier: string;
+        warehouse: string;
+        customer: string;
+        seller: string;
+        branch: string;
+        status: string;
+        invoiceStatus: string;
+        allStatuses: string;
+        allSuppliers: string;
+        allBranches: string;
+        dateRange: string;
+        clearFilters: string;
+        searchPurchases: string;
+        searchSales: string;
+        searchOrders: string;
+        quantity: string;
+        unitCost: string;
+        unitPrice: string;
+        total: string;
+        empty: string;
+        statuses: {
+          pending: string;
+          paid: string;
+          cancelled: string;
+        };
+      };
     };
   };
   company: {
@@ -886,6 +943,7 @@ export interface Dictionary {
       confirmDeleteMessage: string;
       modules: {
         orders: string;
+        purchase_invoices: string;
       };
       validation: {
         descriptionRequired: string;

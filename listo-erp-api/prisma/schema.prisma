@@ -58,6 +58,7 @@ model Company {
   subcategories                         Subcategory[]
   suppliers                             Supplier[]
   purchaseOrders                        PurchaseOrder[]
+  purchaseInvoices                      PurchaseInvoice[]
   inventoryTransfers                    InventoryTransfer[]
   customers                             Customer[]
   sellers                               Seller[]
@@ -171,6 +172,7 @@ model User {
   closedCashSessions   CashSession[] @relation("CashSessionClosedBy")
   sales                Sale[]
   createdOrders        Order[]       @relation("OrderCreatedBy")
+  createdPurchaseInvoices PurchaseInvoice[]
 }
 
 enum AuditAction {
@@ -452,6 +454,7 @@ model Supplier {
   company        Company           @relation(fields: [companyId], references: [id])
   products       SupplierProduct[]
   purchaseOrders PurchaseOrder[]
+  purchaseInvoices PurchaseInvoice[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
@@ -530,6 +533,7 @@ model Product {
   defaultPriceId     Int?                    @unique
   costPrice          Decimal?                @db.Decimal(18, 4)
   taxRate            Decimal?                @db.Decimal(5, 4)
+  isExempt           Boolean                 @default(false)
   isActive           Boolean                 @default(true)
   companyId          Int
   departmentId       Int
@@ -548,6 +552,7 @@ model Product {
   defaultPrice       ProductPrice?           @relation("ProductDefaultPrice", fields: [defaultPriceId], references: [id], onDelete: SetNull)
   supplierProducts   SupplierProduct[]
   purchaseOrderItems PurchaseOrderItem[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
   inventoryBalances  InventoryBalance[]
   inventoryMovements InventoryMovement[]
   saleItems          SaleItem[]
@@ -605,8 +610,14 @@ enum PurchaseOrderStatus {
   CANCELLED
 }
 
+enum PurchaseInvoiceStatus {
+  POSTED
+  CANCELLED
+}
+
 enum InventoryMovementType {
   PURCHASE_RECEIPT
+  PURCHASE_INVOICE
   MANUAL_ENTRY
   INVENTORY_ADJUSTMENT
   TRANSFER_OUT
@@ -648,6 +659,7 @@ model PurchaseOrder {
   warehouse Warehouse           @relation(fields: [warehouseId], references: [id])
   currency  Currency            @relation(fields: [currencyId], references: [id])
   items     PurchaseOrderItem[]
+  purchaseInvoices PurchaseInvoice[]
 
   @@index([companyId, status])
   @@index([supplierId])
@@ -669,6 +681,65 @@ model PurchaseOrderItem {
   movements     InventoryMovement[]
 
   @@unique([purchaseOrderId, productId])
+}
+
+model PurchaseInvoice {
+  id                    Int                   @id @default(autoincrement())
+  companyId             Int
+  supplierId            Int
+  warehouseId           Int
+  purchaseOrderId       Int?
+  seriesId              Int
+  consecutive           Int
+  documentNumber        String
+  supplierInvoiceNumber String
+  issueDate             DateTime
+  status                PurchaseInvoiceStatus @default(POSTED)
+  subtotal              Decimal               @db.Decimal(18, 4)
+  taxAmount             Decimal               @db.Decimal(18, 4)
+  total                 Decimal               @db.Decimal(18, 4)
+  createdByUserId       Int
+  postedAt              DateTime              @default(now())
+  cancelledAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  series        Series         @relation(fields: [seriesId], references: [id])
+  createdByUser User           @relation(fields: [createdByUserId], references: [id])
+  items         PurchaseInvoiceItem[]
+  movements     InventoryMovement[]
+
+  @@unique([companyId, documentNumber])
+  @@unique([companyId, supplierId, supplierInvoiceNumber])
+  @@unique([seriesId, consecutive])
+  @@index([companyId, issueDate])
+  @@index([companyId, status])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+}
+
+model PurchaseInvoiceItem {
+  id                Int             @id @default(autoincrement())
+  purchaseInvoiceId Int
+  productId         Int
+  quantity          Decimal         @db.Decimal(18, 4)
+  unitCost          Decimal         @db.Decimal(18, 4)
+  taxRate           Decimal         @db.Decimal(5, 4)
+  taxAmount         Decimal         @db.Decimal(18, 4)
+  lineTotal         Decimal         @db.Decimal(18, 4)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  product           Product         @relation(fields: [productId], references: [id])
+  inventoryMovement InventoryMovement?
+
+  @@unique([purchaseInvoiceId, productId])
+  @@index([productId])
 }
 
 model InventoryBalance {
@@ -699,6 +770,8 @@ model InventoryMovement {
   balanceAfter        Decimal               @db.Decimal(18, 4)
   purchaseOrderId     Int?
   purchaseOrderItemId Int?
+  purchaseInvoiceId     Int?
+  purchaseInvoiceItemId Int?
   saleItemId          Int?
   orderItemId         Int?
   createdByUserId     Int
@@ -708,10 +781,13 @@ model InventoryMovement {
   warehouse         Warehouse          @relation(fields: [warehouseId], references: [id])
   product           Product            @relation(fields: [productId], references: [id])
   purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+  purchaseInvoice PurchaseInvoice? @relation(fields: [purchaseInvoiceId], references: [id])
+  purchaseInvoiceItem PurchaseInvoiceItem? @relation(fields: [purchaseInvoiceItemId], references: [id])
   saleItem          SaleItem?          @relation(fields: [saleItemId], references: [id])
   orderItem         OrderItem?         @relation(fields: [orderItemId], references: [id])
 
   @@unique([purchaseOrderItemId])
+  @@unique([purchaseInvoiceItemId])
   @@index([saleItemId])
   @@index([orderItemId])
   @@index([companyId, warehouseId, productId, createdAt])
@@ -730,6 +806,7 @@ model Warehouse {
   inventoryBalances    InventoryBalance[]
   inventoryMovements   InventoryMovement[]
   purchaseOrders       PurchaseOrder[]
+  purchaseInvoices     PurchaseInvoice[]
   sourceTransfers      InventoryTransfer[] @relation("TransferSourceWarehouse")
   destinationTransfers InventoryTransfer[] @relation("TransferDestinationWarehouse")
   createdAt            DateTime            @default(now())
@@ -1055,6 +1132,7 @@ model CompanyHierarchyConfig {
 
 enum SeriesModule {
   ORDERS
+  PURCHASE_INVOICES
 }
 
 model Series {
@@ -1070,6 +1148,7 @@ model Series {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   orders  Order[]
+  purchaseInvoices PurchaseInvoice[]
 
   @@unique([companyId, module])
   @@index([companyId])

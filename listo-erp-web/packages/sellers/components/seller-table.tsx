@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,15 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DotsThreeVertical, Pencil, Trash } from "@phosphor-icons/react";
+import {
+  type Column,
+  type ColumnDef,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Seller } from "../types";
 
@@ -60,6 +63,96 @@ function formatDate(value?: string) {
   return date.toLocaleDateString();
 }
 
+function SortableHeader({
+  column,
+  children,
+}: {
+  column: Column<Seller, unknown>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-2 h-8 px-2"
+      onClick={column.getToggleSortingHandler()}
+    >
+      {children}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+}
+
+function buildColumns({
+  t,
+  onEdit,
+  onDelete,
+  isDeleting,
+  deletingSellerId,
+}: Pick<
+  SellerTableProps,
+  "t" | "onEdit" | "onDelete" | "isDeleting" | "deletingSellerId"
+>): ColumnDef<Seller>[] {
+  return [
+    {
+      id: "code",
+      accessorKey: "code",
+      header: ({ column }) => <SortableHeader column={column}>{t("sales.sellers.code")}</SortableHeader>,
+      cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
+    },
+    {
+      id: "name",
+      accessorKey: "name",
+      header: ({ column }) => <SortableHeader column={column}>{t("sales.sellers.name")}</SortableHeader>,
+      cell: ({ row }) => <div className="truncate font-medium">{row.original.name}</div>,
+    },
+    {
+      id: "status",
+      accessorFn: (row) => (row.isActive ? "ACTIVE" : "INACTIVE"),
+      header: ({ column }) => <SortableHeader column={column}>{t("sales.sellers.status")}</SortableHeader>,
+      cell: ({ row }) => <StatusPill isActive={row.original.isActive} t={t} />,
+    },
+    {
+      id: "createdAt",
+      accessorKey: "createdAt",
+      header: ({ column }) => <SortableHeader column={column}>{t("sales.sellers.createdAt")}</SortableHeader>,
+      cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.createdAt)}</span>,
+      sortingFn: "datetime",
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">{t("sales.sellers.actions")}</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <span className="sr-only">{t("sales.sellers.actions")}</span>
+                <DotsThreeVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(row.original)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                {t("common.edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDelete(row.original)}
+                className="text-destructive focus:text-destructive"
+                disabled={isDeleting && deletingSellerId === row.original.id}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                {t("common.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+      enableSorting: false,
+    },
+  ];
+}
+
 export function SellerTable({
   sellers,
   onEdit,
@@ -71,6 +164,7 @@ export function SellerTable({
 }: SellerTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const filteredSellers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -84,6 +178,21 @@ export function SellerTable({
       ].some((value) => value?.toLowerCase().includes(q));
     });
   }, [sellers, search, status]);
+
+  const columns = useMemo(
+    () => buildColumns({ t, onEdit, onDelete, isDeleting, deletingSellerId }),
+    [t, onEdit, onDelete, isDeleting, deletingSellerId],
+  );
+  const table = useReactTable({
+    data: filteredSellers,
+    columns,
+    state: { sorting },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   return (
     <div className="space-y-4">
@@ -117,81 +226,8 @@ export function SellerTable({
         </div>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted/40">
-            <TableRow>
-              <TableHead>{t("sales.sellers.code")}</TableHead>
-              <TableHead>{t("sales.sellers.name")}</TableHead>
-              <TableHead>{t("sales.sellers.status")}</TableHead>
-              <TableHead>{t("sales.sellers.createdAt")}</TableHead>
-              <TableHead className="text-right">
-                {t("sales.sellers.actions")}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSellers.length ? (
-              filteredSellers.map((seller) => (
-                <TableRow key={seller.id}>
-                  <TableCell className="font-medium">{seller.code}</TableCell>
-                  <TableCell>
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{seller.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <StatusPill isActive={seller.isActive} t={t} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(seller.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <span className="sr-only">
-                              {t("sales.sellers.actions")}
-                            </span>
-                            <DotsThreeVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(seller)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            {t("common.edit")}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onDelete(seller)}
-                            className="text-destructive focus:text-destructive"
-                            disabled={
-                              isDeleting && deletingSellerId === seller.id
-                            }
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            {t("common.delete")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  {t("sales.sellers.noSellers")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable table={table} emptyMessage={t("sales.sellers.noSellers")} />
+      <DataTablePagination table={table} pageLabel={t("common.page")} previousLabel={t("common.previous")} nextLabel={t("common.next")} />
     </div>
   );
 }

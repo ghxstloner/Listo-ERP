@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import {
   Dialog,
   DialogContent,
@@ -18,14 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { showToast } from "@/components/ui/sonner";
 import { useTranslation } from "@/hooks/use-translation";
 import {
@@ -37,11 +30,17 @@ import type { WarehouseBranchWithWarehouse } from "@/packages/warehouse-branch/t
 import { useGetWarehouses } from "@/packages/warehouse/api";
 import { Plus, Spinner, Trash } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
+import { type Column, type ColumnDef, getCoreRowModel, getPaginationRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface BranchWarehousesTabProps {
   branchId: number;
   companyId: number;
+}
+
+function SortableHeader({ column, children }: { column: Column<WarehouseBranchWithWarehouse, unknown>; children: React.ReactNode }) {
+  return <Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={column.getToggleSortingHandler()}>{children}<ArrowUpDown className="ml-2 h-4 w-4" /></Button>;
 }
 
 export function BranchWarehousesTab({ branchId, companyId }: BranchWarehousesTabProps) {
@@ -54,6 +53,7 @@ export function BranchWarehousesTab({ branchId, companyId }: BranchWarehousesTab
   const [createLink, isAdding] = useCreateWarehouseBranch();
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteLink, isDeleting] = useDeleteWarehouseBranch(deletingId ?? 0);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const handleRemoveClick = (wb: WarehouseBranchWithWarehouse) => {
     if (isDeleting) return;
@@ -118,13 +118,13 @@ export function BranchWarehousesTab({ branchId, companyId }: BranchWarehousesTab
     // eslint-disable-next-line react-hooks/exhaustive-deps -- deleteLink is stable per deletingId
   }, [deletingId]);
 
-  if (assignedError) {
-    return (
-      <p className="text-destructive text-sm">
-        {t("common.error")}: {(assignedError as Error).message}
-      </p>
-    );
-  }
+  const columns = useMemo<ColumnDef<WarehouseBranchWithWarehouse>[]>(() => [
+    { id: "name", accessorFn: (row) => row.warehouse?.name ?? "", header: ({ column }) => <SortableHeader column={column}>{t("company.warehouses.name")}</SortableHeader>, cell: ({ row }) => <span className="font-medium">{row.original.warehouse?.name ?? "-"}</span> },
+    { id: "code", accessorFn: (row) => row.warehouse?.code ?? "", header: ({ column }) => <SortableHeader column={column}>{t("company.warehouses.code")}</SortableHeader>, cell: ({ row }) => <span className="text-muted-foreground">{row.original.warehouse?.code ?? "-"}</span> },
+    { id: "status", accessorFn: (row) => row.warehouse?.isActive ? "ACTIVE" : "INACTIVE", header: ({ column }) => <SortableHeader column={column}>{t("company.warehouses.status")}</SortableHeader>, cell: ({ row }) => <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${row.original.warehouse?.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>{row.original.warehouse?.isActive ? t("company.warehouses.active") : t("company.warehouses.inactive")}</span> },
+    { id: "actions", header: () => <div className="text-right">{t("company.branches.actions")}</div>, cell: ({ row }) => <div className="text-right"><Button variant="ghost" size="sm" className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={isDeleting && deletingId === row.original.id} onClick={() => handleRemoveClick(row.original)}><Trash className="mr-1.5 h-4 w-4" />{t("company.branches.removeWarehouse")}</Button></div>, enableSorting: false },
+  ], [deletingId, isDeleting, t]);
+  const table = useReactTable({ data: assigned ?? [], columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 10 } } });
 
   return (
     <>
@@ -142,77 +142,14 @@ export function BranchWarehousesTab({ branchId, companyId }: BranchWarehousesTab
           </Button>
         </div>
 
-        {isLoadingAssigned || isLoadingWarehouses ? (
-          <div className="flex items-center justify-center py-12">
-            <Spinner size={28} className="animate-spin text-muted-foreground" />
-          </div>
-        ) : !assigned || assigned.length === 0 ? (
-          <div className="rounded-lg border border-dashed bg-muted/30 py-12 text-center">
-            <p className="text-muted-foreground text-sm">
-              {t("company.branches.noWarehousesAssigned")}
-            </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-3"
-              onClick={() => setAddModalOpen(true)}
-              disabled={availableWarehouses.length === 0}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t("company.branches.addWarehouse")}
-            </Button>
-          </div>
-        ) : (
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow>
-                  <TableHead>{t("company.warehouses.name")}</TableHead>
-                  <TableHead>{t("company.warehouses.code")}</TableHead>
-                  <TableHead>{t("company.warehouses.status")}</TableHead>
-                  <TableHead className="w-[100px] text-right">{t("company.branches.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assigned.map((wb) => (
-                  <TableRow key={wb.id}>
-                    <TableCell className="font-medium">
-                      {wb.warehouse?.name ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {wb.warehouse?.code ?? "-"}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          wb.warehouse?.isActive
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {wb.warehouse?.isActive
-                          ? t("company.warehouses.active")
-                          : t("company.warehouses.inactive")}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        disabled={isDeleting && deletingId === wb.id}
-                        onClick={() => handleRemoveClick(wb)}
-                      >
-                        <Trash className="mr-1.5 h-4 w-4" />
-                        {t("company.branches.removeWarehouse")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <DataTable
+          table={table}
+          loading={isLoadingAssigned || isLoadingWarehouses}
+          loadingMessage={<span className="inline-flex items-center gap-2"><Spinner size={20} className="animate-spin" />Cargando almacenes...</span>}
+          error={assignedError ? <>{t("common.error")}: {(assignedError as Error).message}</> : undefined}
+          emptyMessage={<><p className="text-muted-foreground text-sm">{t("company.branches.noWarehousesAssigned")}</p><Button size="sm" variant="outline" className="mt-3" onClick={() => setAddModalOpen(true)} disabled={availableWarehouses.length === 0}><Plus className="mr-2 h-4 w-4" />{t("company.branches.addWarehouse")}</Button></>}
+        />
+        <DataTablePagination table={table} pageLabel={t("common.page")} previousLabel={t("common.previous")} nextLabel={t("common.next")} />
         </div>
       </div>
 

@@ -31,6 +31,21 @@ export class CreateProductDto {
   @Min(0)
   salePrice: number;
 
+  @ApiPropertyOptional({ description: 'Precio de costo del producto' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  costPrice?: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Indica si el producto está exento de impuesto',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isExempt?: boolean;
+
   @ApiPropertyOptional({
     description: 'Tasa de impuesto como fracción: 0.12 equivale a 12%',
   })

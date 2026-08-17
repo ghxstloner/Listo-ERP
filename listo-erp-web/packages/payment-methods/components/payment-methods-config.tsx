@@ -1,17 +1,19 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showToast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@config";
 import { Camera, PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { type Column, type ColumnDef, getCoreRowModel, getPaginationRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { ArrowUpDown } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { getPaymentMethodImageUrl, uploadPaymentMethodImage, useGetPaymentMethods } from "../api";
 import type { PaymentMethod, PaymentMethodRequest, PaymentMethodResponse } from "../types";
 
@@ -22,6 +24,10 @@ const initialForm: PaymentMethodRequest = {
   isActive: true,
 };
 
+function SortableHeader({ column, children }: { column: Column<PaymentMethod, unknown>; children: React.ReactNode }) {
+  return <Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={column.getToggleSortingHandler()}>{children}<ArrowUpDown className="ml-2 h-4 w-4" /></Button>;
+}
+
 export function PaymentMethodsConfig() {
   const queryClient = useQueryClient();
   const [paymentMethods, isLoading, error] = useGetPaymentMethods();
@@ -30,6 +36,7 @@ export function PaymentMethodsConfig() {
   const [form, setForm] = useState<PaymentMethodRequest>(initialForm);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imageMethodId, setImageMethodId] = useState<number | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
   const save = useMutation({
@@ -93,8 +100,15 @@ export function PaymentMethodsConfig() {
     if (file && imageMethodId) uploadImage.mutate({ id: imageMethodId, file });
   };
 
-  if (isLoading) return <Card><CardContent className="py-8 text-center text-muted-foreground">Cargando métodos de pago...</CardContent></Card>;
-  if (error) return <Card><CardContent className="py-8 text-center text-destructive">No se pudieron cargar los métodos: {error.message}</CardContent></Card>;
+  const columns = useMemo<ColumnDef<PaymentMethod>[]>(() => [
+    { id: "image", accessorFn: (row) => row.image ?? "", header: ({ column }) => <SortableHeader column={column}>Imagen</SortableHeader>, cell: ({ row }) => row.original.image ? <img src={getPaymentMethodImageUrl(row.original.image)} alt="" className="h-9 w-9 rounded object-contain" /> : <div className="flex h-9 w-9 items-center justify-center rounded bg-muted text-xs font-semibold">{row.original.code.slice(0, 2)}</div> },
+    { id: "name", accessorKey: "name", header: ({ column }) => <SortableHeader column={column}>Nombre</SortableHeader>, cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+    { id: "code", accessorKey: "code", header: ({ column }) => <SortableHeader column={column}>Código interno</SortableHeader>, cell: ({ row }) => <span className="font-mono text-xs">{row.original.code}</span> },
+    { id: "dianCode", accessorFn: (row) => row.dianCode ?? "", header: ({ column }) => <SortableHeader column={column}>Código DIAN</SortableHeader>, cell: ({ row }) => <span className="font-mono text-xs">{row.original.dianCode ?? "-"}</span> },
+    { id: "status", accessorFn: (row) => (row.isActive ? "ACTIVE" : "INACTIVE"), header: ({ column }) => <SortableHeader column={column}>Estado</SortableHeader>, cell: ({ row }) => <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${row.original.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>{row.original.isActive ? "Activo" : "Inactivo"}</span> },
+    { id: "actions", header: () => <div className="text-right">Acciones</div>, cell: ({ row }) => <div className="flex justify-end"><Button variant="ghost" size="icon" onClick={() => selectImage(row.original.id)} aria-label={`Cambiar imagen de ${row.original.name}`}><Camera className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => openEdit(row.original)} aria-label={`Editar ${row.original.name}`}><PencilSimple className="h-4 w-4" /></Button><Button variant="ghost" size="icon" disabled={remove.isPending} onClick={() => { if (window.confirm(`¿Eliminar ${row.original.name}?`)) remove.mutate(row.original.id); }} aria-label={`Eliminar ${row.original.name}`}><Trash className="h-4 w-4" /></Button></div>, enableSorting: false },
+  ], [getPaymentMethodImageUrl, remove.isPending, editing]);
+  const table = useReactTable({ data: paymentMethods ?? [], columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 10 } } });
 
   return <>
     <Card>
@@ -103,15 +117,8 @@ export function PaymentMethodsConfig() {
         <Button size="sm" onClick={openCreate}><Plus className="mr-2 h-4 w-4" />Nuevo método</Button>
       </CardHeader>
       <CardContent>
-        <div className="rounded-lg border"><Table>
-          <TableHeader className="bg-muted/40"><TableRow><TableHead className="w-16">Imagen</TableHead><TableHead>Nombre</TableHead><TableHead>Código interno</TableHead><TableHead>Código DIAN</TableHead><TableHead>Estado</TableHead><TableHead className="w-28 text-right">Acciones</TableHead></TableRow></TableHeader>
-          <TableBody>{(paymentMethods ?? []).map((method) => <TableRow key={method.id}>
-            <TableCell>{method.image ? <img src={getPaymentMethodImageUrl(method.image)} alt="" className="h-9 w-9 rounded object-contain" /> : <div className="flex h-9 w-9 items-center justify-center rounded bg-muted text-xs font-semibold">{method.code.slice(0, 2)}</div>}</TableCell>
-            <TableCell className="font-medium">{method.name}</TableCell><TableCell className="font-mono text-xs">{method.code}</TableCell><TableCell className="font-mono text-xs">{method.dianCode ?? "-"}</TableCell>
-            <TableCell><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${method.isActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>{method.isActive ? "Activo" : "Inactivo"}</span></TableCell>
-            <TableCell><div className="flex justify-end"><Button variant="ghost" size="icon" onClick={() => selectImage(method.id)} aria-label={`Cambiar imagen de ${method.name}`}><Camera className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => openEdit(method)} aria-label={`Editar ${method.name}`}><PencilSimple className="h-4 w-4" /></Button><Button variant="ghost" size="icon" disabled={remove.isPending} onClick={() => { if (window.confirm(`¿Eliminar ${method.name}?`)) remove.mutate(method.id); }} aria-label={`Eliminar ${method.name}`}><Trash className="h-4 w-4" /></Button></div></TableCell>
-          </TableRow>)}{paymentMethods?.length === 0 && <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No hay métodos de pago configurados.</TableCell></TableRow>}</TableBody>
-        </Table></div>
+        <DataTable table={table} loading={isLoading} loadingMessage="Cargando métodos de pago..." error={error ? <>No se pudieron cargar los métodos: {error.message}</> : undefined} emptyMessage="No hay métodos de pago configurados." />
+        <DataTablePagination table={table} pageLabel="Página" previousLabel="Anterior" nextLabel="Siguiente" />
         <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(event) => handleImage(event.target.files?.[0])} />
       </CardContent>
     </Card>

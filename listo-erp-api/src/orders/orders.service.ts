@@ -50,6 +50,7 @@ export class OrdersService {
             id: true,
             taxRate: true,
             costPrice: true,
+            isExempt: true,
             prices: {
               where: {
                 id: { in: dto.items.map((item) => item.productPriceId) },
@@ -85,7 +86,9 @@ export class OrdersService {
           );
         }
         const quantity = new Prisma.Decimal(item.quantity);
-        const taxRate = product.taxRate ?? new Prisma.Decimal(0);
+        const taxRate = product.isExempt
+          ? new Prisma.Decimal(0)
+          : (product.taxRate ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;
@@ -248,6 +251,74 @@ export class OrdersService {
     return this.serializeOrder(order);
   }
 
+  async findProductOrders(
+    companyId: number,
+    productId: number,
+    filters: {
+      branchId?: number;
+      status?: OrderStatus;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+  ) {
+    const where: Prisma.OrderWhereInput = {
+      companyId,
+      items: { some: { productId } },
+    };
+    if (filters.branchId != null) where.branchId = filters.branchId;
+    if (filters.status && filters.status !== ('all' as OrderStatus)) {
+      where.status = filters.status;
+    }
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endDate;
+      }
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        createdAt: true,
+        customer: { select: { id: true, name: true } },
+        seller: { select: { id: true, name: true } },
+        branch: { select: { id: true, name: true } },
+        items: {
+          where: { productId },
+          select: {
+            id: true,
+            quantity: true,
+            unitPrice: true,
+            lineTotal: true,
+          },
+        },
+      },
+    });
+
+    return orders.flatMap((order) =>
+      order.items.map((item) => ({
+        id: order.id,
+        itemId: item.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        createdAt: order.createdAt,
+        customer: order.customer,
+        seller: order.seller,
+        branch: order.branch,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        total: Number(item.lineTotal),
+      })),
+    );
+  }
+
   async update(
     id: number,
     dto: UpdateOrderDto,
@@ -308,6 +379,7 @@ export class OrdersService {
           id: true,
           taxRate: true,
           costPrice: true,
+          isExempt: true,
           prices: {
             where: {
               id: {
@@ -337,7 +409,9 @@ export class OrdersService {
           );
         }
         const quantity = new Prisma.Decimal(item.quantity);
-        const taxRate = product.taxRate ?? new Prisma.Decimal(0);
+        const taxRate = product.isExempt
+          ? new Prisma.Decimal(0)
+          : (product.taxRate ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;

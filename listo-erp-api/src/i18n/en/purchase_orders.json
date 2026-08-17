@@ -5,10 +5,12 @@
     "supplier_not_found": "Active supplier not found",
     "warehouse_not_found": "Active warehouse not found",
     "product_not_found": "One or more products are unavailable",
+    "product_cost_required": "All products must have a cost greater than zero",
     "product_not_supplied": "All products must be linked to the selected supplier",
     "default_currency_required": "The company must have a default currency to create purchase orders",
     "exchange_rate_required": "No rate is registered for the operation currency and the current date",
-    "not_pending": "Only pending orders can be received or cancelled"
+    "not_pending": "Only pending orders can be received or cancelled",
+    "invoice_required": "Orders do not update inventory directly; register a supplier invoice"
   },
   "success": {
     "created": "Purchase order created successfully",

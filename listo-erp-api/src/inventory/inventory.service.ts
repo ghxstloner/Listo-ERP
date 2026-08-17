@@ -169,13 +169,67 @@ export class InventoryService {
         unitCost: true,
         balanceAfter: true,
         purchaseOrderId: true,
+        purchaseInvoiceId: true,
+        purchaseInvoiceItemId: true,
         createdByUserId: true,
         createdAt: true,
         warehouse: { select: { id: true, name: true, code: true } },
         product: { select: { id: true, sku: true, name: true, unit: true } },
+        purchaseInvoice: {
+          select: { documentNumber: true, supplierInvoiceNumber: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
+    return movements.map((movement) => ({
+      ...movement,
+      quantity: Number(movement.quantity),
+      unitCost: Number(movement.unitCost),
+      balanceAfter: Number(movement.balanceAfter),
+    }));
+  }
+
+  async findProductMovements(
+    companyId: number,
+    productId: number,
+    filters: { warehouseId?: number; dateFrom?: string; dateTo?: string },
+  ) {
+    const where: Prisma.InventoryMovementWhereInput = { companyId, productId };
+    if (filters.warehouseId != null) where.warehouseId = filters.warehouseId;
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endDate;
+      }
+    }
+
+    const movements = await this.prisma.inventoryMovement.findMany({
+      where,
+      select: {
+        id: true,
+        warehouseId: true,
+        productId: true,
+        type: true,
+        quantity: true,
+        unitCost: true,
+        balanceAfter: true,
+        purchaseOrderId: true,
+        purchaseInvoiceId: true,
+        purchaseInvoiceItemId: true,
+        saleItemId: true,
+        orderItemId: true,
+        createdAt: true,
+        warehouse: { select: { id: true, name: true, code: true } },
+        purchaseInvoice: {
+          select: { documentNumber: true, supplierInvoiceNumber: true },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+
     return movements.map((movement) => ({
       ...movement,
       quantity: Number(movement.quantity),

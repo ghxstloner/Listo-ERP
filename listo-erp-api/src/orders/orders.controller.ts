@@ -65,6 +65,28 @@ export class OrdersController {
     });
   }
 
+  @Get('products/:productId')
+  @ApiQuery({ name: 'branchId', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  findProductOrders(
+    @Param('productId', ParseIntPipe) productId: number,
+    @CurrentCompanyId() companyId: number,
+    @Query('branchId', new ParseIntPipe({ optional: true }))
+    branchId?: number,
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.ordersService.findProductOrders(companyId, productId, {
+      branchId,
+      status: status as 'PENDING' | 'PAID' | 'CANCELLED' | undefined,
+      dateFrom,
+      dateTo,
+    });
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseIntPipe) id: number,

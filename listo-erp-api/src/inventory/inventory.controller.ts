@@ -62,6 +62,25 @@ export class InventoryController {
     );
   }
 
+  @Get('products/:productId/movements')
+  @ApiQuery({ name: 'warehouseId', required: false, type: Number })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  productMovements(
+    @Param('productId', ParseIntPipe) productId: number,
+    @CurrentCompanyId() companyId: number,
+    @Query('warehouseId', new ParseIntPipe({ optional: true }))
+    warehouseId?: number,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.inventoryService.findProductMovements(companyId, productId, {
+      warehouseId,
+      dateFrom,
+      dateTo,
+    });
+  }
+
   @Get('branches/:branchId/balances')
   branchBalances(
     @Param('branchId', ParseIntPipe) branchId: number,

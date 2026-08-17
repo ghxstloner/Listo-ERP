@@ -99,7 +99,11 @@ export class ProductsService {
             name: createProductDto.name,
             description: null,
             salePrice: new Prisma.Decimal(createProductDto.salePrice),
-            costPrice: null,
+            costPrice:
+              createProductDto.costPrice != null
+                ? new Prisma.Decimal(createProductDto.costPrice)
+                : null,
+            isExempt: createProductDto.isExempt ?? false,
             taxRate:
               createProductDto.taxRate != null
                 ? new Prisma.Decimal(createProductDto.taxRate)
@@ -258,6 +262,15 @@ export class ProductsService {
         updateProductDto.taxRate != null
           ? new Prisma.Decimal(updateProductDto.taxRate)
           : null;
+    }
+    if (updateProductDto.costPrice !== undefined) {
+      data.costPrice =
+        updateProductDto.costPrice != null
+          ? new Prisma.Decimal(updateProductDto.costPrice)
+          : null;
+    }
+    if (updateProductDto.isExempt !== undefined) {
+      data.isExempt = updateProductDto.isExempt;
     }
     if (updateProductDto.dianCode !== undefined) {
       data.dianCode = this.normalizeDianCode(updateProductDto.dianCode);
@@ -522,6 +535,7 @@ export class ProductsService {
       defaultPriceId: true,
       costPrice: true,
       taxRate: true,
+      isExempt: true,
       unit: true,
       dianCode: true,
       image: true,

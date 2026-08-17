@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
@@ -13,8 +14,15 @@ import { MoneyInput } from "@/packages/currency/components/money-input";
 import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useState } from "react";
+import type { SupplierProduct } from "../types";
+import { type Column, type ColumnDef, getCoreRowModel, getPaginationRowModel, getSortedRowModel, type SortingState, useReactTable } from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useAddSupplierProduct, useGetSupplierProducts } from "../api";
+
+function SortableHeader({ column, children }: { column: Column<SupplierProduct, unknown>; children: React.ReactNode }) {
+  return <Button variant="ghost" size="sm" className="-ml-2 h-8 px-2" onClick={column.getToggleSortingHandler()}>{children}<ArrowUpDown className="ml-2 h-4 w-4" /></Button>;
+}
 
 export function SupplierProducts({ supplierId }: { supplierId: number }) {
   const { parseMoney, formatMoney } = useCurrency();
@@ -26,6 +34,7 @@ export function SupplierProducts({ supplierId }: { supplierId: number }) {
   const [supplierSku, setSupplierSku] = useState("");
   const [referenceCost, setReferenceCost] = useState("");
   const [addProduct, adding] = useAddSupplierProduct(supplierId);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const availableProducts = Array.isArray(products) ? products : products?.data ?? [];
   const selectedProduct = availableProducts.find((product) => String(product.id) === productId);
 
@@ -38,6 +47,14 @@ export function SupplierProducts({ supplierId }: { supplierId: number }) {
     });
   };
 
+  const columns = useMemo<ColumnDef<SupplierProduct>[]>(() => [
+    { id: "product", accessorFn: (row) => `${row.product.sku} ${row.product.name}`, header: ({ column }) => <SortableHeader column={column}>Producto</SortableHeader>, cell: ({ row }) => `${row.original.product.sku} - ${row.original.product.name}` },
+    { id: "supplierSku", accessorFn: (row) => row.supplierSku ?? "", header: ({ column }) => <SortableHeader column={column}>SKU proveedor</SortableHeader>, cell: ({ row }) => row.original.supplierSku || "-" },
+    { id: "referenceCost", accessorKey: "referenceCost", header: ({ column }) => <SortableHeader column={column}>Costo</SortableHeader>, cell: ({ row }) => row.original.referenceCost == null ? "-" : formatMoney(row.original.referenceCost) },
+    { id: "preferred", accessorFn: (row) => row.isPreferred, header: ({ column }) => <SortableHeader column={column}>Preferido</SortableHeader>, cell: ({ row }) => row.original.isPreferred ? "Sí" : "No" },
+  ], [formatMoney]);
+  const table = useReactTable({ data: supplierProducts ?? [], columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 10 } } });
+
   return <Card>
     <CardHeader><CardTitle>Catálogo del proveedor</CardTitle></CardHeader>
     <CardContent className="space-y-6">
@@ -47,7 +64,8 @@ export function SupplierProducts({ supplierId }: { supplierId: number }) {
         <div className="space-y-1"><Label>Costo referencial</Label><MoneyInput value={referenceCost} onValueChange={setReferenceCost} /></div>
       </div>
       <Button onClick={add} disabled={!productId || adding}>Agregar producto</Button>
-      <div className="overflow-x-auto rounded-md border"><table className="w-full text-sm"><thead className="bg-muted/50 text-left"><tr><th className="p-3">Producto</th><th className="p-3">SKU proveedor</th><th className="p-3">Costo</th><th className="p-3">Preferido</th></tr></thead><tbody>{loading ? <tr><td className="p-4" colSpan={4}>Cargando catálogo...</td></tr> : supplierProducts?.map((item) => <tr key={item.id} className="border-t"><td className="p-3">{item.product.sku} - {item.product.name}</td><td className="p-3">{item.supplierSku || "-"}</td><td className="p-3">{item.referenceCost == null ? "-" : formatMoney(item.referenceCost)}</td><td className="p-3">{item.isPreferred ? "Sí" : "No"}</td></tr>)}</tbody></table></div>
+       <DataTable table={table} loading={loading} loadingMessage="Cargando catálogo..." emptyMessage="No hay productos asociados." />
+       <DataTablePagination table={table} pageLabel="Página" previousLabel="Anterior" nextLabel="Siguiente" />
     </CardContent>
   </Card>;
 }

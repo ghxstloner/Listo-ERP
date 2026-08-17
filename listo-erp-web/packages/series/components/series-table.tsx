@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,19 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DotsThreeVertical, Pencil, Trash } from "@phosphor-icons/react";
 import {
   type Column,
   type ColumnDef,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -81,7 +73,9 @@ function StatusPill({ isActive, t }: { isActive: boolean; t: TFunction }) {
           : "bg-muted text-muted-foreground"
       }`}
     >
-      {isActive ? t("administration.series.active") : t("administration.series.inactive")}
+      {isActive
+        ? t("administration.series.active")
+        : t("administration.series.inactive")}
     </span>
   );
 }
@@ -96,6 +90,7 @@ function formatDate(value?: string) {
 function getModuleLabel(module: SeriesModule, t: TFunction): string {
   const labels: Record<SeriesModule, string> = {
     ORDERS: t("administration.series.modules.orders"),
+    PURCHASE_INVOICES: t("administration.series.modules.purchase_invoices"),
   };
   return labels[module] || module;
 }
@@ -114,7 +109,9 @@ function buildColumns({
     {
       id: "description",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("administration.series.description")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("administration.series.description")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.description ?? "",
       cell: ({ row }) => (
@@ -127,7 +124,9 @@ function buildColumns({
     {
       id: "format",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("administration.series.format")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("administration.series.format")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.format ?? "",
       cell: ({ row }) => (
@@ -138,7 +137,9 @@ function buildColumns({
     {
       id: "consecutive",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("administration.series.consecutive")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("administration.series.consecutive")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.consecutive ?? 0,
       cell: ({ row }) => (
@@ -149,11 +150,15 @@ function buildColumns({
     {
       id: "module",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("administration.series.module")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("administration.series.module")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.module ?? "",
       cell: ({ row }) => (
-        <span className="text-sm">{getModuleLabel(row.original.module, t)}</span>
+        <span className="text-sm">
+          {getModuleLabel(row.original.module, t)}
+        </span>
       ),
       sortingFn: "alphanumeric",
       filterFn: (row, _id, filterValue) => {
@@ -164,12 +169,12 @@ function buildColumns({
     {
       id: "status",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("administration.series.status")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("administration.series.status")}
+        </SortableHeader>
       ),
       accessorFn: (row) => (row.isActive ? "ACTIVE" : "INACTIVE"),
-      cell: ({ row }) => (
-        <StatusPill isActive={row.original.isActive} t={t} />
-      ),
+      cell: ({ row }) => <StatusPill isActive={row.original.isActive} t={t} />,
       filterFn: (row, _id, filterValue) => {
         if (!filterValue || filterValue === "ALL") return true;
         const isActive = row.original.isActive;
@@ -201,7 +206,9 @@ function buildColumns({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <span className="sr-only">{t("administration.series.actions")}</span>
+                <span className="sr-only">
+                  {t("administration.series.actions")}
+                </span>
                 <DotsThreeVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -244,7 +251,7 @@ export function SeriesTable({
 
   const columns = React.useMemo(
     () => buildColumns({ t, onEdit, onDelete, isDeleting, deletingSeriesId }),
-    [t, onEdit, onDelete, isDeleting, deletingSeriesId]
+    [t, onEdit, onDelete, isDeleting, deletingSeriesId],
   );
 
   // eslint-disable-next-line
@@ -258,7 +265,9 @@ export function SeriesTable({
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue ?? "").trim().toLowerCase();
+      const q = String(filterValue ?? "")
+        .trim()
+        .toLowerCase();
       if (!q) return true;
       const description = row.original.description?.toLowerCase() ?? "";
       const format = row.original.format?.toLowerCase() ?? "";
@@ -295,7 +304,9 @@ export function SeriesTable({
                 }}
               >
                 <SelectTrigger size="default" className="min-w-40">
-                  <SelectValue placeholder={t("administration.series.module")} />
+                  <SelectValue
+                    placeholder={t("administration.series.module")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">
@@ -323,7 +334,9 @@ export function SeriesTable({
                 }}
               >
                 <SelectTrigger size="default" className="min-w-40">
-                  <SelectValue placeholder={t("administration.series.status")} />
+                  <SelectValue
+                    placeholder={t("administration.series.status")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">
@@ -346,76 +359,17 @@ export function SeriesTable({
         </div>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted/40">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getAllLeafColumns().length}
-                  className="h-24 text-center"
-                >
-                  {t("administration.series.noSeries")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        table={table}
+        emptyMessage={t("administration.series.noSeries")}
+      />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-muted-foreground text-sm">
-          {t("common.page")} {table.getState().pagination.pageIndex + 1} /{" "}
-          {table.getPageCount()}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            {t("common.previous")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            {t("common.next")}
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        table={table}
+        pageLabel={t("common.page")}
+        previousLabel={t("common.previous")}
+        nextLabel={t("common.next")}
+      />
     </div>
   );
 }

@@ -24,6 +24,7 @@ const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   'inventory-transfers': 'inventory.transfers',
   suppliers: 'purchases.suppliers',
   'purchase-orders': 'purchases.orders',
+  'purchase-invoices': 'purchases.billing',
   customers: ['sales.customers', 'sales.pos'],
   sellers: ['sales.sellers', 'sales.pos'],
   'payment-methods': ['sales.catalogs', 'sales.pos'],

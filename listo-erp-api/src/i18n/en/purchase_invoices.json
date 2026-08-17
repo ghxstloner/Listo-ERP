@@ -1,0 +1,20 @@
+{
+  "errors": {
+    "not_found": "Supplier invoice not found",
+    "duplicate_product": "A product cannot be repeated within the invoice",
+    "supplier_invoice_exists": "An invoice with that number already exists for the supplier",
+    "supplier_not_found": "Active supplier not found",
+    "warehouse_not_found": "Active warehouse not found",
+    "product_not_found": "One or more products are unavailable",
+    "series_required": "Configure an active series for supplier invoices",
+    "default_currency_required": "The company must have a base currency configured",
+    "purchase_order_not_found": "Purchase order not found",
+    "purchase_order_not_pending": "The purchase order was already received or cancelled",
+    "purchase_order_changed": "The supplier or warehouse does not match the purchase order",
+    "purchase_order_items_changed": "Products or quantities do not match the purchase order",
+    "receipt_not_available": "The invoice receipt is not available"
+  },
+  "success": {
+    "created": "Supplier invoice registered successfully"
+  }
+}

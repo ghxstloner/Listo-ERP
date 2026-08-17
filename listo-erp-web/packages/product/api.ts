@@ -7,6 +7,14 @@ import type {
   UpdateProductRequest,
   ProductsApiResponse,
   ProductPrice,
+  ProductKardexMovement,
+  ProductKardexFilters,
+  ProductPurchaseFilters,
+  ProductSalesFilters,
+  ProductOrdersFilters,
+  ProductPurchase,
+  ProductSale,
+  ProductOrder,
 } from "./types";
 
 export interface ProductPricesResponse {
@@ -54,6 +62,63 @@ export const useGetProducts = (filters: ProductFilters = {}) => {
 export const useGetProduct = (id: Product["id"]) => {
   return useApiQuery<Product>(["products", id], `products/${id}`);
 };
+
+const historyParams = (filters: object) => {
+  const params: Record<string, string | number | undefined> = {};
+  Object.entries(filters as Record<string, string | number | undefined>).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params[key] = value;
+  });
+  return Object.keys(params).length > 0 ? { params } : undefined;
+};
+
+export const useGetProductKardex = (
+  id: Product["id"],
+  filters: ProductKardexFilters,
+) => {
+  const params: Record<string, string | number | undefined> = {};
+  if (filters.warehouseId) params.warehouseId = filters.warehouseId;
+  if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+  if (filters.dateTo) params.dateTo = filters.dateTo;
+  return useApiQuery<ProductKardexMovement[]>(
+    ["products", id, "kardex", filters],
+    `inventory/products/${id}/movements`,
+    Object.keys(params).length > 0 ? { params } : undefined,
+    { enabled: id > 0 },
+  );
+};
+
+export const useGetProductPurchases = (
+  id: Product["id"],
+  filters: ProductPurchaseFilters,
+) =>
+  useApiQuery<ProductPurchase[]>(
+    ["products", id, "purchases", filters],
+    `purchase-invoices/products/${id}`,
+    historyParams(filters),
+    { enabled: id > 0 },
+  );
+
+export const useGetProductSales = (
+  id: Product["id"],
+  filters: ProductSalesFilters,
+) =>
+  useApiQuery<ProductSale[]>(
+    ["products", id, "sales", filters],
+    `sales/products/${id}`,
+    historyParams(filters),
+    { enabled: id > 0 },
+  );
+
+export const useGetProductOrders = (
+  id: Product["id"],
+  filters: ProductOrdersFilters,
+) =>
+  useApiQuery<ProductOrder[]>(
+    ["products", id, "orders", filters],
+    `orders/products/${id}`,
+    historyParams(filters),
+    { enabled: id > 0 },
+  );
 
 export const useGetProductPrices = (
   id: Product["id"],

@@ -16,6 +16,10 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Data tables
+
+Las tablas de datos migradas usan `@/components/data-table`. Cada instancia configura sorting y paginación de TanStack Table, comienza con 10 filas por página y renderiza su navegación con `DataTablePagination`. Loading, error, acciones y controles interactivos se mantienen como props o celdas de `DataTable`.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

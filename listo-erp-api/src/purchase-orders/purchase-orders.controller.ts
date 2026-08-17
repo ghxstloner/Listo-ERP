@@ -6,8 +6,9 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import {
   CurrentCompanyId,
@@ -38,6 +39,29 @@ export class PurchaseOrdersController {
   @Get()
   findAll(@CurrentCompanyId() companyId: number) {
     return this.purchaseOrdersService.findAll(companyId);
+  }
+
+  @Get('products/:productId')
+  @ApiQuery({ name: 'warehouseId', required: false, type: Number })
+  @ApiQuery({ name: 'supplierId', required: false, type: Number })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  findProductOrders(
+    @Param('productId', ParseIntPipe) productId: number,
+    @CurrentCompanyId() companyId: number,
+    @Query('warehouseId', new ParseIntPipe({ optional: true }))
+    warehouseId?: number,
+    @Query('supplierId', new ParseIntPipe({ optional: true }))
+    supplierId?: number,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.purchaseOrdersService.findProductOrders(companyId, productId, {
+      warehouseId,
+      supplierId,
+      dateFrom,
+      dateTo,
+    });
   }
 
   @Get(':id')

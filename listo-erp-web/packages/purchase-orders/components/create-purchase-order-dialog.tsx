@@ -64,6 +64,15 @@ export function CreatePurchaseOrderDialog() {
     ));
   };
 
+  const selectProduct = (index: number, productId: string) => {
+    const product = products.find((item) => String(item.id) === productId);
+    setItems((current) => current.map((item, itemIndex) =>
+      itemIndex === index
+        ? { ...item, productId, unitCost: product ? formatMoney(product.costPrice) : "" }
+        : item
+    ));
+  };
+
   const removeItem = (index: number) => {
     setItems((current) => current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index));
   };
@@ -90,7 +99,11 @@ export function CreatePurchaseOrderDialog() {
     }
 
     createPurchaseOrder(
-      { supplierId: Number(supplierId), warehouseId: Number(warehouseId), items: parsedItems },
+      {
+        supplierId: Number(supplierId),
+        warehouseId: Number(warehouseId),
+        items: parsedItems.map(({ productId, quantity }) => ({ productId, quantity })),
+      },
       () => {
         queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
         close();
@@ -154,10 +167,10 @@ export function CreatePurchaseOrderDialog() {
                   <div key={index} className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[minmax(0,1fr)_110px_130px_36px] sm:items-end">
                     <Field>
                       <FieldLabel htmlFor={`purchase-product-${index}`}>Producto</FieldLabel>
-                      <Select value={item.productId} onValueChange={(value) => updateItem(index, "productId", value)} disabled={isCreating}>
+                      <Select value={item.productId} onValueChange={(value) => selectProduct(index, value)} disabled={isCreating}>
                         <SelectTrigger id={`purchase-product-${index}`} className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
                         <SelectContent>
-                          {products.filter((product) => product.isActive && (!selectedProducts.has(String(product.id)) || item.productId === String(product.id))).map((product) => <SelectItem key={product.id} value={String(product.id)}>{product.sku} - {product.name}</SelectItem>)}
+                          {products.filter((product) => product.isActive && Number(product.costPrice) > 0 && (!selectedProducts.has(String(product.id)) || item.productId === String(product.id))).map((product) => <SelectItem key={product.id} value={String(product.id)}>{product.sku} - {product.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </Field>
@@ -167,7 +180,7 @@ export function CreatePurchaseOrderDialog() {
                     </Field>
                     <Field>
                       <FieldLabel htmlFor={`purchase-cost-${index}`}>Costo unitario</FieldLabel>
-                      <MoneyInput id={`purchase-cost-${index}`} value={item.unitCost} onValueChange={(value) => updateItem(index, "unitCost", value)} disabled={isCreating} />
+                      <MoneyInput id={`purchase-cost-${index}`} value={item.unitCost} onValueChange={() => undefined} disabled />
                     </Field>
                     <Button type="button" size="icon" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => removeItem(index)} disabled={isCreating || items.length === 1} aria-label="Quitar producto">
                       <Trash2 className="size-4" />

@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  InventoryMovementType,
-  Prisma,
-  PurchaseOrderStatus,
-} from '@prisma/client';
+import { Prisma, PurchaseOrderStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,7 +33,7 @@ export class PurchaseOrdersService {
         }),
         this.prisma.product.findMany({
           where: { companyId, id: { in: productIds }, isActive: true },
-          select: { id: true },
+          select: { id: true, costPrice: true },
         }),
         this.prisma.supplierProduct.findMany({
           where: {
@@ -65,6 +61,14 @@ export class PurchaseOrdersService {
       throw I18nException.badRequest(
         'purchase_orders.errors.product_not_found',
       );
+    const productCosts = new Map<number, Prisma.Decimal>();
+    for (const product of products) {
+      if (product.costPrice == null || product.costPrice.lte(0))
+        throw I18nException.badRequest(
+          'purchase_orders.errors.product_cost_required',
+        );
+      productCosts.set(product.id, product.costPrice);
+    }
     if (catalog.length !== productIds.length)
       throw I18nException.badRequest(
         'purchase_orders.errors.product_not_supplied',
@@ -84,7 +88,7 @@ export class PurchaseOrdersService {
           create: dto.items.map((item) => ({
             productId: item.productId,
             quantity: new Prisma.Decimal(item.quantity),
-            unitCost: new Prisma.Decimal(item.unitCost),
+            unitCost: productCosts.get(item.productId),
             supplierSku: supplierSkus.get(item.productId) || null,
           })),
         },
@@ -123,70 +127,76 @@ export class PurchaseOrdersService {
     return this.serializeOrder(order);
   }
 
-  async receive(id: number, companyId: number, userId: number) {
-    const order = await this.prisma.$transaction(async (tx) => {
-      const current = await tx.purchaseOrder.findFirst({
-        where: { id, companyId },
-        include: { items: true },
-      });
-      if (!current)
-        throw I18nException.notFound('purchase_orders.errors.not_found');
-      if (current.status !== PurchaseOrderStatus.PENDING)
-        throw I18nException.badRequest('purchase_orders.errors.not_pending');
-
-      for (const item of current.items) {
-        const balance = await tx.inventoryBalance.upsert({
-          where: {
-            warehouseId_productId: {
-              warehouseId: current.warehouseId,
-              productId: item.productId,
-            },
-          },
-          create: {
-            companyId,
-            warehouseId: current.warehouseId,
-            productId: item.productId,
-            quantity: item.quantity,
-          },
-          update: { quantity: { increment: item.quantity } },
-          select: { quantity: true },
-        });
-        await tx.inventoryMovement.create({
-          data: {
-            companyId,
-            warehouseId: current.warehouseId,
-            productId: item.productId,
-            type: InventoryMovementType.PURCHASE_RECEIPT,
-            quantity: item.quantity,
-            unitCost: item.unitCost,
-            balanceAfter: balance.quantity,
-            purchaseOrderId: current.id,
-            purchaseOrderItemId: item.id,
-            createdByUserId: userId,
-          },
-        });
-      }
-      return tx.purchaseOrder.update({
-        where: { id },
-        data: {
-          status: PurchaseOrderStatus.RECEIVED,
-          receivedAt: new Date(),
-          receivedByUserId: userId,
-        },
-        select: this.selectOrder(),
-      });
-    });
-    await this.auditService.logUpdate(
-      userId,
+  async findProductOrders(
+    companyId: number,
+    productId: number,
+    filters: {
+      warehouseId?: number;
+      supplierId?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+  ) {
+    const where: Prisma.PurchaseOrderWhereInput = {
       companyId,
-      'purchase-orders',
-      'Recepción de orden de compra',
-      id,
-    );
-    return {
-      message: 'purchase_orders.success.received',
-      data: this.serializeOrder(order),
+      status: PurchaseOrderStatus.RECEIVED,
+      items: { some: { productId } },
     };
+    if (filters.warehouseId != null) where.warehouseId = filters.warehouseId;
+    if (filters.supplierId != null) where.supplierId = filters.supplierId;
+    if (filters.dateFrom || filters.dateTo) {
+      where.receivedAt = {};
+      if (filters.dateFrom) where.receivedAt.gte = new Date(filters.dateFrom);
+      if (filters.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        where.receivedAt.lte = endDate;
+      }
+    }
+
+    const orders = await this.prisma.purchaseOrder.findMany({
+      where,
+      orderBy: [{ receivedAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        receivedAt: true,
+        supplier: { select: { id: true, name: true, taxId: true } },
+        warehouse: { select: { id: true, name: true, code: true } },
+        items: {
+          where: { productId },
+          select: {
+            id: true,
+            productId: true,
+            quantity: true,
+            unitCost: true,
+          },
+        },
+      },
+    });
+
+    return orders.flatMap((order) =>
+      order.items.map((item) => ({
+        id: order.id,
+        itemId: item.id,
+        status: order.status,
+        createdAt: order.createdAt,
+        receivedAt: order.receivedAt,
+        supplier: order.supplier,
+        warehouse: order.warehouse,
+        quantity: Number(item.quantity),
+        unitCost: Number(item.unitCost),
+        total: Number(item.quantity.mul(item.unitCost)),
+      })),
+    );
+  }
+
+  receive(id: number, companyId: number, userId: number) {
+    void id;
+    void companyId;
+    void userId;
+    throw I18nException.badRequest('purchase_orders.errors.invoice_required');
   }
 
   async cancel(id: number, companyId: number, userId: number) {

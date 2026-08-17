@@ -1,0 +1,20 @@
+{
+  "errors": {
+    "not_found": "Fatura de fornecedor não encontrada",
+    "duplicate_product": "Um produto não pode ser repetido na fatura",
+    "supplier_invoice_exists": "Já existe uma fatura com esse número para o fornecedor",
+    "supplier_not_found": "Fornecedor ativo não encontrado",
+    "warehouse_not_found": "Armazém ativo não encontrado",
+    "product_not_found": "Um ou mais produtos não estão disponíveis",
+    "series_required": "Configure uma série ativa para faturas de fornecedores",
+    "default_currency_required": "A empresa deve ter uma moeda base configurada",
+    "purchase_order_not_found": "Pedido de compra não encontrado",
+    "purchase_order_not_pending": "O pedido de compra já foi recebido ou cancelado",
+    "purchase_order_changed": "O fornecedor ou armazém não corresponde ao pedido de compra",
+    "purchase_order_items_changed": "Os produtos ou quantidades não correspondem ao pedido de compra",
+    "receipt_not_available": "O recibo da fatura não está disponível"
+  },
+  "success": {
+    "created": "Fatura de fornecedor registrada com sucesso"
+  }
+}

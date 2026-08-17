@@ -40,7 +40,9 @@ export function CreateProductPage() {
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [salePrice, setSalePrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
   const [taxRate, setTaxRate] = useState("");
+  const [isExempt, setIsExempt] = useState(false);
   const [usesUnit, setUsesUnit] = useState(false);
   const [dianCode, setDianCode] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -103,7 +105,9 @@ export function CreateProductPage() {
       sku: sku.trim(),
       name: name.trim(),
       salePrice: parseMoney(salePrice),
+      costPrice: costPrice.trim() ? parseMoney(costPrice) : undefined,
       taxRate: taxRate ? Number(taxRate) / 100 : undefined,
+      isExempt,
       departmentId: departmentId!,
       subdepartmentId,
       categoryId,
@@ -224,12 +228,23 @@ export function CreateProductPage() {
                     {t("inventory.products.salePrice")}{" "}
                     <span className="text-destructive">*</span>
                   </Label>
-                   <MoneyInput
-                     id="salePrice"
-                     value={salePrice}
-                     onValueChange={setSalePrice}
-                     disabled={creating}
-                   />
+                  <MoneyInput
+                    id="salePrice"
+                    value={salePrice}
+                    onValueChange={setSalePrice}
+                    disabled={creating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="costPrice">
+                    {t("inventory.products.costPrice")}
+                  </Label>
+                  <MoneyInput
+                    id="costPrice"
+                    value={costPrice}
+                    onValueChange={setCostPrice}
+                    disabled={creating}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="taxRate">
@@ -245,6 +260,19 @@ export function CreateProductPage() {
                     onChange={(event) => setTaxRate(event.target.value)}
                     disabled={creating}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="isExempt">
+                    {t("inventory.products.isExempt")}
+                  </Label>
+                  <div className="flex h-10 items-center">
+                    <Switch
+                      id="isExempt"
+                      checked={isExempt}
+                      onCheckedChange={setIsExempt}
+                      disabled={creating}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="usesUnit">Usa unidad de medida</Label>

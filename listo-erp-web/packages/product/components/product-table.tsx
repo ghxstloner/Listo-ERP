@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,19 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { DotsThreeVertical, Pencil, Trash } from "@phosphor-icons/react";
 import {
   type Column,
   type ColumnDef,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -82,7 +74,9 @@ function StatusPill({ isActive, t }: { isActive: boolean; t: TFunction }) {
           : "bg-muted text-muted-foreground"
       }`}
     >
-      {isActive ? t("inventory.products.active") : t("inventory.products.inactive")}
+      {isActive
+        ? t("inventory.products.active")
+        : t("inventory.products.inactive")}
     </span>
   );
 }
@@ -110,7 +104,9 @@ function buildColumns({
   return [
     {
       id: "image",
-      header: () => <span className="sr-only">{t("inventory.products.image")}</span>,
+      header: () => (
+        <span className="sr-only">{t("inventory.products.image")}</span>
+      ),
       cell: ({ row }) =>
         row.original.image ? (
           <img
@@ -129,7 +125,9 @@ function buildColumns({
     {
       id: "sku",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("inventory.products.sku")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("inventory.products.sku")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.sku ?? "",
       cell: ({ row }) => (
@@ -145,7 +143,9 @@ function buildColumns({
     {
       id: "name",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("inventory.products.name")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("inventory.products.name")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.name ?? "",
       cell: ({ row }) => (
@@ -161,7 +161,9 @@ function buildColumns({
     {
       id: "pricing",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("inventory.products.pricing")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("inventory.products.pricing")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.salePrice ?? 0,
       cell: ({ row }) => (
@@ -170,7 +172,8 @@ function buildColumns({
             {formatMoney(row.original.salePrice)}
           </div>
           <div className="text-muted-foreground truncate text-sm">
-            {t("inventory.products.cost")}: {formatMoney(row.original.costPrice)}
+            {t("inventory.products.cost")}:{" "}
+            {formatMoney(row.original.costPrice)}
           </div>
         </div>
       ),
@@ -179,7 +182,9 @@ function buildColumns({
     {
       id: "hierarchy",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("inventory.products.hierarchy")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("inventory.products.hierarchy")}
+        </SortableHeader>
       ),
       accessorFn: (row) => row.department?.name ?? "",
       cell: ({ row }) => (
@@ -201,7 +206,9 @@ function buildColumns({
     {
       id: "status",
       header: ({ column }) => (
-        <SortableHeader column={column}>{t("inventory.products.status")}</SortableHeader>
+        <SortableHeader column={column}>
+          {t("inventory.products.status")}
+        </SortableHeader>
       ),
       accessorFn: (row) => (row.isActive ? "ACTIVE" : "INACTIVE"),
       cell: ({ row }) => <StatusPill isActive={row.original.isActive} t={t} />,
@@ -236,7 +243,9 @@ function buildColumns({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <span className="sr-only">{t("inventory.products.actions")}</span>
+                <span className="sr-only">
+                  {t("inventory.products.actions")}
+                </span>
                 <DotsThreeVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -278,8 +287,16 @@ export function ProductTable({
   const [statusValue, setStatusValue] = React.useState<string>("");
 
   const columns = React.useMemo(
-    () => buildColumns({ t, onEdit, onDelete, isDeleting, deletingProductId, formatMoney }),
-    [t, onEdit, onDelete, isDeleting, deletingProductId, formatMoney]
+    () =>
+      buildColumns({
+        t,
+        onEdit,
+        onDelete,
+        isDeleting,
+        deletingProductId,
+        formatMoney,
+      }),
+    [t, onEdit, onDelete, isDeleting, deletingProductId, formatMoney],
   );
 
   const table = useReactTable({
@@ -292,13 +309,16 @@ export function ProductTable({
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue ?? "").trim().toLowerCase();
+      const q = String(filterValue ?? "")
+        .trim()
+        .toLowerCase();
       if (!q) return true;
       const sku = row.original.sku?.toLowerCase() ?? "";
       const name = row.original.name?.toLowerCase() ?? "";
       const description = row.original.description?.toLowerCase() ?? "";
       const department = row.original.department?.name?.toLowerCase() ?? "";
-      const subdepartment = row.original.subdepartment?.name?.toLowerCase() ?? "";
+      const subdepartment =
+        row.original.subdepartment?.name?.toLowerCase() ?? "";
       const category = row.original.category?.name?.toLowerCase() ?? "";
       return (
         sku.includes(q) ||
@@ -363,76 +383,17 @@ export function ProductTable({
         </div>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader className="bg-muted/40">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getAllLeafColumns().length}
-                  className="h-24 text-center"
-                >
-                  {t("inventory.products.noProducts")}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <DataTable
+        table={table}
+        emptyMessage={t("inventory.products.noProducts")}
+      />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-muted-foreground text-sm">
-          {t("common.page")} {table.getState().pagination.pageIndex + 1} /{" "}
-          {table.getPageCount()}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            {t("common.previous")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            {t("common.next")}
-          </Button>
-        </div>
-      </div>
+      <DataTablePagination
+        table={table}
+        pageLabel={t("common.page")}
+        previousLabel={t("common.previous")}
+        nextLabel={t("common.next")}
+      />
     </div>
   );
 }

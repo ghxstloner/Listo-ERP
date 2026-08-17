@@ -20,11 +20,6 @@ class CreatePurchaseOrderItemDto {
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0.0001)
   quantity: number;
-
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  unitCost: number;
 }
 
 export class CreatePurchaseOrderDto {

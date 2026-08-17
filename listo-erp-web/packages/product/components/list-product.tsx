@@ -23,18 +23,19 @@ export function ListProduct({
 }: ListProductProps) {
   const t = useTranslation();
   const queryClient = useQueryClient();
-  const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(
+    null,
+  );
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [deleteProduct, isDeleting, deleteError] = useDeleteProduct(
-    deletingProductId || 0
+    deletingProductId || 0,
   );
 
   useEffect(() => {
     if (deleteError) {
       showToast({
         type: "error",
-        message:
-          (deleteError as Error).message || t("common.error"),
+        message: (deleteError as Error).message || t("common.error"),
       });
     }
   }, [deleteError, t]);
