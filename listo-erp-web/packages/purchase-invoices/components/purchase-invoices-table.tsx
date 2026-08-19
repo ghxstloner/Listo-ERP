@@ -1,9 +1,31 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { DataTable, DataTablePagination } from "@/components/data-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/packages/currency/components/currency-provider";
-import { FileText, MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  DotsThreeVertical,
+  FileText,
+  MagnifyingGlass,
+} from "@phosphor-icons/react";
+import {
+  type Column,
+  type ColumnDef,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { PurchaseInvoice } from "../types";
 import { PurchaseInvoiceReceiptDialog } from "./purchase-invoice-receipt-dialog";
@@ -12,109 +34,215 @@ interface PurchaseInvoicesTableProps {
   invoices: PurchaseInvoice[];
   isLoading: boolean;
   error?: Error | null;
-  action?: React.ReactNode;
+}
+
+const statusLabels: Record<PurchaseInvoice["status"], string> = {
+  POSTED: "Registrada",
+  CANCELLED: "Cancelada",
+};
+
+const statusClasses: Record<PurchaseInvoice["status"], string> = {
+  POSTED:
+    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
+  CANCELLED:
+    "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+};
+
+function SortableHeader({
+  column,
+  children,
+}: {
+  column: Column<PurchaseInvoice, unknown>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-2 h-8 px-2"
+      onClick={column.getToggleSortingHandler()}
+    >
+      {children}
+      <ArrowUpDown className="ml-2 h-4 w-4" />
+    </Button>
+  );
+}
+
+function buildColumns(
+  formatMoney: (value: number | string | null | undefined) => string,
+  onReceipt: (invoice: PurchaseInvoice) => void,
+): ColumnDef<PurchaseInvoice>[] {
+  return [
+    {
+      id: "documentNumber",
+      header: ({ column }) => (
+        <SortableHeader column={column}>No. factura</SortableHeader>
+      ),
+      accessorKey: "documentNumber",
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.documentNumber}</span>
+      ),
+    },
+    {
+      id: "supplierInvoiceNumber",
+      header: ({ column }) => (
+        <SortableHeader column={column}>No. proveedor</SortableHeader>
+      ),
+      accessorKey: "supplierInvoiceNumber",
+    },
+    {
+      id: "issueDate",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Fecha</SortableHeader>
+      ),
+      accessorKey: "issueDate",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap text-muted-foreground">
+          {new Date(row.original.issueDate).toLocaleDateString()}
+        </span>
+      ),
+      sortingFn: "datetime",
+    },
+    {
+      id: "supplier",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Proveedor</SortableHeader>
+      ),
+      accessorFn: (row) => row.supplier.name,
+      cell: ({ row }) => row.original.supplier.name,
+    },
+    {
+      id: "warehouse",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Almacén</SortableHeader>
+      ),
+      accessorFn: (row) => row.warehouse.name,
+      cell: ({ row }) => row.original.warehouse.name,
+    },
+    {
+      id: "total",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Total</SortableHeader>
+      ),
+      accessorKey: "total",
+      cell: ({ row }) => (
+        <span className="font-medium tabular-nums">
+          {formatMoney(row.original.total)}
+        </span>
+      ),
+      sortingFn: "basic",
+    },
+    {
+      id: "status",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Estado</SortableHeader>
+      ),
+      accessorKey: "status",
+      cell: ({ row }) => (
+        <span
+          className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusClasses[row.original.status]}`}
+        >
+          {statusLabels[row.original.status]}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Acciones</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Acciones para factura ${row.original.documentNumber}`}
+              >
+                <DotsThreeVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => onReceipt(row.original)}>
+                <FileText className="size-4" /> Ver recibo
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
 }
 
 export function PurchaseInvoicesTable({
   invoices,
   isLoading,
   error,
-  action,
 }: PurchaseInvoicesTableProps) {
   const { formatMoney } = useCurrency();
   const [search, setSearch] = useState("");
   const [receiptInvoice, setReceiptInvoice] = useState<PurchaseInvoice | null>(
     null,
   );
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return invoices;
-    return invoices.filter((invoice) =>
-      [
-        invoice.documentNumber,
-        invoice.supplierInvoiceNumber,
-        invoice.supplier.name,
-        invoice.supplier.taxId ?? "",
-      ].some((value) => value.toLowerCase().includes(query)),
-    );
-  }, [invoices, search]);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const columns = useMemo(
+    () => buildColumns(formatMoney, setReceiptInvoice),
+    [formatMoney],
+  );
+  const table = useReactTable({
+    data: invoices ?? [],
+    columns,
+    state: { sorting, globalFilter: search },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setSearch,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const query = String(filterValue ?? "")
+        .trim()
+        .toLowerCase();
+      if (!query) return true;
+      return [
+        row.original.documentNumber,
+        row.original.supplierInvoiceNumber,
+        row.original.supplier.name,
+        row.original.supplier.taxId ?? "",
+        row.original.warehouse.name,
+      ].some((value) => value.toLowerCase().includes(query));
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full max-w-sm">
-          <MagnifyingGlass className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar factura o proveedor..."
-          />
-        </div>
-        {action}
+      <div className="relative w-full max-w-sm">
+        <MagnifyingGlass className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="pl-9"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar factura, proveedor o almacén..."
+        />
       </div>
-      {isLoading && (
-        <p className="py-10 text-center text-muted-foreground">
-          Cargando facturas...
-        </p>
-      )}
-      {error && (
-        <p className="py-10 text-center text-destructive">{error.message}</p>
-      )}
-      {!isLoading && !error && (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">No. interno</th>
-                <th className="px-4 py-3 font-medium">No. proveedor</th>
-                <th className="px-4 py-3 font-medium">Fecha</th>
-                <th className="px-4 py-3 font-medium">Proveedor</th>
-                <th className="px-4 py-3 font-medium">Almacén</th>
-                <th className="px-4 py-3 text-right font-medium">Total</th>
-                <th className="px-4 py-3 text-right font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-muted/20">
-                  <td className="px-4 py-3 font-medium">
-                    {invoice.documentNumber}
-                  </td>
-                  <td className="px-4 py-3">{invoice.supplierInvoiceNumber}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                    {new Date(invoice.issueDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">{invoice.supplier.name}</td>
-                  <td className="px-4 py-3">{invoice.warehouse.name}</td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums">
-                    {formatMoney(invoice.total)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setReceiptInvoice(invoice)}
-                    >
-                      <FileText className="size-4" /> Recibo
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-10 text-center text-muted-foreground"
-                  >
-                    No hay facturas registradas.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        table={table}
+        loading={isLoading}
+        loadingMessage="Cargando facturas..."
+        error={error?.message}
+        emptyMessage="No hay facturas de proveedores registradas."
+        className="overflow-x-auto"
+        tableClassName="min-w-[980px]"
+      />
+      <DataTablePagination
+        table={table}
+        pageLabel="Página"
+        previousLabel="Anterior"
+        nextLabel="Siguiente"
+      />
       <PurchaseInvoiceReceiptDialog
         invoiceId={receiptInvoice?.id ?? null}
         documentNumber={receiptInvoice?.documentNumber}

@@ -1,12 +1,13 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePageTitle } from "@/lib/page-title-context";
 import { useTranslation } from "@/hooks/use-translation";
-import { AreaChartComponent } from "@/packages/dashboard/components/area-chart";
 import { InfoCards } from "@/packages/dashboard/components/info-cards";
-import { LineChartComponent } from "@/packages/dashboard/components/line-chart";
-import { PieChartComponent } from "@/packages/dashboard/components/pie-chart";
+import { MonthlySalesProfitChart } from "@/packages/dashboard/components/monthly-sales-profit-chart";
+import { PaymentMethodSalesChart } from "@/packages/dashboard/components/payment-method-sales-chart";
+import { TopCustomersChart, TopDepartmentsChart, TopSellersChart } from "@/packages/dashboard/components/ranking-bar-charts";
+import { TopProductsTable } from "@/packages/dashboard/components/top-products-table";
+import { WeeklySalesChart } from "@/packages/dashboard/components/weekly-sales-chart";
 import { useEffect } from "react";
 
 export default function DashboardPage() {
@@ -20,34 +21,15 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 p-2">
       <InfoCards />
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="col-span-2">
-          <CardHeader className="border-b">
-            <CardTitle>{t("dashboard.monthlySales")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AreaChartComponent />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="border-b">
-            <CardTitle>{t("dashboard.salesDistribution")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PieChartComponent />
-          </CardContent>
-        </Card>
+      <TopProductsTable />
+      <MonthlySalesProfitChart />
+      <WeeklySalesChart />
+      <PaymentMethodSalesChart />
+      <div className="grid gap-6 xl:grid-cols-3">
+        <TopCustomersChart />
+        <TopSellersChart />
+        <TopDepartmentsChart />
       </div>
-
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>{t("dashboard.incomeVsExpenses")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LineChartComponent />
-        </CardContent>
-      </Card>
     </div>
   )
 }

@@ -33,9 +33,8 @@ export interface PurchaseInvoice {
 export interface CreatePurchaseInvoiceRequest {
   supplierId: number;
   warehouseId: number;
-  supplierInvoiceNumber: string;
   issueDate: string;
-  purchaseOrderId?: number;
+  purchaseOrderId: number;
   items: Array<{
     productId: number;
     quantity: number;

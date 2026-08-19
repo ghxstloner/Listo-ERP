@@ -15,7 +15,7 @@ import type { CartItem } from "../types";
 
 interface TicketItemProps {
   item: CartItem;
-  availableStock: number;
+  availableStock?: number;
   onQuantityChange: (productPriceId: number, quantity: number) => void;
   onPriceChange: (productPriceId: number, nextPrice: ProductPrice) => void;
 }

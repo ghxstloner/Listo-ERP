@@ -88,6 +88,37 @@ export interface Dictionary {
     income: string;
     expenses: string;
     sales: string;
+    productsSoldToday: string;
+    salesToday: string;
+    newCustomersThisMonth: string;
+    pendingInvoices: string;
+    summaryError: string;
+    topProducts: string;
+    currentMonth: string;
+    productCode: string;
+    productName: string;
+    unitPrice: string;
+    quantitySold: string;
+    totalAmount: string;
+    noData: string;
+    monthlySalesProfit: string;
+    lastTwelveMonths: string;
+    profit: string;
+    weeklySales: string;
+    thisWeek: string;
+    topCustomers: string;
+    topSellers: string;
+    topDepartments: string;
+    paymentMethodSales: string;
+    days: {
+      monday: string;
+      tuesday: string;
+      wednesday: string;
+      thursday: string;
+      friday: string;
+      saturday: string;
+      sunday: string;
+    };
     months: {
       january: string;
       february: string;
@@ -169,6 +200,7 @@ export interface Dictionary {
       skuPlaceholder: string;
       name: string;
       namePlaceholder: string;
+      productType: string;
       description: string;
       descriptionPlaceholder: string;
       salePrice: string;
@@ -276,6 +308,20 @@ export interface Dictionary {
           cancelled: string;
         };
       };
+    };
+    services: {
+      title: string;
+      addNewService: string;
+      serviceInformation: string;
+      namePlaceholder: string;
+      searchServices: string;
+      noServices: string;
+      notFound: string;
+      backToServices: string;
+      confirmDelete: string;
+      confirmDeleteMessage: string;
+      serviceUpdated: string;
+      serviceDeleted: string;
     };
   };
   company: {

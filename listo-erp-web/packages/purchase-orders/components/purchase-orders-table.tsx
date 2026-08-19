@@ -12,13 +12,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { showToast } from "@/components/ui/sonner";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   type Column,
   type ColumnDef,
   getCoreRowModel,
@@ -29,9 +22,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { DotsThreeVertical, MagnifyingGlass } from "@phosphor-icons/react";
-import { ArrowUpDown, X } from "lucide-react";
+import { ArrowUpDown, FileText, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCurrency } from "@/packages/currency/components/currency-provider";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCancelPurchaseOrder } from "../api";
 import type { PurchaseOrder } from "../types";
@@ -98,6 +92,11 @@ function OrderActions({ order }: { order: PurchaseOrder }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/listoerp/purchases/orders/${order.id}/invoice`}>
+              <FileText className="size-4" /> Aprobar y facturar
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => setConfirmation("cancel")}
@@ -215,10 +214,6 @@ function buildColumns(
           {statusLabels[row.original.status]}
         </span>
       ),
-      filterFn: (row, _id, filterValue) => {
-        if (!filterValue || filterValue === "ALL") return true;
-        return row.original.status === filterValue;
-      },
     },
     {
       id: "actions",
@@ -252,8 +247,6 @@ export function PurchaseOrdersTable({
   const { formatMoney } = useCurrency();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [statusValue, setStatusValue] = useState<string>("");
-
   const columns = useMemo(() => buildColumns(formatMoney), [formatMoney]);
 
   const table = useReactTable({
@@ -300,28 +293,6 @@ export function PurchaseOrdersTable({
               className="pl-9"
             />
           </div>
-          <Select
-            value={statusValue}
-            onValueChange={(value) => {
-              if (value === "ALL") {
-                table.getColumn("status")?.setFilterValue(undefined);
-                setStatusValue("");
-                return;
-              }
-              setStatusValue(value);
-              table.getColumn("status")?.setFilterValue(value);
-            }}
-          >
-            <SelectTrigger className="min-w-[180px]">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Todos los estados</SelectItem>
-              <SelectItem value="PENDING">Pendientes</SelectItem>
-              <SelectItem value="RECEIVED">Recibidas</SelectItem>
-              <SelectItem value="CANCELLED">Canceladas</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
         <div className="flex items-center justify-between gap-3 sm:justify-end">
           {action}

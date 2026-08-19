@@ -20,7 +20,7 @@ import { useGetCategories } from "@/packages/category/api";
 import { useGetDepartments } from "@/packages/department/api";
 import { uploadProductImage, useCreateProduct } from "@/packages/product/api";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
-import type { CreateProductRequest } from "@/packages/product/types";
+import type { CreateProductRequest, ProductType } from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
 import { MoneyInput } from "@/packages/currency/components/money-input";
@@ -31,12 +31,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
-export function CreateProductPage() {
+export function CreateProductPage({ productType = "PRODUCT" }: { productType?: ProductType }) {
   const t = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { validateProductFields } = useProductValidation();
   const { parseMoney } = useCurrency();
+  const isService = productType === "SERVICE";
+  const basePath = isService
+    ? "/listoerp/inventory/services"
+    : "/listoerp/inventory/products";
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [salePrice, setSalePrice] = useState("");
@@ -114,6 +118,7 @@ export function CreateProductPage() {
       subcategoryId,
       dianCode: usesUnit ? dianCode.trim().toUpperCase() : "ZZ",
       isActive,
+      productType,
     };
     create(request, async (response) => {
       if (imageFile) {
@@ -125,7 +130,7 @@ export function CreateProductPage() {
         }
       }
       await queryClient.invalidateQueries({ queryKey: ["products"] });
-      router.push(`/listoerp/inventory/products/${encodeId(response.data.id)}`);
+      router.push(`${basePath}/${encodeId(response.data.id)}`);
     });
   };
   const select = (
@@ -164,11 +169,13 @@ export function CreateProductPage() {
       <div className="flex items-center justify-between gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link
-            href="/listoerp/inventory/products"
+            href={basePath}
             className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            {t("inventory.products.backToProducts")}
+            {isService
+              ? t("inventory.services.backToServices")
+              : t("inventory.products.backToProducts")}
           </Link>
         </Button>
         <Button
@@ -180,7 +187,11 @@ export function CreateProductPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
+          <CardTitle>
+            {isService
+              ? t("inventory.services.serviceInformation")
+              : t("inventory.products.productInformation")}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
           <div className="min-w-0 space-y-6">
@@ -211,7 +222,11 @@ export function CreateProductPage() {
                     id="name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    placeholder={t("inventory.products.namePlaceholder")}
+                     placeholder={
+                       isService
+                         ? t("inventory.services.namePlaceholder")
+                         : t("inventory.products.namePlaceholder")
+                     }
                     disabled={creating}
                   />
                 </div>
@@ -386,7 +401,7 @@ export function CreateProductPage() {
               {imagePreview ? (
                 <img
                   src={imagePreview}
-                  alt={name || "Producto"}
+                   alt={name || (isService ? t("navigation.services") : t("navigation.products"))}
                   className="size-full object-cover"
                 />
               ) : (

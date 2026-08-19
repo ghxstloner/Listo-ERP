@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   InventoryMovementType,
   Prisma,
+  ProductType,
   PurchaseInvoiceStatus,
   PurchaseOrderStatus,
   SeriesModule,
@@ -51,7 +52,12 @@ export class PurchaseInvoicesService {
               select: { id: true },
             }),
             tx.product.findMany({
-              where: { companyId, id: { in: productIds }, isActive: true },
+          where: {
+            companyId,
+            id: { in: productIds },
+            isActive: true,
+            productType: ProductType.PRODUCT,
+          },
               select: {
                 id: true,
                 sku: true,
@@ -196,7 +202,7 @@ export class PurchaseInvoicesService {
             seriesId: series.id,
             consecutive: numbering.previousConsecutive,
             documentNumber,
-            supplierInvoiceNumber: dto.supplierInvoiceNumber.trim(),
+            supplierInvoiceNumber: documentNumber,
             issueDate: new Date(dto.issueDate),
             status: PurchaseInvoiceStatus.POSTED,
             subtotal,

@@ -5,7 +5,6 @@
     "supplier_not_found": "Proveedor activo no encontrado",
     "warehouse_not_found": "Almacén activo no encontrado",
     "product_not_found": "Uno o más productos no están disponibles",
-    "product_cost_required": "Todos los productos deben tener un coste mayor que cero",
     "product_not_supplied": "Todos los productos deben estar asociados al proveedor seleccionado",
     "default_currency_required": "La empresa debe tener una moneda predeterminada para crear órdenes de compra",
     "exchange_rate_required": "No hay una tasa registrada para la moneda de operación y la fecha actual",

@@ -15,6 +15,7 @@ import type {
   ProductPurchase,
   ProductSale,
   ProductOrder,
+  ProductType,
 } from "./types";
 
 export interface ProductPricesResponse {
@@ -43,6 +44,7 @@ export interface ProductFilters {
   subdepartmentId?: number;
   categoryId?: number;
   subcategoryId?: number;
+  productType?: ProductType;
 }
 
 export const useCreateProduct = () => {
@@ -54,7 +56,7 @@ export const useGetProducts = (filters: ProductFilters = {}) => {
     ["products", filters],
     "products",
     {
-      params: Object.keys(filters).length > 0 ? filters as Record<string, number | undefined> : undefined
+      params: Object.keys(filters).length > 0 ? filters as Record<string, string | number | undefined> : undefined
     }
   );
 };

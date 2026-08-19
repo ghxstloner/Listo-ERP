@@ -20,7 +20,6 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { CreateSupplierProductDto } from './dto/create-supplier-product.dto';
-import { UpdateSupplierProductDto } from './dto/update-supplier-product.dto';
 import {
   CurrentUser,
   CurrentUserPayload,
@@ -109,24 +108,6 @@ export class SuppliersController {
     @CurrentCompanyId() companyId: number,
   ) {
     return this.suppliersService.findProducts(id, companyId);
-  }
-
-  @Patch(':id/products/:supplierProductId')
-  @Roles(Role.ADMIN)
-  async updateProduct(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('supplierProductId', ParseIntPipe) supplierProductId: number,
-    @Body() dto: UpdateSupplierProductDto,
-    @CurrentCompanyId() companyId: number,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.suppliersService.updateProduct(
-      id,
-      supplierProductId,
-      dto,
-      companyId,
-      user.id,
-    );
   }
 
   @Delete(':id/products/:supplierProductId')

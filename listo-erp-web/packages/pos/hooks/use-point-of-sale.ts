@@ -194,8 +194,9 @@ export function usePointOfSale() {
         defaultPrice: orderPrice,
         description: null,
         costPrice: null,
-        taxRate: Number(item.taxRate),
-        unit: null,
+         taxRate: Number(item.taxRate),
+         productType: item.product.productType,
+         unit: null,
         dianCode: null,
         image: null,
         isActive: true,
@@ -310,14 +311,14 @@ export function usePointOfSale() {
     const currentQuantity = cart
       .filter((item) => item.product.id === product.id)
       .reduce((sum, item) => sum + item.quantity, 0);
-    if (availableStock <= 0) {
+    if (product.productType === "PRODUCT" && availableStock <= 0) {
       showToast({
         type: "warning",
         message: "Este producto no tiene inventario disponible en esta sucursal.",
       });
       return;
     }
-    if (currentQuantity >= availableStock) {
+    if (product.productType === "PRODUCT" && currentQuantity >= availableStock) {
       showToast({
         type: "warning",
         message: "Ya alcanzaste el inventario disponible para este producto.",
@@ -350,8 +351,11 @@ export function usePointOfSale() {
     const otherQuantity = cart
       .filter((line) => line.product.id === productId && line.productPriceId !== productPriceId)
       .reduce((sum, line) => sum + line.quantity, 0);
-    const nextQuantity = Math.min(quantity, Math.max(0, availableStock - otherQuantity));
-    if (quantity > availableStock) {
+    const isProduct = item.product.productType === "PRODUCT";
+    const nextQuantity = isProduct
+      ? Math.min(quantity, Math.max(0, availableStock - otherQuantity))
+      : quantity;
+    if (isProduct && quantity > availableStock) {
       showToast({
         type: "warning",
         message: `La cantidad se ajustó al máximo disponible: ${availableStock}.`,

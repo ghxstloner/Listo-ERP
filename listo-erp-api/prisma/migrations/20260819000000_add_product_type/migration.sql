@@ -1,0 +1,4 @@
+CREATE TYPE "ProductType" AS ENUM ('PRODUCT', 'SERVICE');
+
+ALTER TABLE "Product"
+ADD COLUMN "productType" "ProductType" NOT NULL DEFAULT 'PRODUCT';

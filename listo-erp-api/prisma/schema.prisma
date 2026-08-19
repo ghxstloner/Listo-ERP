@@ -155,23 +155,23 @@ model CompanyUserRole {
 }
 
 model User {
-  id                   Int           @id @default(autoincrement())
-  email                String        @unique
-  password             String
-  name                 String        @unique
-  userCode             String?       @unique
-  isActive             Boolean       @default(true)
-  resetPasswordCode    String?
-  resetPasswordExpires DateTime?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  companyUsers         CompanyUser[]
-  sellerUsers          SellerUser[]
-  auditLogs            AuditLog[]
-  openedCashSessions   CashSession[] @relation("CashSessionOpenedBy")
-  closedCashSessions   CashSession[] @relation("CashSessionClosedBy")
-  sales                Sale[]
-  createdOrders        Order[]       @relation("OrderCreatedBy")
+  id                      Int               @id @default(autoincrement())
+  email                   String            @unique
+  password                String
+  name                    String            @unique
+  userCode                String?           @unique
+  isActive                Boolean           @default(true)
+  resetPasswordCode       String?
+  resetPasswordExpires    DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  companyUsers            CompanyUser[]
+  sellerUsers             SellerUser[]
+  auditLogs               AuditLog[]
+  openedCashSessions      CashSession[]     @relation("CashSessionOpenedBy")
+  closedCashSessions      CashSession[]     @relation("CashSessionClosedBy")
+  sales                   Sale[]
+  createdOrders           Order[]           @relation("OrderCreatedBy")
   createdPurchaseInvoices PurchaseInvoice[]
 }
 
@@ -304,7 +304,6 @@ model Currency {
   branches          branch[]
   exchangeRatesFrom ExchangeRate[]    @relation("ExchangeRateFrom")
   exchangeRatesTo   ExchangeRate[]    @relation("ExchangeRateTo")
-  supplierProducts  SupplierProduct[]
   purchaseOrders    PurchaseOrder[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
@@ -442,21 +441,21 @@ model Subcategory {
 }
 
 model Supplier {
-  id             Int               @id @default(autoincrement())
-  name           String
-  taxId          String?
-  address        String?
-  phone          String?
-  email          String?
-  contactName    String?
-  isActive       Boolean           @default(true)
-  companyId      Int
-  company        Company           @relation(fields: [companyId], references: [id])
-  products       SupplierProduct[]
-  purchaseOrders PurchaseOrder[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  taxId            String?
+  address          String?
+  phone            String?
+  email            String?
+  contactName      String?
+  isActive         Boolean           @default(true)
+  companyId        Int
+  company          Company           @relation(fields: [companyId], references: [id])
+  products         SupplierProduct[]
+  purchaseOrders   PurchaseOrder[]
   purchaseInvoices PurchaseInvoice[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model Customer {
@@ -525,43 +524,49 @@ model SellerUser {
 }
 
 model Product {
-  id                 Int                     @id @default(autoincrement())
-  sku                String
-  name               String
-  description        String?
-  salePrice          Decimal                 @db.Decimal(18, 4)
-  defaultPriceId     Int?                    @unique
-  costPrice          Decimal?                @db.Decimal(18, 4)
-  taxRate            Decimal?                @db.Decimal(5, 4)
-  isExempt           Boolean                 @default(false)
-  isActive           Boolean                 @default(true)
-  companyId          Int
-  departmentId       Int
-  subdepartmentId    Int?
-  categoryId         Int?
-  subcategoryId      Int?
-  unit               String?
-  dianCode           String?
-  image              String? // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
-  company            Company                 @relation(fields: [companyId], references: [id])
-  department         Department              @relation(fields: [departmentId], references: [id])
-  subdepartment      Subdepartment?          @relation(fields: [subdepartmentId], references: [id])
-  category           Category?               @relation(fields: [categoryId], references: [id])
-  subcategory        Subcategory?            @relation(fields: [subcategoryId], references: [id])
-  prices             ProductPrice[]          @relation("ProductPrices")
-  defaultPrice       ProductPrice?           @relation("ProductDefaultPrice", fields: [defaultPriceId], references: [id], onDelete: SetNull)
-  supplierProducts   SupplierProduct[]
-  purchaseOrderItems PurchaseOrderItem[]
+  id                   Int                     @id @default(autoincrement())
+  sku                  String
+  name                 String
+  description          String?
+  salePrice            Decimal                 @db.Decimal(18, 4)
+  defaultPriceId       Int?                    @unique
+  costPrice            Decimal?                @db.Decimal(18, 4)
+  taxRate              Decimal?                @db.Decimal(5, 4)
+  isExempt             Boolean                 @default(false)
+  isActive             Boolean                 @default(true)
+  productType          ProductType             @default(PRODUCT)
+  companyId            Int
+  departmentId         Int
+  subdepartmentId      Int?
+  categoryId           Int?
+  subcategoryId        Int?
+  unit                 String?
+  dianCode             String?
+  image                String? // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
+  company              Company                 @relation(fields: [companyId], references: [id])
+  department           Department              @relation(fields: [departmentId], references: [id])
+  subdepartment        Subdepartment?          @relation(fields: [subdepartmentId], references: [id])
+  category             Category?               @relation(fields: [categoryId], references: [id])
+  subcategory          Subcategory?            @relation(fields: [subcategoryId], references: [id])
+  prices               ProductPrice[]          @relation("ProductPrices")
+  defaultPrice         ProductPrice?           @relation("ProductDefaultPrice", fields: [defaultPriceId], references: [id], onDelete: SetNull)
+  supplierProducts     SupplierProduct[]
+  purchaseOrderItems   PurchaseOrderItem[]
   purchaseInvoiceItems PurchaseInvoiceItem[]
-  inventoryBalances  InventoryBalance[]
-  inventoryMovements InventoryMovement[]
-  saleItems          SaleItem[]
-  orderItems         OrderItem[]
-  transferItems      InventoryTransferItem[]
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
+  inventoryBalances    InventoryBalance[]
+  inventoryMovements   InventoryMovement[]
+  saleItems            SaleItem[]
+  orderItems           OrderItem[]
+  transferItems        InventoryTransferItem[]
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
   @@unique([companyId, sku])
+}
+
+enum ProductType {
+  PRODUCT
+  SERVICE
 }
 
 model ProductPrice {
@@ -583,22 +588,15 @@ model ProductPrice {
 }
 
 model SupplierProduct {
-  id              Int      @id @default(autoincrement())
-  supplierId      Int
-  productId       Int
-  supplierSku     String?
-  referenceCost   Decimal? @db.Decimal(18, 4)
-  currencyId      Int?
-  minimumQuantity Decimal? @db.Decimal(18, 4)
-  leadTimeDays    Int?
-  isPreferred     Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  supplierId Int
+  productId  Int
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  supplier Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  currency Currency? @relation(fields: [currencyId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([supplierId, productId])
   @@index([productId])
@@ -654,11 +652,11 @@ model PurchaseOrder {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  company   Company             @relation(fields: [companyId], references: [id])
-  supplier  Supplier            @relation(fields: [supplierId], references: [id])
-  warehouse Warehouse           @relation(fields: [warehouseId], references: [id])
-  currency  Currency            @relation(fields: [currencyId], references: [id])
-  items     PurchaseOrderItem[]
+  company          Company             @relation(fields: [companyId], references: [id])
+  supplier         Supplier            @relation(fields: [supplierId], references: [id])
+  warehouse        Warehouse           @relation(fields: [warehouseId], references: [id])
+  currency         Currency            @relation(fields: [currencyId], references: [id])
+  items            PurchaseOrderItem[]
   purchaseInvoices PurchaseInvoice[]
 
   @@index([companyId, status])
@@ -670,7 +668,6 @@ model PurchaseOrderItem {
   id              Int      @id @default(autoincrement())
   purchaseOrderId Int
   productId       Int
-  supplierSku     String?
   quantity        Decimal  @db.Decimal(18, 4)
   unitCost        Decimal  @db.Decimal(18, 4)
   createdAt       DateTime @default(now())
@@ -704,12 +701,12 @@ model PurchaseInvoice {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  company       Company        @relation(fields: [companyId], references: [id])
-  supplier      Supplier       @relation(fields: [supplierId], references: [id])
-  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
-  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  series        Series         @relation(fields: [seriesId], references: [id])
-  createdByUser User           @relation(fields: [createdByUserId], references: [id])
+  company       Company               @relation(fields: [companyId], references: [id])
+  supplier      Supplier              @relation(fields: [supplierId], references: [id])
+  warehouse     Warehouse             @relation(fields: [warehouseId], references: [id])
+  purchaseOrder PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id])
+  series        Series                @relation(fields: [seriesId], references: [id])
+  createdByUser User                  @relation(fields: [createdByUserId], references: [id])
   items         PurchaseInvoiceItem[]
   movements     InventoryMovement[]
 
@@ -723,19 +720,19 @@ model PurchaseInvoice {
 }
 
 model PurchaseInvoiceItem {
-  id                Int             @id @default(autoincrement())
+  id                Int      @id @default(autoincrement())
   purchaseInvoiceId Int
   productId         Int
-  quantity          Decimal         @db.Decimal(18, 4)
-  unitCost          Decimal         @db.Decimal(18, 4)
-  taxRate           Decimal         @db.Decimal(5, 4)
-  taxAmount         Decimal         @db.Decimal(18, 4)
-  lineTotal         Decimal         @db.Decimal(18, 4)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  quantity          Decimal  @db.Decimal(18, 4)
+  unitCost          Decimal  @db.Decimal(18, 4)
+  taxRate           Decimal  @db.Decimal(5, 4)
+  taxAmount         Decimal  @db.Decimal(18, 4)
+  lineTotal         Decimal  @db.Decimal(18, 4)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  purchaseInvoice   PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
-  product           Product         @relation(fields: [productId], references: [id])
+  purchaseInvoice   PurchaseInvoice    @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  product           Product            @relation(fields: [productId], references: [id])
   inventoryMovement InventoryMovement?
 
   @@unique([purchaseInvoiceId, productId])
@@ -760,31 +757,31 @@ model InventoryBalance {
 }
 
 model InventoryMovement {
-  id                  Int                   @id @default(autoincrement())
-  companyId           Int
-  warehouseId         Int
-  productId           Int
-  type                InventoryMovementType
-  quantity            Decimal               @db.Decimal(18, 4)
-  unitCost            Decimal               @db.Decimal(18, 4)
-  balanceAfter        Decimal               @db.Decimal(18, 4)
-  purchaseOrderId     Int?
-  purchaseOrderItemId Int?
+  id                    Int                   @id @default(autoincrement())
+  companyId             Int
+  warehouseId           Int
+  productId             Int
+  type                  InventoryMovementType
+  quantity              Decimal               @db.Decimal(18, 4)
+  unitCost              Decimal               @db.Decimal(18, 4)
+  balanceAfter          Decimal               @db.Decimal(18, 4)
+  purchaseOrderId       Int?
+  purchaseOrderItemId   Int?
   purchaseInvoiceId     Int?
   purchaseInvoiceItemId Int?
-  saleItemId          Int?
-  orderItemId         Int?
-  createdByUserId     Int
-  createdAt           DateTime              @default(now())
+  saleItemId            Int?
+  orderItemId           Int?
+  createdByUserId       Int
+  createdAt             DateTime              @default(now())
 
-  company           Company            @relation(fields: [companyId], references: [id])
-  warehouse         Warehouse          @relation(fields: [warehouseId], references: [id])
-  product           Product            @relation(fields: [productId], references: [id])
-  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
-  purchaseInvoice PurchaseInvoice? @relation(fields: [purchaseInvoiceId], references: [id])
+  company             Company              @relation(fields: [companyId], references: [id])
+  warehouse           Warehouse            @relation(fields: [warehouseId], references: [id])
+  product             Product              @relation(fields: [productId], references: [id])
+  purchaseOrderItem   PurchaseOrderItem?   @relation(fields: [purchaseOrderItemId], references: [id])
+  purchaseInvoice     PurchaseInvoice?     @relation(fields: [purchaseInvoiceId], references: [id])
   purchaseInvoiceItem PurchaseInvoiceItem? @relation(fields: [purchaseInvoiceItemId], references: [id])
-  saleItem          SaleItem?          @relation(fields: [saleItemId], references: [id])
-  orderItem         OrderItem?         @relation(fields: [orderItemId], references: [id])
+  saleItem            SaleItem?            @relation(fields: [saleItemId], references: [id])
+  orderItem           OrderItem?           @relation(fields: [orderItemId], references: [id])
 
   @@unique([purchaseOrderItemId])
   @@unique([purchaseInvoiceItemId])
@@ -1146,8 +1143,8 @@ model Series {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  orders  Order[]
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orders           Order[]
   purchaseInvoices PurchaseInvoice[]
 
   @@unique([companyId, module])

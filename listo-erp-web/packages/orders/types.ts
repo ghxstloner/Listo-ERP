@@ -1,4 +1,4 @@
-import type { Product } from "@/packages/product/types";
+import type { Product, ProductType } from "@/packages/product/types";
 
 export interface CartItem {
   product: Product;
@@ -39,6 +39,7 @@ export interface OrderItem {
     id: number;
     sku: string;
     name: string;
+    productType: ProductType;
   };
   productPrice?: {
     id: number;

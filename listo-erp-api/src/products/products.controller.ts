@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseEnumPipe,
   Patch,
   Post,
   Query,
@@ -22,7 +23,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { ProductType, Role } from '@prisma/client';
 import {
   CurrentCompanyId,
   CurrentUser,
@@ -88,12 +89,20 @@ export class ProductsController {
     type: Number,
     description: 'Filtrar por subcategoría',
   })
+  @ApiQuery({
+    name: 'productType',
+    required: false,
+    enum: ProductType,
+    description: 'Filtrar por tipo de artículo',
+  })
   findAll(
     @CurrentCompanyId() companyId: number,
     @Query('departmentId') departmentId?: string,
     @Query('subdepartmentId') subdepartmentId?: string,
     @Query('categoryId') categoryId?: string,
     @Query('subcategoryId') subcategoryId?: string,
+    @Query('productType', new ParseEnumPipe(ProductType, { optional: true }))
+    productType?: ProductType,
   ) {
     const parseId = (value?: string) => {
       if (value == null || value === '') return undefined;
@@ -106,6 +115,7 @@ export class ProductsController {
       subdepartmentId: parseId(subdepartmentId),
       categoryId: parseId(categoryId),
       subcategoryId: parseId(subcategoryId),
+      productType,
     });
   }
 

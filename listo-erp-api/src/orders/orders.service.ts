@@ -535,7 +535,9 @@ export class OrdersService {
           taxRate: true,
           taxAmount: true,
           lineTotal: true,
-          product: { select: { id: true, sku: true, name: true } },
+          product: {
+            select: { id: true, sku: true, name: true, productType: true },
+          },
           productPrice: { select: { id: true, name: true, amount: true } },
         },
       },

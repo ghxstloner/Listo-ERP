@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PurchaseOrderStatus } from '@prisma/client';
+import { Prisma, ProductType, PurchaseOrderStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,8 +32,13 @@ export class PurchaseOrdersService {
           where: { id: dto.warehouseId, companyId, isActive: true },
         }),
         this.prisma.product.findMany({
-          where: { companyId, id: { in: productIds }, isActive: true },
-          select: { id: true, costPrice: true },
+          where: {
+            companyId,
+            id: { in: productIds },
+            isActive: true,
+            productType: ProductType.PRODUCT,
+          },
+          select: { id: true },
         }),
         this.prisma.supplierProduct.findMany({
           where: {
@@ -41,7 +46,7 @@ export class PurchaseOrdersService {
             productId: { in: productIds },
             isActive: true,
           },
-          select: { productId: true, supplierSku: true },
+          select: { productId: true },
         }),
       ],
     );
@@ -61,22 +66,11 @@ export class PurchaseOrdersService {
       throw I18nException.badRequest(
         'purchase_orders.errors.product_not_found',
       );
-    const productCosts = new Map<number, Prisma.Decimal>();
-    for (const product of products) {
-      if (product.costPrice == null || product.costPrice.lte(0))
-        throw I18nException.badRequest(
-          'purchase_orders.errors.product_cost_required',
-        );
-      productCosts.set(product.id, product.costPrice);
-    }
     if (catalog.length !== productIds.length)
       throw I18nException.badRequest(
         'purchase_orders.errors.product_not_supplied',
       );
 
-    const supplierSkus = new Map(
-      catalog.map((item) => [item.productId, item.supplierSku]),
-    );
     const order = await this.prisma.purchaseOrder.create({
       data: {
         companyId,
@@ -88,8 +82,7 @@ export class PurchaseOrdersService {
           create: dto.items.map((item) => ({
             productId: item.productId,
             quantity: new Prisma.Decimal(item.quantity),
-            unitCost: productCosts.get(item.productId),
-            supplierSku: supplierSkus.get(item.productId) || null,
+            unitCost: new Prisma.Decimal(item.unitCost),
           })),
         },
       },
@@ -110,7 +103,7 @@ export class PurchaseOrdersService {
 
   async findAll(companyId: number) {
     const orders = await this.prisma.purchaseOrder.findMany({
-      where: { companyId },
+      where: { companyId, status: PurchaseOrderStatus.PENDING },
       select: this.selectOrder(),
       orderBy: { createdAt: 'desc' },
     });
@@ -247,7 +240,6 @@ export class PurchaseOrdersService {
         select: {
           id: true,
           productId: true,
-          supplierSku: true,
           quantity: true,
           unitCost: true,
           product: { select: { id: true, sku: true, name: true } },

@@ -111,6 +111,7 @@ export function OrderForm({ orderId }: OrderFormProps) {
             description: null,
             costPrice: null,
             taxRate: Number(item.taxRate),
+            productType: item.product.productType,
             unit: null,
             dianCode: null,
             image: null,
@@ -220,7 +221,7 @@ export function OrderForm({ orderId }: OrderFormProps) {
       return;
     }
     const availableStock = stockByProduct.get(product.id) ?? 0;
-    if (availableStock <= 0) {
+    if (product.productType === "PRODUCT" && availableStock <= 0) {
       showToast({
         type: "warning",
         message: t("sales.orders.noStock"),
@@ -230,7 +231,7 @@ export function OrderForm({ orderId }: OrderFormProps) {
     const currentQuantity = cart
       .filter((item) => item.product.id === product.id)
       .reduce((sum, item) => sum + item.quantity, 0);
-    if (currentQuantity >= availableStock) {
+    if (product.productType === "PRODUCT" && currentQuantity >= availableStock) {
       showToast({
         type: "warning",
         message: t("sales.orders.maxStockReached"),
@@ -263,8 +264,11 @@ export function OrderForm({ orderId }: OrderFormProps) {
     const otherQuantity = cart
       .filter((line) => line.product.id === productId && line.productPriceId !== productPriceId)
       .reduce((sum, line) => sum + line.quantity, 0);
-    const nextQuantity = Math.min(quantity, Math.max(0, availableStock - otherQuantity));
-    if (quantity > availableStock) {
+    const isProduct = item.product.productType === "PRODUCT";
+    const nextQuantity = isProduct
+      ? Math.min(quantity, Math.max(0, availableStock - otherQuantity))
+      : quantity;
+    if (isProduct && quantity > availableStock) {
       showToast({
         type: "warning",
         message: t("sales.orders.quantityAdjusted"),
@@ -504,7 +508,11 @@ export function OrderForm({ orderId }: OrderFormProps) {
                     <TicketItem
                        key={item.productPriceId}
                       item={item}
-                      availableStock={stockByProduct.get(item.product.id) ?? 0}
+                       availableStock={
+                         item.product.productType === "PRODUCT"
+                           ? stockByProduct.get(item.product.id) ?? 0
+                           : undefined
+                       }
                       onQuantityChange={updateQuantity}
                       onPriceChange={updatePrice}
                     />

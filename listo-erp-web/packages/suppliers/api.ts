@@ -1,5 +1,11 @@
 import { useApiMutation, useApiQuery } from "@config";
-import type { Supplier, CreateSupplierRequest, UpdateSupplierRequest, SupplierProduct, CreateSupplierProductRequest } from "./types";
+import type {
+  Supplier,
+  CreateSupplierRequest,
+  UpdateSupplierRequest,
+  SupplierProduct,
+  CreateSupplierProductRequest,
+} from "./types";
 
 export const useCreateSupplier = () => {
   return useApiMutation<Supplier, CreateSupplierRequest>("suppliers", "post");
@@ -14,7 +20,10 @@ export const useGetSupplier = (id: Supplier["id"]) => {
 };
 
 export const useUpdateSupplier = (id: Supplier["id"]) => {
-  return useApiMutation<Supplier, UpdateSupplierRequest>(`suppliers/${id}`, "patch");
+  return useApiMutation<Supplier, UpdateSupplierRequest>(
+    `suppliers/${id}`,
+    "patch",
+  );
 };
 
 export const useDeleteSupplier = (id: Supplier["id"]) => {
@@ -22,10 +31,24 @@ export const useDeleteSupplier = (id: Supplier["id"]) => {
 };
 
 export const useGetSupplierProducts = (id: Supplier["id"]) =>
-  useApiQuery<SupplierProduct[]>(["suppliers", id, "products"], `suppliers/${id}/products`);
+  useApiQuery<SupplierProduct[]>(
+    ["suppliers", id, "products"],
+    `suppliers/${id}/products`,
+    undefined,
+    { enabled: id > 0 },
+  );
 
 export const useAddSupplierProduct = (id: Supplier["id"]) =>
-  useApiMutation<SupplierProduct, CreateSupplierProductRequest>(`suppliers/${id}/products`, "post");
+  useApiMutation<SupplierProduct, CreateSupplierProductRequest>(
+    `suppliers/${id}/products`,
+    "post",
+  );
 
-export const useDeleteSupplierProduct = (supplierId: number, supplierProductId: number) =>
-  useApiMutation<void, void>(`suppliers/${supplierId}/products/${supplierProductId}`, "delete");
+export const useDeleteSupplierProduct = (
+  supplierId: number,
+  supplierProductId: number,
+) =>
+  useApiMutation<void, void>(
+    `suppliers/${supplierId}/products/${supplierProductId}`,
+    "delete",
+  );

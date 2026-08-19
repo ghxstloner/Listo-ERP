@@ -14,12 +14,22 @@ interface ListProductProps {
   products: Product[];
   onEdit: (product: Product) => void;
   headerAction?: React.ReactNode;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  confirmDeleteTitle?: string;
+  confirmDeleteMessage?: string;
+  deletedMessage?: string;
 }
 
 export function ListProduct({
   products,
   onEdit,
   headerAction,
+  searchPlaceholder,
+  emptyMessage,
+  confirmDeleteTitle,
+  confirmDeleteMessage,
+  deletedMessage,
 }: ListProductProps) {
   const t = useTranslation();
   const queryClient = useQueryClient();
@@ -56,7 +66,7 @@ export function ListProduct({
       setProductToDelete(null);
       showToast({
         type: "success",
-        message: t("inventory.products.productDeleted"),
+         message: deletedMessage ?? t("inventory.products.productDeleted"),
       });
     });
   };
@@ -72,14 +82,16 @@ export function ListProduct({
           deletingProductId={deletingProductId}
           t={t}
           action={headerAction}
+          searchPlaceholder={searchPlaceholder}
+          emptyMessage={emptyMessage}
         />
       </CardContent>
       <ConfirmDialog
         open={!!productToDelete}
         onOpenChange={(open) => !open && setProductToDelete(null)}
         onConfirm={handleConfirmDelete}
-        title={t("inventory.products.confirmDelete")}
-        description={t("inventory.products.confirmDeleteMessage")}
+        title={confirmDeleteTitle ?? t("inventory.products.confirmDelete")}
+        description={confirmDeleteMessage ?? t("inventory.products.confirmDeleteMessage")}
         confirmText={t("common.delete")}
         cancelText={t("common.cancel")}
         severity="destructive"

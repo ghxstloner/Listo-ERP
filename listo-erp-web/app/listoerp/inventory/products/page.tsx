@@ -16,7 +16,7 @@ export default function ProductsPage() {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
   const router = useRouter();
-  const [response, isLoading, error] = useGetProducts();
+  const [response, isLoading, error] = useGetProducts({ productType: "PRODUCT" });
 
   useEffect(() => {
     setTitle(t("inventory.products.title"));
@@ -49,14 +49,16 @@ export default function ProductsPage() {
       <ListProduct
         products={products}
         onEdit={(product) => router.push(`/listoerp/inventory/products/${encodeId(product.id)}`)}
-        headerAction={
+          headerAction={
           <Button size="sm" asChild>
             <Link href="/listoerp/inventory/products/new">
               <Plus className="mr-2 h-4 w-4" />
               {t("inventory.products.addNewProduct")}
             </Link>
           </Button>
-        }
+          }
+          searchPlaceholder={t("inventory.products.searchProducts")}
+          emptyMessage={t("inventory.products.noProducts")}
       />
     </div>
   );

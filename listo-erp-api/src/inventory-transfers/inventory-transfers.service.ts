@@ -3,6 +3,7 @@ import {
   InventoryMovementType,
   InventoryTransferStatus,
   Prisma,
+  ProductType,
 } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
@@ -25,12 +26,21 @@ export class InventoryTransfersService {
       new Set(dto.items.map((item) => item.productId)).size !== dto.items.length
     )
       throw I18nException.badRequest('common.errors.duplicate_product');
-    const [sourceWarehouse, destinationWarehouse] = await Promise.all([
+    const [sourceWarehouse, destinationWarehouse, products] = await Promise.all([
       this.prisma.warehouse.findFirst({
         where: { id: dto.sourceWarehouseId, companyId, isActive: true },
       }),
       this.prisma.warehouse.findFirst({
         where: { id: dto.destinationWarehouseId, companyId, isActive: true },
+      }),
+      this.prisma.product.findMany({
+        where: {
+          id: { in: dto.items.map((item) => item.productId) },
+          companyId,
+          isActive: true,
+          productType: ProductType.PRODUCT,
+        },
+        select: { id: true },
       }),
     ]);
     if (
@@ -39,6 +49,8 @@ export class InventoryTransfersService {
       sourceWarehouse.id === destinationWarehouse.id
     )
       throw I18nException.badRequest('common.errors.invalid_location');
+    if (products.length !== dto.items.length)
+      throw I18nException.badRequest('inventory.errors.invalid_product');
     const balances = await this.prisma.inventoryBalance.findMany({
       where: {
         warehouseId: sourceWarehouse.id,

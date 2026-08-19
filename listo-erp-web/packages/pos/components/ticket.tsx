@@ -56,7 +56,7 @@ export function Ticket(props: TicketProps) {
           </div>
           <div className="min-h-0 flex-1 divide-y overflow-y-auto border-y">
             {props.cart.length === 0 ? <p className="text-muted-foreground py-10 text-center text-sm">Agrega productos para iniciar el ticket.</p> : props.cart.map((item) => (
-               <TicketItem key={item.productPriceId} item={item} availableStock={props.stockByProduct.get(item.product.id) ?? 0} onQuantityChange={props.onQuantityChange} onPriceChange={props.onPriceChange} />
+               <TicketItem key={item.productPriceId} item={item} availableStock={item.product.productType === "PRODUCT" ? props.stockByProduct.get(item.product.id) ?? 0 : undefined} onQuantityChange={props.onQuantityChange} onPriceChange={props.onPriceChange} />
             ))}
           </div>
            <TicketSummary subtotal={props.subtotal} tax={props.tax} total={props.total} />

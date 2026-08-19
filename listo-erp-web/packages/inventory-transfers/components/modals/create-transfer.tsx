@@ -37,7 +37,7 @@ export function CreateTransfer() {
   const [quantity, setQuantity] = useState("");
   const [createTransfer, isCreating, error] = useCreateInventoryTransfer();
   const [warehouses] = useGetWarehouses();
-  const [productsResponse] = useGetProducts();
+  const [productsResponse] = useGetProducts({ productType: "PRODUCT" });
   const [balances] = useGetWarehouseInventoryBalances(
     Number(sourceWarehouseId) || 0,
   );

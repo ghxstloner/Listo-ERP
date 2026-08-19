@@ -5,11 +5,8 @@ import {
   IsDateString,
   IsInt,
   IsNumber,
-  IsNotEmpty,
   IsOptional,
-  IsString,
   Max,
-  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -49,19 +46,13 @@ export class CreatePurchaseInvoiceDto {
   @Min(1)
   warehouseId: number;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  supplierInvoiceNumber: string;
-
   @IsDateString()
   issueDate: string;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @IsOptional()
-  purchaseOrderId?: number;
+  purchaseOrderId: number;
 
   @IsArray()
   @ArrayMinSize(1)

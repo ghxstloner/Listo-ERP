@@ -13,5 +13,5 @@ export default function NewProductPage() {
     setTitle(t("inventory.products.addNewProduct"));
   }, [setTitle, t]);
 
-  return <CreateProductPage />;
+  return <CreateProductPage productType="PRODUCT" />;
 }

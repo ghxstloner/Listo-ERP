@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ProductType } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { isUniqueConstraintError } from '../common/utils/prisma-errors';
@@ -108,6 +108,7 @@ export class ProductsService {
               createProductDto.taxRate != null
                 ? new Prisma.Decimal(createProductDto.taxRate)
                 : null,
+            productType: createProductDto.productType ?? ProductType.PRODUCT,
             departmentId: createProductDto.departmentId,
             subdepartmentId: createProductDto.subdepartmentId ?? null,
             categoryId: createProductDto.categoryId ?? null,
@@ -159,7 +160,11 @@ export class ProductsService {
     companyId: number,
     filters: Pick<
       Prisma.ProductWhereInput,
-      'departmentId' | 'subdepartmentId' | 'categoryId' | 'subcategoryId'
+      'departmentId'
+      | 'subdepartmentId'
+      | 'categoryId'
+      | 'subcategoryId'
+      | 'productType'
     > = {},
   ) {
     const where: Prisma.ProductWhereInput = { companyId, ...filters };
@@ -536,6 +541,7 @@ export class ProductsService {
       costPrice: true,
       taxRate: true,
       isExempt: true,
+      productType: true,
       unit: true,
       dianCode: true,
       image: true,

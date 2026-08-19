@@ -1,80 +1,85 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useTranslation } from "@/hooks/use-translation"
 import { cn } from "@/lib/utils"
-import { DollarSign, TrendingDown, TrendingUp } from "lucide-react"
+import { useCurrency } from "@/packages/currency/components/currency-provider"
+import { useGetDashboardSummary } from "../api"
+import { Banknote, FileText, Package, UserRoundPlus } from "lucide-react"
 
 export function InfoCards() {
   const t = useTranslation();
+  const { formatMoney } = useCurrency();
+  const [summary, isLoading, error] = useGetDashboardSummary();
 
   const infoCards = [
     {
-      title: t("dashboard.totalSales"),
-      value: "$125,430",
-      change: "+12.5%",
-      trend: "up",
-      icon: TrendingUp,
-      bgColor: "bg-primary/10 dark:bg-primary/20",
+      title: t("dashboard.productsSoldToday"),
+      value: summary?.productsSoldToday.toLocaleString() ?? "-",
+      icon: Package,
+      accentColor: "border-l-primary",
       textColor: "text-primary",
-      borderColor: "border-primary/20 dark:border-primary/30",
-      iconBg: "bg-primary/20 dark:bg-primary/30",
+      iconBg: "bg-primary/10 dark:bg-primary/20",
     },
     {
-      title: t("dashboard.income"),
-      value: "$98,250",
-      change: "+8.2%",
-      trend: "up",
-      icon: DollarSign,
-      bgColor: "bg-success/10 dark:bg-success/20",
-      textColor: "text-success",
-      borderColor: "border-success/20 dark:border-success/30",
-      iconBg: "bg-success/20 dark:bg-success/30",
+      title: t("dashboard.salesToday"),
+      value: summary ? formatMoney(summary.salesToday) : "-",
+      icon: Banknote,
+      accentColor: "border-l-info",
+      textColor: "text-info",
+      iconBg: "bg-info/10 dark:bg-info/20",
     },
     {
-      title: t("dashboard.expenses"),
-      value: "$45,180",
-      change: "-3.1%",
-      trend: "down",
-      icon: TrendingDown,
-      bgColor: "bg-secondary/10 dark:bg-secondary/20",
-      textColor: "text-secondary",
-      borderColor: "border-secondary/20 dark:border-secondary/30",
-      iconBg: "bg-secondary/20 dark:bg-secondary/30",
+      title: t("dashboard.newCustomersThisMonth"),
+      value: summary?.newCustomersThisMonth.toLocaleString() ?? "-",
+      icon: UserRoundPlus,
+      accentColor: "border-l-warning",
+      textColor: "text-warning",
+      iconBg: "bg-warning/10 dark:bg-warning/20",
+    },
+    {
+      title: t("dashboard.pendingInvoices"),
+      value: summary?.pendingInvoices.toLocaleString() ?? "-",
+      icon: FileText,
+      accentColor: "border-l-destructive",
+      textColor: "text-destructive",
+      iconBg: "bg-destructive/10 dark:bg-destructive/20",
     },
   ]
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {infoCards.map((card, index) => {
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {infoCards.map((card) => {
         const Icon = card.icon
         return (
           <Card
-            key={index}
+            key={card.title}
             className={cn(
-              "relative overflow-hidden transition-all hover:shadow-md",
-              card.bgColor,
-              card.borderColor
+              "min-h-[92px] flex-row items-center gap-4 overflow-hidden rounded-xl border border-border border-l-4 bg-card px-4 py-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+              card.accentColor,
             )}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className={cn("text-sm font-medium", card.textColor)}>
+            <div
+              className={cn(
+                "flex size-12 shrink-0 items-center justify-center rounded-full",
+                card.iconBg,
+              )}
+            >
+              <Icon className={cn("size-5", card.textColor)} strokeWidth={2} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {card.title}
-              </CardTitle>
-              <div className={cn("rounded-full p-2", card.iconBg)}>
-                <Icon className={cn("h-4 w-4", card.textColor)} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-              <p
-                className={cn(
-                  "text-xs mt-1",
-                  card.trend === "up" ? "text-success" : "text-destructive"
-                )}
-              >
-                {card.change} {t("common.sinceLastMonth")}
               </p>
-            </CardContent>
+              <div className="mt-1 flex min-h-8 items-center text-2xl font-bold leading-none tracking-tight text-foreground">
+                {isLoading ? <Skeleton className="h-8 w-24" /> : card.value}
+              </div>
+              {error && (
+                <p className="mt-1 text-[11px] text-destructive">
+                  {t("dashboard.summaryError")}
+                </p>
+              )}
+            </div>
           </Card>
         )
       })}

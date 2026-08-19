@@ -14,6 +14,8 @@ export interface ProductPrice {
   updatedAt?: string;
 }
 
+export type ProductType = "PRODUCT" | "SERVICE";
+
 export function getProductDefaultPrice(product: Product): ProductPrice | null {
   if (product.defaultPrice?.isActive) return product.defaultPrice;
   if (product.defaultPriceId != null) {
@@ -37,6 +39,7 @@ export interface Product {
   costPrice: number | null;
   taxRate: number | null;
   isExempt: boolean;
+  productType: ProductType;
   unit: string | null;
   dianCode: string | null;
   image: string | null;
@@ -67,6 +70,7 @@ export interface CreateProductRequest {
   subcategoryId?: number | null;
   dianCode?: string | null;
   isActive?: boolean;
+  productType?: ProductType;
 }
 
 export interface CreateProductResponse {

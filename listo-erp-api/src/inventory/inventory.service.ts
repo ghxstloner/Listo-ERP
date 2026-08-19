@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InventoryMovementType, Prisma } from '@prisma/client';
+import { InventoryMovementType, Prisma, ProductType } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
@@ -41,6 +41,7 @@ export class InventoryService {
           id: { in: dto.items.map((item) => item.productId) },
           companyId,
           isActive: true,
+          productType: ProductType.PRODUCT,
         },
         select: { id: true },
       }),
@@ -132,7 +133,11 @@ export class InventoryService {
 
   async findBalances(companyId: number, warehouseId?: number) {
     const balances = await this.prisma.inventoryBalance.findMany({
-      where: { companyId, ...(warehouseId != null && { warehouseId }) },
+      where: {
+        companyId,
+        ...(warehouseId != null && { warehouseId }),
+        product: { productType: ProductType.PRODUCT },
+      },
       select: {
         id: true,
         warehouseId: true,
@@ -140,7 +145,7 @@ export class InventoryService {
         quantity: true,
         updatedAt: true,
         warehouse: { select: { id: true, name: true, code: true } },
-        product: { select: { id: true, sku: true, name: true, unit: true } },
+         product: { select: { id: true, sku: true, name: true, unit: true } },
       },
       orderBy: [{ warehouse: { name: 'asc' } }, { product: { name: 'asc' } }],
     });
@@ -156,6 +161,7 @@ export class InventoryService {
     productId?: number,
   ) {
     const where: Prisma.InventoryMovementWhereInput = { companyId };
+    where.product = { productType: ProductType.PRODUCT };
     if (warehouseId != null) where.warehouseId = warehouseId;
     if (productId != null) where.productId = productId;
     const movements = await this.prisma.inventoryMovement.findMany({
@@ -174,7 +180,7 @@ export class InventoryService {
         createdByUserId: true,
         createdAt: true,
         warehouse: { select: { id: true, name: true, code: true } },
-        product: { select: { id: true, sku: true, name: true, unit: true } },
+         product: { select: { id: true, sku: true, name: true, unit: true } },
         purchaseInvoice: {
           select: { documentNumber: true, supplierInvoiceNumber: true },
         },
@@ -195,6 +201,7 @@ export class InventoryService {
     filters: { warehouseId?: number; dateFrom?: string; dateTo?: string },
   ) {
     const where: Prisma.InventoryMovementWhereInput = { companyId, productId };
+    where.product = { productType: ProductType.PRODUCT };
     if (filters.warehouseId != null) where.warehouseId = filters.warehouseId;
     if (filters.dateFrom || filters.dateTo) {
       where.createdAt = {};
@@ -249,12 +256,16 @@ export class InventoryService {
     if (warehouseIds.length === 0) return [];
 
     const balances = await this.prisma.inventoryBalance.findMany({
-      where: { companyId, warehouseId: { in: warehouseIds } },
+       where: {
+         companyId,
+         warehouseId: { in: warehouseIds },
+         product: { productType: ProductType.PRODUCT },
+       },
       select: {
         productId: true,
         quantity: true,
         updatedAt: true,
-        product: { select: { id: true, sku: true, name: true, unit: true } },
+         product: { select: { id: true, sku: true, name: true, unit: true } },
       },
       orderBy: { product: { name: 'asc' } },
     });

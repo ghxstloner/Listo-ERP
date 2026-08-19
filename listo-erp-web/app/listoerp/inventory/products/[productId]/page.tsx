@@ -32,7 +32,11 @@ import { ProductOrdersTab } from "@/packages/product/components/product-orders-t
 import { ProductPurchasesTab } from "@/packages/product/components/product-purchases-tab";
 import { ProductSalesTab } from "@/packages/product/components/product-sales-tab";
 import { useProductValidation } from "@/packages/product/hooks/use-product-validation";
-import type { Product, UpdateProductRequest } from "@/packages/product/types";
+import type {
+  Product,
+  ProductType,
+  UpdateProductRequest,
+} from "@/packages/product/types";
 import { useGetSubCategories } from "@/packages/subcategory/api";
 import { useGetSubDepartments } from "@/packages/subdepartment/api";
 import { ArrowLeft, Camera, Spinner, Upload } from "@phosphor-icons/react";
@@ -51,6 +55,7 @@ interface FormState {
   dianCode: string;
   usesUnit: boolean;
   isActive: boolean;
+  productType: ProductType;
   departmentId: number | null;
   subdepartmentId: number | null;
   categoryId: number | null;
@@ -67,6 +72,7 @@ const toForm = (product: Product): FormState => ({
   dianCode: product.dianCode === "ZZ" ? "" : (product.dianCode ?? ""),
   usesUnit: Boolean(product.dianCode && product.dianCode !== "ZZ"),
   isActive: product.isActive,
+  productType: product.productType,
   departmentId: product.departmentId,
   subdepartmentId: product.subdepartmentId,
   categoryId: product.categoryId,
@@ -74,17 +80,27 @@ const toForm = (product: Product): FormState => ({
   imagePreview: getProductImageUrl(product.image) || null,
 });
 
-export default function ProductDetailPage({
+export default function ProductDetailRoute({
   params,
 }: {
   params: Promise<{ productId: string }>;
 }) {
+  const { productId } = use(params);
+  return <ProductDetailPage productId={productId} productType="PRODUCT" />;
+}
+
+export function ProductDetailPage({
+  productId: encodedProductId,
+  productType = "PRODUCT",
+}: {
+  productId: string;
+  productType?: ProductType;
+}) {
   const { setTitle } = usePageTitle();
   const t = useTranslation();
-  const { productId } = use(params);
-  const id = decodeId(productId);
+  const id = decodeId(encodedProductId);
   const [product, loading, error] = useApiQuery<Product>(
-    ["products", id ?? "invalid"],
+    ["products", id ?? "invalid", productType],
     `products/${id ?? 0}`,
     undefined,
     { enabled: id !== null },
@@ -100,7 +116,7 @@ export default function ProductDetailPage({
         spin
       />
     );
-  if (error || !product)
+  if (error || !product || product.productType !== productType)
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <p className="text-destructive">
@@ -109,15 +125,24 @@ export default function ProductDetailPage({
         </p>
       </div>
     );
-  return <Editor key={product.id} product={product} productId={id} />;
+  return (
+    <Editor
+      key={product.id}
+      product={product}
+      productId={id}
+      expectedProductType={productType}
+    />
+  );
 }
 
 function Editor({
   product,
   productId,
+  expectedProductType,
 }: {
   product: Product;
   productId: number;
+  expectedProductType: ProductType;
 }) {
   const t = useTranslation();
   const queryClient = useQueryClient();
@@ -193,13 +218,17 @@ function Editor({
       subcategoryId: form.subcategoryId,
       dianCode: form.usesUnit ? form.dianCode.trim().toUpperCase() : "ZZ",
       isActive: form.isActive,
+      productType: form.productType,
     };
     update(request, () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["products", productId] });
       showToast({
         type: "success",
-        message: t("inventory.products.productUpdated"),
+        message:
+          expectedProductType === "SERVICE"
+            ? t("inventory.services.serviceUpdated")
+            : t("inventory.products.productUpdated"),
       });
     });
   };
@@ -246,11 +275,17 @@ function Editor({
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild className="shrink-0">
             <Link
-              href="/listoerp/inventory/products"
+              href={
+                expectedProductType === "SERVICE"
+                  ? "/listoerp/inventory/services"
+                  : "/listoerp/inventory/products"
+              }
               className="text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="mr-1 h-4 w-4" />
-              {t("inventory.products.backToProducts")}
+              {expectedProductType === "SERVICE"
+                ? t("inventory.services.backToServices")
+                : t("inventory.products.backToProducts")}
             </Link>
           </Button>
           <TabsList className="min-w-0 overflow-x-auto">
@@ -280,7 +315,11 @@ function Editor({
         <TabsContent value="general" className="mt-2 w-full">
           <Card>
             <CardHeader>
-              <CardTitle>{t("inventory.products.productInformation")}</CardTitle>
+              <CardTitle>
+                {expectedProductType === "SERVICE"
+                  ? t("inventory.services.serviceInformation")
+                  : t("inventory.products.productInformation")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
               <div className="min-w-0 space-y-6">

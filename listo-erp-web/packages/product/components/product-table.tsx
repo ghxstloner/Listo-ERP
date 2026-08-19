@@ -43,6 +43,8 @@ interface ProductTableProps {
   deletingProductId: number | null;
   t: TFunction;
   action?: React.ReactNode;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
 }
 
 function SortableHeader({
@@ -155,6 +157,23 @@ function buildColumns({
             {row.original.department?.name}
           </div>
         </div>
+      ),
+      sortingFn: "alphanumeric",
+    },
+    {
+      id: "productType",
+      header: ({ column }) => (
+        <SortableHeader column={column}>
+          {t("inventory.products.productType")}
+        </SortableHeader>
+      ),
+      accessorFn: (row) => row.productType,
+      cell: ({ row }) => (
+        <span className="text-sm">
+          {row.original.productType === "SERVICE"
+            ? t("navigation.services")
+            : t("navigation.products")}
+        </span>
       ),
       sortingFn: "alphanumeric",
     },
@@ -280,6 +299,8 @@ export function ProductTable({
   deletingProductId,
   t,
   action,
+  searchPlaceholder,
+  emptyMessage,
 }: ProductTableProps) {
   const { formatMoney } = useCurrency();
   const [globalFilter, setGlobalFilter] = React.useState("");
@@ -342,7 +363,7 @@ export function ProductTable({
           <Input
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder={t("inventory.products.searchProducts")}
+            placeholder={searchPlaceholder ?? t("inventory.products.searchProducts")}
             className="sm:max-w-sm"
           />
           <div className="flex flex-wrap items-center gap-2">
@@ -385,7 +406,7 @@ export function ProductTable({
 
       <DataTable
         table={table}
-        emptyMessage={t("inventory.products.noProducts")}
+        emptyMessage={emptyMessage ?? t("inventory.products.noProducts")}
       />
 
       <DataTablePagination

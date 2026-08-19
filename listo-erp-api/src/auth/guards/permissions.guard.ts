@@ -32,6 +32,7 @@ const ROUTE_PERMISSIONS: Record<string, string | string[]> = {
   sales: 'sales.pos',
   orders: 'sales.orders',
   audit: 'reports.sales-book',
+  dashboard: 'dashboard',
 };
 
 @Injectable()
@@ -59,9 +60,12 @@ export class PermissionsGuard implements CanActivate {
 
     // POS users may read products to build their ticket, but cannot modify the catalog.
     if (resource === 'products' && request.method === 'GET') {
-      required = ['inventory.products', 'sales.pos'];
+      required =
+        request.query?.productType === 'SERVICE'
+          ? ['inventory.services', 'sales.pos']
+          : ['inventory.products', 'sales.pos'];
     } else if (resource === 'products') {
-      required = 'inventory.products';
+      required = ['inventory.products', 'inventory.services'];
     } else if (resource === 'sales' && request.method === 'GET') {
       required = ['sales.electronic-invoices', 'sales.pos'];
     }

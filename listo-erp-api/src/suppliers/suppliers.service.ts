@@ -1,12 +1,11 @@
 import { AuditService } from '../audit/audit.service';
 import { Injectable } from '@nestjs/common';
+import { ProductType } from '@prisma/client';
 import { I18nException } from '../common/exceptions/i18n-exception';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { CreateSupplierProductDto } from './dto/create-supplier-product.dto';
-import { UpdateSupplierProductDto } from './dto/update-supplier-product.dto';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SuppliersService {
@@ -128,34 +127,13 @@ export class SuppliersService {
   ) {
     await this.findOne(supplierId, companyId);
     await this.ensureProduct(dto.productId, companyId);
-    await this.ensureCurrency(dto.currencyId);
     try {
-      const item = await this.prisma.$transaction(async (tx) => {
-        if (dto.isPreferred)
-          await tx.supplierProduct.updateMany({
-            where: { productId: dto.productId, product: { companyId } },
-            data: { isPreferred: false },
-          });
-        return tx.supplierProduct.create({
-          data: {
-            supplierId,
-            productId: dto.productId,
-            supplierSku: dto.supplierSku?.trim() || null,
-            referenceCost:
-              dto.referenceCost != null
-                ? new Prisma.Decimal(dto.referenceCost)
-                : null,
-            currencyId: dto.currencyId ?? null,
-            minimumQuantity:
-              dto.minimumQuantity != null
-                ? new Prisma.Decimal(dto.minimumQuantity)
-                : null,
-            leadTimeDays: dto.leadTimeDays ?? null,
-            isPreferred: dto.isPreferred ?? false,
-            isActive: dto.isActive ?? true,
-          },
-          select: this.selectSupplierProduct(),
-        });
+      const item = await this.prisma.supplierProduct.create({
+        data: {
+          supplierId,
+          productId: dto.productId,
+        },
+        select: this.selectSupplierProduct(),
       });
       await this.auditService.logCreate(
         userId,
@@ -166,7 +144,7 @@ export class SuppliersService {
       );
       return {
         message: 'suppliers.success.product_added',
-        data: this.serializeSupplierProduct(item),
+        data: item,
       };
     } catch (error) {
       if ((error as { code?: string }).code === 'P2002')
@@ -184,48 +162,7 @@ export class SuppliersService {
       select: this.selectSupplierProduct(),
       orderBy: { createdAt: 'desc' },
     });
-    return items.map((item) => this.serializeSupplierProduct(item));
-  }
-
-  async updateProduct(
-    supplierId: number,
-    id: number,
-    dto: UpdateSupplierProductDto,
-    companyId: number,
-    userId: number,
-  ) {
-    const current = await this.prisma.supplierProduct.findFirst({
-      where: { id, supplierId, supplier: { companyId } },
-      select: this.selectSupplierProduct(),
-    });
-    if (!current)
-      throw I18nException.notFound('suppliers.errors.product_not_found');
-    if (dto.productId != null && dto.productId !== current.productId)
-      throw I18nException.badRequest('suppliers.errors.product_cannot_change');
-    await this.ensureCurrency(dto.currencyId);
-    const item = await this.prisma.$transaction(async (tx) => {
-      if (dto.isPreferred)
-        await tx.supplierProduct.updateMany({
-          where: { productId: current.productId, product: { companyId } },
-          data: { isPreferred: false },
-        });
-      return tx.supplierProduct.update({
-        where: { id },
-        data: this.supplierProductData(dto),
-        select: this.selectSupplierProduct(),
-      });
-    });
-    await this.auditService.logUpdate(
-      userId,
-      companyId,
-      'supplier-products',
-      'Producto de proveedor',
-      id,
-    );
-    return {
-      message: 'suppliers.success.product_updated',
-      data: this.serializeSupplierProduct(item),
-    };
+    return items;
   }
 
   async removeProduct(
@@ -251,36 +188,12 @@ export class SuppliersService {
   }
 
   private async ensureProduct(id: number, companyId: number) {
-    if (!(await this.prisma.product.findFirst({ where: { id, companyId } })))
-      throw I18nException.badRequest('suppliers.errors.product_not_found');
-  }
-
-  private async ensureCurrency(id?: number) {
     if (
-      id != null &&
-      !(await this.prisma.currency.findUnique({ where: { id } }))
+      !(await this.prisma.product.findFirst({
+        where: { id, companyId, productType: ProductType.PRODUCT },
+      }))
     )
-      throw I18nException.badRequest('suppliers.errors.currency_not_found');
-  }
-
-  private supplierProductData(
-    dto: CreateSupplierProductDto | UpdateSupplierProductDto,
-  ): Prisma.SupplierProductUncheckedUpdateInput {
-    return {
-      supplierSku: dto.supplierSku?.trim() || undefined,
-      referenceCost:
-        dto.referenceCost != null
-          ? new Prisma.Decimal(dto.referenceCost)
-          : undefined,
-      currencyId: dto.currencyId,
-      minimumQuantity:
-        dto.minimumQuantity != null
-          ? new Prisma.Decimal(dto.minimumQuantity)
-          : undefined,
-      leadTimeDays: dto.leadTimeDays,
-      isPreferred: dto.isPreferred,
-      isActive: dto.isActive,
-    };
+      throw I18nException.badRequest('suppliers.errors.product_not_found');
   }
 
   private selectSupplierProduct() {
@@ -288,32 +201,10 @@ export class SuppliersService {
       id: true,
       supplierId: true,
       productId: true,
-      supplierSku: true,
-      referenceCost: true,
-      currencyId: true,
-      minimumQuantity: true,
-      leadTimeDays: true,
-      isPreferred: true,
       isActive: true,
       createdAt: true,
       updatedAt: true,
       product: { select: { id: true, sku: true, name: true } },
-      currency: { select: { id: true, code: true, symbol: true } },
-    };
-  }
-
-  private serializeSupplierProduct<
-    T extends {
-      referenceCost: Prisma.Decimal | null;
-      minimumQuantity: Prisma.Decimal | null;
-    },
-  >(item: T) {
-    return {
-      ...item,
-      referenceCost:
-        item.referenceCost == null ? null : Number(item.referenceCost),
-      minimumQuantity:
-        item.minimumQuantity == null ? null : Number(item.minimumQuantity),
     };
   }
 

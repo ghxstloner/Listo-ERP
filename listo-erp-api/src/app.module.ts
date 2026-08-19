@@ -39,6 +39,7 @@ import { I18nModule, QueryResolver, AcceptLanguageResolver } from 'nestjs-i18n';
 import { InventoryModule } from './inventory/inventory.module';
 import { InventoryTransfersModule } from './inventory-transfers/inventory-transfers.module';
 import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -68,6 +69,7 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     InventoryModule,
     InventoryTransfersModule,
     ElectronicInvoicingModule,
+    DashboardModule,
     PrismaModule,
     AuthModule,
     UsersModule,

@@ -49,7 +49,7 @@ export function CreateInventoryEntryDialog() {
   const [warehouseId, setWarehouseId] = useState("");
   const [items, setItems] = useState<DraftItem[]>([emptyItem()]);
   const [warehouses] = useGetWarehouses();
-  const [productsResponse] = useGetProducts();
+  const [productsResponse] = useGetProducts({ productType: "PRODUCT" });
   const [balances] = useGetWarehouseInventoryBalances(Number(warehouseId) || 0);
   const [createEntry, isCreating, createError] = useCreateInventoryEntry();
   const products = Array.isArray(productsResponse)

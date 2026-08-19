@@ -4,6 +4,7 @@ import {
   InventoryMovementType,
   OrderStatus,
   Prisma,
+  ProductType,
 } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { ElectronicInvoicingService } from '../electronic-invoicing/electronic-invoicing.service';
@@ -159,6 +160,7 @@ export class SalesService {
           costPrice: true,
           isExempt: true,
           dianCode: true,
+          productType: true,
           prices: {
             where: { id: { in: saleProductPriceIds }, isActive: true },
             select: { id: true, amount: true },
@@ -288,7 +290,11 @@ export class SalesService {
           warehouseId: {
             in: warehouseBranches.map((item) => item.warehouseId),
           },
-          productId: { in: saleProductIds },
+          productId: {
+            in: products
+              .filter((product) => product.productType === ProductType.PRODUCT)
+              .map((product) => product.id),
+          },
         },
         select: { warehouseId: true, productId: true, quantity: true },
       });
@@ -302,11 +308,15 @@ export class SalesService {
         );
       }
       if (
-        lineItems.some((item) =>
-          (
-            availableByProduct.get(item.productId) ?? new Prisma.Decimal(0)
-          ).lessThan(item.quantity),
-        )
+        lineItems.some((item) => {
+          const product = productsById.get(item.productId);
+          return (
+            product?.productType === ProductType.PRODUCT &&
+            (
+              availableByProduct.get(item.productId) ?? new Prisma.Decimal(0)
+            ).lessThan(item.quantity)
+          );
+        })
       ) {
         throw I18nException.badRequest('sales.errors.insufficient_stock');
       }
@@ -361,6 +371,8 @@ export class SalesService {
         ]),
       );
       for (const item of lineItems) {
+        if (productsById.get(item.productId)?.productType === ProductType.SERVICE)
+          continue;
         let remaining = item.quantity;
         for (const { warehouseId } of warehouseBranches) {
           if (remaining.isZero()) break;

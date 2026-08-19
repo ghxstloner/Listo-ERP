@@ -29,9 +29,10 @@ function roundValue(value: number, currency: CompanyCurrency): number {
     case "half_even": {
       const lower = Math.floor(absolute);
       const remainder = absolute - lower;
-      rounded = remainder > 0.5 || (remainder === 0.5 && lower % 2 !== 0)
-        ? lower + 1
-        : lower;
+      rounded =
+        remainder > 0.5 || (remainder === 0.5 && lower % 2 !== 0)
+          ? lower + 1
+          : lower;
       break;
     }
     case "half_up":
@@ -66,9 +67,7 @@ export function formatMoney(
     : currency.symbol;
   const tokenFirst = currency.format.endsWith("before");
 
-  return tokenFirst
-    ? `${sign}${token} ${number}`
-    : `${sign}${number} ${token}`;
+  return tokenFirst ? `${sign}${token} ${number}` : `${sign}${number} ${token}`;
 }
 
 export function parseMoney(
@@ -78,8 +77,12 @@ export function parseMoney(
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (!value?.trim()) return 0;
 
+  const token = currency.format.startsWith("code")
+    ? currency.code
+    : currency.symbol;
   const normalized = value
     .trim()
+    .replaceAll(token, "")
     .replaceAll(currency.thousandsSeparator, "")
     .replace(currency.decimalSeparator, ".")
     .replace(/[^\d.-]/g, "");
