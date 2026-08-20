@@ -49,14 +49,13 @@ export class CreateProductDto {
   isExempt?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Tasa de impuesto como fracción: 0.12 equivale a 12%',
+    description: 'ID del impuesto asignado',
   })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  @Max(1)
-  taxRate?: number;
+  @IsInt()
+  @Min(1)
+  taxId?: number;
 
   @ApiProperty({ description: 'ID del departamento' })
   @Type(() => Number)

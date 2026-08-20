@@ -37,7 +37,8 @@ export interface Product {
   prices: ProductPrice[];
   defaultPrice: ProductPrice | null;
   costPrice: number | null;
-  taxRate: number | null;
+  taxId: number | null;
+  tax: { id: number; name: string; rate: number } | null;
   isExempt: boolean;
   productType: ProductType;
   unit: string | null;
@@ -62,7 +63,7 @@ export interface CreateProductRequest {
   name: string;
   salePrice: number;
   costPrice?: number | null;
-  taxRate?: number | null;
+  taxId?: number | null;
   isExempt?: boolean;
   departmentId: number;
   subdepartmentId?: number | null;

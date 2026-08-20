@@ -81,3 +81,19 @@ export interface CompanyRoleRequest {
   permissionCodes: string[];
   isActive?: boolean;
 }
+
+export interface Tax {
+  id: number;
+  companyId: number;
+  name: string;
+  rate: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaxRequest {
+  name: string;
+  rate: number;
+  isActive?: boolean;
+}

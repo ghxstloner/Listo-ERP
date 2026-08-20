@@ -58,7 +58,7 @@ export function PurchaseOrderInvoiceForm({
           unitCost: draft?.unitCost ?? formatMoney(item.unitCost),
           taxRate:
             draft?.taxRate ??
-            (product?.isExempt ? "0" : String((product?.taxRate ?? 0) * 100)),
+            (product?.isExempt ? "0" : String((product?.tax?.rate ?? 0) * 100)),
         };
       }),
     [drafts, formatMoney, order?.items, products],

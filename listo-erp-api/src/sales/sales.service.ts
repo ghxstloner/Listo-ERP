@@ -156,7 +156,7 @@ export class SalesService {
         where: { id: { in: saleProductIds }, companyId, isActive: true },
         select: {
           id: true,
-          taxRate: true,
+          tax: true,
           costPrice: true,
           isExempt: true,
           dianCode: true,
@@ -249,7 +249,7 @@ export class SalesService {
           ? new Prisma.Decimal(item.taxRate)
           : product.isExempt
             ? new Prisma.Decimal(0)
-            : (product.taxRate ?? new Prisma.Decimal(0));
+            : ((product.tax?.rate) ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;

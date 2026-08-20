@@ -11,6 +11,7 @@ interface ProductCatalogProps {
   priceLabel?: string;
   disabled: boolean;
   viewportRef: RefObject<HTMLDivElement | null>;
+  showProductTypes?: boolean;
   onAdd: (product: Product) => void;
 }
 
@@ -23,6 +24,7 @@ export function ProductCatalog({
   priceLabel,
   disabled,
   viewportRef,
+  showProductTypes,
   onAdd,
 }: ProductCatalogProps) {
   return (
@@ -42,6 +44,7 @@ export function ProductCatalog({
             priceOverride={priceOverride?.(product)}
             priceLabel={priceLabel}
             disabled={disabled}
+            showProductType={showProductTypes}
             onAdd={onAdd}
           />
         ))}

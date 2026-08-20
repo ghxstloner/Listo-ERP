@@ -194,8 +194,10 @@ export function usePointOfSale() {
         defaultPrice: orderPrice,
         description: null,
         costPrice: null,
-         taxRate: Number(item.taxRate),
-         productType: item.product.productType,
+        taxId: null,
+        tax: item.taxRate != null ? { id: 0, name: "", rate: Number(item.taxRate) } : null,
+        isExempt: Number(item.taxRate) === 0,
+        productType: item.product.productType,
          unit: null,
         dianCode: null,
         image: null,
@@ -267,16 +269,20 @@ export function usePointOfSale() {
     (currentPage - 1) * productsPerPage,
     currentPage * productsPerPage,
   );
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0,
-  );
-  const tax = cart.reduce(
-    (sum, item) =>
-      sum + item.unitPrice * item.quantity * getTaxRate(item.product),
-    0,
-  );
-  const total = subtotal + tax;
+  const subtotal = selectedOrder
+    ? Number(selectedOrder.subtotal)
+    : cart.reduce(
+        (sum, item) => sum + item.unitPrice * item.quantity,
+        0,
+      );
+  const tax = selectedOrder
+    ? Number(selectedOrder.taxAmount)
+    : cart.reduce(
+        (sum, item) =>
+          sum + item.unitPrice * item.quantity * getTaxRate(item.product),
+        0,
+      );
+  const total = selectedOrder ? Number(selectedOrder.total) : subtotal + tax;
   const paymentsTotal = payments.reduce((sum, p) => sum + p.amount, 0);
   const remaining = Math.round((total - paymentsTotal) * 100) / 100;
   const usedPaymentMethodIds = new Set(payments.map((p) => p.paymentMethodId));

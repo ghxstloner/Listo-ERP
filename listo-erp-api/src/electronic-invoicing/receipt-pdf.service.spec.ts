@@ -38,6 +38,76 @@ describe('ReceiptPdfService', () => {
     expect(pdf.length).toBeGreaterThan(500);
   });
 
+  it('renders multiple taxes with custom names and percentages from impuestosGenerales', async () => {
+    const service = new ReceiptPdfService();
+
+    const pdf = await service.create({
+      cufe: 'cufe-test-multi-tax',
+      qr: 'https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=cufe-test',
+      currency: {
+        code: 'COP',
+        symbol: '$',
+        decimalPlaces: 2,
+        decimalSeparator: '.',
+        thousandsSeparator: ',',
+        format: 'symbol_before',
+      },
+      payload: {
+        factura: {
+          consecutivoDocumento: 'FE102',
+          fechaEmision: '2026-08-20 14:00:00',
+          cliente: { nombreRazonSocial: 'Empresa Test SAS' },
+          detalleDeFactura: [
+            {
+              cantidadUnidades: '1.00',
+              descripcion: 'Servicio con IVA',
+              precioTotal: '11900.00',
+            },
+            {
+              cantidadUnidades: '1.00',
+              descripcion: 'Consumo Restaurante',
+              precioTotal: '10800.00',
+            },
+          ],
+          impuestosGenerales: [
+            {
+              codigoTOTALImp: '01',
+              porcentajeTOTALImp: '19.00',
+              baseImponibleTOTALImp: '10000.00',
+              valorTOTALImp: '1900.00',
+              unidadMedida: '94',
+              nombreImpuesto: 'IVA General',
+            },
+            {
+              codigoTOTALImp: '04',
+              porcentajeTOTALImp: '8.00',
+              baseImponibleTOTALImp: '10000.00',
+              valorTOTALImp: '800.00',
+              unidadMedida: '94',
+              nombreImpuesto: 'Impoconsumo 8%',
+            },
+            {
+              codigoTOTALImp: '01',
+              porcentajeTOTALImp: '5.00',
+              baseImponibleTOTALImp: '5000.00',
+              valorTOTALImp: '250.00',
+              unidadMedida: '94',
+            },
+          ],
+          impuestosTotales: [
+            { codigoTOTALImp: '01', montoTotal: '2150.00' },
+            { codigoTOTALImp: '04', montoTotal: '800.00' },
+          ],
+          totalSinImpuestos: '25000.00',
+          totalMonto: '27950.00',
+        },
+      } as never,
+    });
+
+    expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
+    expect(pdf.length).toBeGreaterThan(500);
+  });
+
   it('normalizes an image QR before embedding it in the PDF', async () => {
     const service = new ReceiptPdfService();
     const qr = Buffer.from(

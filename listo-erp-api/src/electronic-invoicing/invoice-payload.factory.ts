@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   TheFactoryGeneralTax,
   TheFactoryInvoicePayload,
+  TheFactoryLineTax,
   TheFactoryTaxTotal,
 } from './the-factory.types';
 
@@ -31,6 +32,7 @@ export interface InvoicePayloadInput {
     taxRate: Prisma.Decimal;
     taxAmount: Prisma.Decimal;
     lineTotal: Prisma.Decimal;
+    taxName?: string | null;
   }>;
 }
 
@@ -40,10 +42,16 @@ export class InvoicePayloadFactory {
     const taxGroups = new Map<string, TheFactoryGeneralTax>();
     const detailDeFactura = input.items.map((item, index) => {
       const base = this.round(item.unitPrice.mul(item.quantity));
-      const tax = this.toTax(item.taxRate, base, item.taxAmount, item.dianCode);
+      const tax = this.toTax(
+        item.taxRate,
+        base,
+        item.taxAmount,
+        item.dianCode,
+        item.taxName,
+      );
       if (tax) {
         const generalTax = tax;
-        const key = `${tax.codigoTOTALImp}:${tax.porcentajeTOTALImp}:${tax.unidadMedida}`;
+        const key = `${tax.codigoTOTALImp}:${tax.porcentajeTOTALImp}:${tax.nombreImpuesto ?? ''}:${tax.unidadMedida}`;
         const current = taxGroups.get(key);
         taxGroups.set(
           key,
@@ -143,7 +151,8 @@ export class InvoicePayloadFactory {
     base: Prisma.Decimal,
     amount: Prisma.Decimal,
     unidadMedida: string,
-  ) {
+    taxName?: string | null,
+  ): TheFactoryLineTax | null {
     if (amount.isZero()) return null;
     const rate = taxRate.greaterThan(1) ? taxRate : taxRate.mul(100);
     return {
@@ -152,6 +161,7 @@ export class InvoicePayloadFactory {
       baseImponibleTOTALImp: this.format(base),
       valorTOTALImp: this.format(amount),
       unidadMedida,
+      ...(taxName ? { nombreImpuesto: taxName } : {}),
     };
   }
 

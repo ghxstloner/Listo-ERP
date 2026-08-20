@@ -317,7 +317,14 @@ export class ElectronicInvoicingService {
             taxRate: true,
             taxAmount: true,
             lineTotal: true,
-            product: { select: { sku: true, name: true, dianCode: true } },
+            product: {
+              select: {
+                sku: true,
+                name: true,
+                dianCode: true,
+                tax: { select: { name: true, rate: true } },
+              },
+            },
           },
         },
       },
@@ -413,6 +420,7 @@ export class ElectronicInvoicingService {
         taxRate: item.taxRate,
         taxAmount: item.taxAmount,
         lineTotal: item.lineTotal,
+        taxName: item.product.tax?.name ?? null,
       })),
     });
     return tx.electronicInvoice.create({

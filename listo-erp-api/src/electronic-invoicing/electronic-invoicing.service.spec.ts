@@ -411,7 +411,12 @@ describe('ElectronicInvoicingService', () => {
                 taxRate: {},
                 taxAmount: {},
                 lineTotal: {},
-                product: { sku: 'SKU-1', name: 'Producto', dianCode: 'UND' },
+                product: {
+                  sku: 'SKU-1',
+                  name: 'Producto',
+                  dianCode: 'UND',
+                  tax: { name: 'IVA 19%', rate: {} },
+                },
               },
             ],
           }),
@@ -456,7 +461,10 @@ describe('ElectronicInvoicingService', () => {
         }),
       );
       expect(payloadFactory.create).toHaveBeenCalledWith(
-        expect.objectContaining({ numberingRange: 'DEMO-1' }),
+        expect.objectContaining({
+          numberingRange: 'DEMO-1',
+          items: [expect.objectContaining({ taxName: 'IVA 19%' })],
+        }),
       );
       expect(tx.electronicInvoice.create).toHaveBeenCalledWith(
         expect.objectContaining({

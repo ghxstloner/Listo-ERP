@@ -19,6 +19,7 @@ import { CatalogPagination } from "@/packages/pos/components/catalog-pagination"
 import { TicketItem } from "@/packages/pos/components/ticket-item";
 import { TicketSummary } from "@/packages/pos/components/ticket-summary";
 import { TicketSelector } from "@/packages/pos/components/ticket-selector";
+import { getTaxRate } from "@/packages/pos/utils";
 import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -110,7 +111,9 @@ export function OrderForm({ orderId }: OrderFormProps) {
             defaultPrice: orderPrice,
             description: null,
             costPrice: null,
-            taxRate: Number(item.taxRate),
+            taxId: null,
+            tax: item.taxRate != null ? { id: 0, name: "", rate: Number(item.taxRate) } : null,
+            isExempt: Number(item.taxRate) === 0,
             productType: item.product.productType,
             unit: null,
             dianCode: null,
@@ -129,11 +132,11 @@ export function OrderForm({ orderId }: OrderFormProps) {
             updatedAt: "",
           } as Product;
           return {
-          product,
-          productPriceId: item.productPriceId ?? legacyPrice.id,
-          unitPrice: Number(item.unitPrice),
-          priceName: item.productPrice?.name,
-          quantity: Number(item.quantity),
+            product,
+            productPriceId: item.productPriceId ?? legacyPrice.id,
+            unitPrice: Number(item.unitPrice),
+            priceName: item.productPrice?.name,
+            quantity: Number(item.quantity),
           };
         })
       );
@@ -190,7 +193,7 @@ export function OrderForm({ orderId }: OrderFormProps) {
   );
   const tax = cart.reduce(
     (sum, item) =>
-       sum + item.unitPrice * item.quantity * (Number(item.product.taxRate ?? 0) > 1 ? Number(item.product.taxRate) / 100 : Number(item.product.taxRate ?? 0)),
+      sum + item.unitPrice * item.quantity * getTaxRate(item.product),
     0
   );
   const total = subtotal + tax;
@@ -506,13 +509,13 @@ export function OrderForm({ orderId }: OrderFormProps) {
                 ) : (
                   cart.map((item) => (
                     <TicketItem
-                       key={item.productPriceId}
+                      key={item.productPriceId}
                       item={item}
-                       availableStock={
-                         item.product.productType === "PRODUCT"
-                           ? stockByProduct.get(item.product.id) ?? 0
-                           : undefined
-                       }
+                      availableStock={
+                        item.product.productType === "PRODUCT"
+                          ? stockByProduct.get(item.product.id) ?? 0
+                          : undefined
+                      }
                       onQuantityChange={updateQuantity}
                       onPriceChange={updatePrice}
                     />

@@ -82,6 +82,22 @@ model Company {
   electronicInvoicingConfigurations     ElectronicInvoicingConfiguration[]
   tillElectronicInvoicingConfigurations TillElectronicInvoicingConfiguration[]
   series                                Series[]
+  taxes                                 Tax[]
+}
+
+model Tax {
+  id        Int      @id @default(autoincrement())
+  companyId Int
+  name      String
+  rate      Decimal  @db.Decimal(5, 4)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([companyId, name])
 }
 
 model CompanyUser {
@@ -531,7 +547,8 @@ model Product {
   salePrice            Decimal                 @db.Decimal(18, 4)
   defaultPriceId       Int?                    @unique
   costPrice            Decimal?                @db.Decimal(18, 4)
-  taxRate              Decimal?                @db.Decimal(5, 4)
+  taxId                Int?
+  tax                  Tax?                    @relation(fields: [taxId], references: [id])
   isExempt             Boolean                 @default(false)
   isActive             Boolean                 @default(true)
   productType          ProductType             @default(PRODUCT)

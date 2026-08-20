@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import sharp from 'sharp';
-import type { TheFactoryInvoicePayload } from './the-factory.types';
+import type {
+  TheFactoryGeneralTax,
+  TheFactoryInvoicePayload,
+  TheFactoryTaxTotal,
+} from './the-factory.types';
 
 interface ReceiptPdfInput {
   payload: TheFactoryInvoicePayload;
@@ -27,7 +31,11 @@ const MARGIN = 12;
 export class ReceiptPdfService {
   async create({ payload, cufe, qr, currency }: ReceiptPdfInput): Promise<Buffer> {
     const invoice = payload.factura;
-    const height = this.estimateHeight(invoice.detalleDeFactura);
+    const taxes: Array<TheFactoryGeneralTax | TheFactoryTaxTotal> =
+      invoice.impuestosGenerales && invoice.impuestosGenerales.length > 0
+        ? invoice.impuestosGenerales
+        : invoice.impuestosTotales ?? [];
+    const height = this.estimateHeight(invoice.detalleDeFactura, taxes.length);
     const document = new PDFDocument({
       size: [RECEIPT_WIDTH, height],
       margin: MARGIN,
@@ -92,8 +100,15 @@ export class ReceiptPdfService {
     this.rule(document);
 
     this.total(document, 'Subtotal', invoice.totalSinImpuestos, currency);
-    for (const tax of invoice.impuestosTotales) {
-      this.total(document, this.taxLabel(tax.codigoTOTALImp), tax.montoTotal, currency);
+    for (const tax of taxes) {
+      const isGeneral = 'porcentajeTOTALImp' in tax;
+      const label = isGeneral
+        ? this.taxLabel(tax as TheFactoryGeneralTax)
+        : this.legacyTaxLabel(tax.codigoTOTALImp);
+      const value = isGeneral
+        ? (tax as TheFactoryGeneralTax).valorTOTALImp
+        : tax.montoTotal;
+      this.total(document, label, value, currency);
     }
     document.font('Helvetica-Bold');
     this.total(document, 'TOTAL', invoice.totalMonto, currency, 9);
@@ -113,13 +128,14 @@ export class ReceiptPdfService {
 
   private estimateHeight(
     items: TheFactoryInvoicePayload['factura']['detalleDeFactura'],
+    taxesCount = 1,
   ) {
     const itemsHeight = items.reduce(
       (height, item) =>
         height + Math.max(16, Math.ceil(item.descripcion.length / 23) * 9),
       0,
     );
-    return Math.max(430, 245 + itemsHeight + 130);
+    return Math.max(430, 245 + itemsHeight + taxesCount * 14 + 130);
   }
 
   private total(
@@ -129,13 +145,18 @@ export class ReceiptPdfService {
     currency: ReceiptCurrency,
     size = 7,
   ) {
-    document.fontSize(size).text(label, MARGIN, document.y + 2, {
+    const y = document.y + 2;
+    document.fontSize(size).text(label, MARGIN, y, {
       width: 96,
     });
-    document.text(this.money(value, currency), MARGIN + 98, document.y, {
+    document.text(this.money(value, currency), MARGIN + 98, y, {
       width: 104,
       align: 'right',
     });
+    document.y = Math.max(
+      document.y,
+      y + document.heightOfString(label, { width: 96 }),
+    );
   }
 
   private rule(document: PDFKit.PDFDocument) {
@@ -174,7 +195,25 @@ export class ReceiptPdfService {
       : `${sign}${number} ${token}`;
   }
 
-  private taxLabel(code: string) {
+  private taxLabel(tax: TheFactoryGeneralTax): string {
+    const rateNumber = parseFloat(tax.porcentajeTOTALImp);
+    const formattedRate = Number.isFinite(rateNumber)
+      ? `${Number(rateNumber.toFixed(2))}%`
+      : `${tax.porcentajeTOTALImp}%`;
+
+    const rawName = tax.nombreImpuesto?.trim();
+    const baseName =
+      rawName ||
+      (tax.codigoTOTALImp === '01' ? 'IVA' : `Impuesto ${tax.codigoTOTALImp}`);
+
+    if (baseName.includes('%') || baseName.includes(formattedRate)) {
+      return baseName;
+    }
+
+    return `${baseName} (${formattedRate})`;
+  }
+
+  private legacyTaxLabel(code: string): string {
     return code === '01' ? 'IVA' : `Impuesto ${code}`;
   }
 

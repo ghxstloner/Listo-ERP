@@ -29,6 +29,7 @@ describe('InvoicePayloadFactory', () => {
           taxRate: new Prisma.Decimal('0.19'),
           taxAmount: new Prisma.Decimal('3800'),
           lineTotal: new Prisma.Decimal('23800'),
+          taxName: 'IVA General',
         },
       ],
     });
@@ -70,6 +71,7 @@ describe('InvoicePayloadFactory', () => {
         expect.objectContaining({
           porcentajeTOTALImp: '19.00',
           unidadMedida: '94',
+          nombreImpuesto: 'IVA General',
         }),
       ],
       impuestosTotales: [{ codigoTOTALImp: '01', montoTotal: '3800.00' }],
@@ -77,12 +79,88 @@ describe('InvoicePayloadFactory', () => {
     expect(payload.factura.impuestosGenerales).toEqual([
       expect.objectContaining({
         codigoTOTALImp: '01',
+        porcentajeTOTALImp: '19.00',
         unidadMedida: '94',
         valorTOTALImp: '3800.00',
+        nombreImpuesto: 'IVA General',
       }),
     ]);
     expect(payload.factura.impuestosTotales).toEqual([
       { codigoTOTALImp: '01', montoTotal: '3800.00' },
+    ]);
+  });
+
+  it('groups multiple items by tax name and percentage in impuestosGenerales', () => {
+    const payload = factory.create({
+      consecutive: 'DEMO-MULTI',
+      numberingRange: 'DEMO-1',
+      numberingMode: 'WITH_PREFIX',
+      issuedAt: new Date('2026-07-20T12:34:56.000Z'),
+      payments: [{ dianCode: '10' }],
+      customer: {
+        name: 'Cliente Multi',
+        isFinalConsumer: true,
+        taxDocumentType: null,
+        taxId: null,
+        taxCheckDigit: null,
+        fiscalPersonType: null,
+      },
+      items: [
+        {
+          sku: 'SKU-IVA-19-A',
+          name: 'Producto A 19%',
+          dianCode: '94',
+          quantity: new Prisma.Decimal('1'),
+          unitPrice: new Prisma.Decimal('10000'),
+          taxRate: new Prisma.Decimal('0.19'),
+          taxAmount: new Prisma.Decimal('1900'),
+          lineTotal: new Prisma.Decimal('11900'),
+          taxName: 'IVA 19%',
+        },
+        {
+          sku: 'SKU-IVA-19-B',
+          name: 'Producto B 19%',
+          dianCode: '94',
+          quantity: new Prisma.Decimal('2'),
+          unitPrice: new Prisma.Decimal('5000'),
+          taxRate: new Prisma.Decimal('0.19'),
+          taxAmount: new Prisma.Decimal('1900'),
+          lineTotal: new Prisma.Decimal('11900'),
+          taxName: 'IVA 19%',
+        },
+        {
+          sku: 'SKU-IVA-5',
+          name: 'Producto 5%',
+          dianCode: '94',
+          quantity: new Prisma.Decimal('1'),
+          unitPrice: new Prisma.Decimal('20000'),
+          taxRate: new Prisma.Decimal('0.05'),
+          taxAmount: new Prisma.Decimal('1000'),
+          lineTotal: new Prisma.Decimal('21000'),
+          taxName: 'IVA 5%',
+        },
+      ],
+    });
+
+    expect(payload.factura.impuestosGenerales).toHaveLength(2);
+    expect(payload.factura.impuestosGenerales).toEqual([
+      expect.objectContaining({
+        codigoTOTALImp: '01',
+        porcentajeTOTALImp: '19.00',
+        baseImponibleTOTALImp: '20000.00',
+        valorTOTALImp: '3800.00',
+        nombreImpuesto: 'IVA 19%',
+      }),
+      expect.objectContaining({
+        codigoTOTALImp: '01',
+        porcentajeTOTALImp: '5.00',
+        baseImponibleTOTALImp: '20000.00',
+        valorTOTALImp: '1000.00',
+        nombreImpuesto: 'IVA 5%',
+      }),
+    ]);
+    expect(payload.factura.impuestosTotales).toEqual([
+      { codigoTOTALImp: '01', montoTotal: '4800.00' },
     ]);
   });
 

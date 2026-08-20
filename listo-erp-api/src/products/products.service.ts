@@ -104,10 +104,7 @@ export class ProductsService {
                 ? new Prisma.Decimal(createProductDto.costPrice)
                 : null,
             isExempt: createProductDto.isExempt ?? false,
-            taxRate:
-              createProductDto.taxRate != null
-                ? new Prisma.Decimal(createProductDto.taxRate)
-                : null,
+            taxId: createProductDto.taxId ?? null,
             productType: createProductDto.productType ?? ProductType.PRODUCT,
             departmentId: createProductDto.departmentId,
             subdepartmentId: createProductDto.subdepartmentId ?? null,
@@ -262,12 +259,7 @@ export class ProductsService {
     if (updateProductDto.salePrice != null) {
       data.salePrice = new Prisma.Decimal(updateProductDto.salePrice);
     }
-    if (updateProductDto.taxRate !== undefined) {
-      data.taxRate =
-        updateProductDto.taxRate != null
-          ? new Prisma.Decimal(updateProductDto.taxRate)
-          : null;
-    }
+    if (updateProductDto.taxId !== undefined) { data.taxId = updateProductDto.taxId ?? null; }
     if (updateProductDto.costPrice !== undefined) {
       data.costPrice =
         updateProductDto.costPrice != null
@@ -355,7 +347,8 @@ export class ProductsService {
     userId: number,
   ) {
     await this.findOne(productId, companyId);
-    const name = this.getPriceName(dto.name, dto.label);
+    const fallbackName = `Precio ${(dto.sortOrder ?? 0) + 1}`;
+    const name = this.getPriceName(dto.name, dto.label, undefined, fallbackName);
     const price = await this.prisma.productPrice.create({
       data: {
         productId,
@@ -539,7 +532,7 @@ export class ProductsService {
       salePrice: true,
       defaultPriceId: true,
       costPrice: true,
-      taxRate: true,
+      taxId: true, tax: true,
       isExempt: true,
       productType: true,
       unit: true,
@@ -599,22 +592,22 @@ export class ProductsService {
       salePrice: Prisma.Decimal;
       defaultPriceId: number | null;
       costPrice: Prisma.Decimal | null;
-      taxRate: Prisma.Decimal | null;
+      taxId: number | null; tax?: { id: number; name: string; rate: Prisma.Decimal } | null;
       prices?: Array<{ amount: Prisma.Decimal }>;
       defaultPrice?: { amount: Prisma.Decimal } | null;
     },
   >(
     product: T,
-  ): Omit<T, 'salePrice' | 'costPrice' | 'taxRate'> & {
+  ): Omit<T, 'salePrice' | 'costPrice' | 'taxId' | 'tax'> & {
     salePrice: number;
     costPrice: number | null;
-    taxRate: number | null;
+    taxId: number | null; tax?: { id: number; name: string; rate: number } | null;
   } {
     return {
       ...product,
       salePrice: Number(product.salePrice),
       costPrice: product.costPrice != null ? Number(product.costPrice) : null,
-      taxRate: product.taxRate != null ? Number(product.taxRate) : null,
+      taxId: product.taxId ?? null, tax: product.tax ? { ...product.tax, rate: Number(product.tax.rate) } : null,
       prices: product.prices?.map((price) => this.serializePrice(price)),
       defaultPrice: product.defaultPrice
         ? this.serializePrice(product.defaultPrice)
@@ -626,8 +619,13 @@ export class ProductsService {
     return { ...price, amount: Number(price.amount) };
   }
 
-  private getPriceName(name?: string, label?: string, current?: string) {
-    const value = (name ?? label ?? current ?? '').trim();
+  private getPriceName(
+    name?: string,
+    label?: string,
+    current?: string,
+    fallback?: string,
+  ) {
+    const value = (name ?? label ?? current ?? fallback ?? '').trim();
     if (!value) {
       throw I18nException.badRequest('products.errors.price_name_required');
     }

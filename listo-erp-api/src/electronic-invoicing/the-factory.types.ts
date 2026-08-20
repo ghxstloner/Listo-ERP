@@ -6,6 +6,7 @@ export interface TheFactoryLineTax {
   baseImponibleTOTALImp: string;
   valorTOTALImp: string;
   unidadMedida: string;
+  nombreImpuesto?: string;
 }
 
 export type TheFactoryGeneralTax = TheFactoryLineTax;

@@ -4,7 +4,7 @@ import { useCurrency } from "@/packages/currency/components/currency-provider";
 import { getProductImageUrl } from "@/packages/product/api";
 import { getProductDefaultPrice } from "@/packages/product/types";
 import type { Product } from "@/packages/product/types";
-import { Cube, Plus } from "@phosphor-icons/react";
+import { Cube, Package, Plus, Sparkle } from "@phosphor-icons/react";
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +12,7 @@ interface ProductCardProps {
   priceOverride?: number | null;
   priceLabel?: string;
   disabled: boolean;
+  showProductType?: boolean;
   onAdd: (product: Product) => void;
 }
 
@@ -21,6 +22,7 @@ export function ProductCard({
   priceOverride,
   priceLabel,
   disabled,
+  showProductType,
   onAdd,
 }: ProductCardProps) {
   const { formatMoney } = useCurrency();
@@ -34,7 +36,19 @@ export function ProductCard({
 
   return (
     <Card className="h-full gap-0 overflow-hidden py-0">
-      <div className="bg-primary/10 flex min-h-20 flex-1 items-center justify-center overflow-hidden">
+      <div className="bg-primary/10 relative flex min-h-20 flex-1 items-center justify-center overflow-hidden">
+        {showProductType && (
+          <>
+            <div className="absolute right-0 top-0 z-10 h-12 w-12 bg-primary [clip-path:polygon(100%_0,0_0,100%_100%)]" />
+            <div className="absolute right-1.5 top-1.5 z-20 text-primary-foreground">
+              {product.productType === "SERVICE" ? (
+                <Sparkle size={18} weight="duotone" />
+              ) : (
+                <Package size={18} weight="duotone" />
+              )}
+            </div>
+          </>
+        )}
         {product.image ? (
           <img
             className="h-full w-full object-fit"

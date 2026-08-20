@@ -48,7 +48,7 @@ export class OrdersService {
           where: { id: { in: productIds }, companyId, isActive: true },
           select: {
             id: true,
-            taxRate: true,
+            tax: true,
             costPrice: true,
             isExempt: true,
             prices: {
@@ -88,7 +88,7 @@ export class OrdersService {
         const quantity = new Prisma.Decimal(item.quantity);
         const taxRate = product.isExempt
           ? new Prisma.Decimal(0)
-          : (product.taxRate ?? new Prisma.Decimal(0));
+          : ((product.tax?.rate) ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;
@@ -377,7 +377,7 @@ export class OrdersService {
         where: { id: { in: productIds }, companyId, isActive: true },
         select: {
           id: true,
-          taxRate: true,
+          tax: true,
           costPrice: true,
           isExempt: true,
           prices: {
@@ -411,7 +411,7 @@ export class OrdersService {
         const quantity = new Prisma.Decimal(item.quantity);
         const taxRate = product.isExempt
           ? new Prisma.Decimal(0)
-          : (product.taxRate ?? new Prisma.Decimal(0));
+          : ((product.tax?.rate) ?? new Prisma.Decimal(0));
         const effectiveTaxRate = taxRate.greaterThan(1)
           ? taxRate.dividedBy(100)
           : taxRate;

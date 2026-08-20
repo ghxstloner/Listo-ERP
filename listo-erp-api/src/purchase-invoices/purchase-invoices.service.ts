@@ -62,7 +62,7 @@ export class PurchaseInvoicesService {
                 id: true,
                 sku: true,
                 name: true,
-                taxRate: true,
+                tax: true,
                 isExempt: true,
               },
             }),
@@ -162,7 +162,7 @@ export class PurchaseInvoicesService {
           const unitCost = new Prisma.Decimal(item.unitCost);
           const taxRate = product.isExempt
             ? new Prisma.Decimal(0)
-            : new Prisma.Decimal(item.taxRate ?? product.taxRate ?? 0);
+            : new Prisma.Decimal(item.taxRate ?? (product.tax?.rate) ?? 0);
           const subtotal = quantity.mul(unitCost);
           const taxAmount = subtotal.mul(taxRate).toDecimalPlaces(4);
           return {

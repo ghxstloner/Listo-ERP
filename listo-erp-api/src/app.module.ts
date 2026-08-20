@@ -40,6 +40,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { InventoryTransfersModule } from './inventory-transfers/inventory-transfers.module';
 import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { TaxesModule } from './taxes/taxes.module';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -97,6 +98,7 @@ const i18nPath = fs.existsSync(path.join(process.cwd(), 'src/i18n/'))
     PurchaseInvoicesModule,
     WarehouseModule,
     WarehouseBranchModule,
+    TaxesModule,
   ],
   controllers: [AppController],
   providers: [

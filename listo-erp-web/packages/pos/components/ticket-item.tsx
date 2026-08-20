@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Minus, Plus, Trash } from "@phosphor-icons/react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CaretDown, Check, Minus, Plus, Trash } from "@phosphor-icons/react";
 import { useCurrency } from "@/packages/currency/components/currency-provider";
 import type { ProductPrice } from "@/packages/product/types";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import type { CartItem } from "../types";
 
@@ -23,7 +24,7 @@ interface TicketItemProps {
 export function TicketItem({ item, availableStock, onQuantityChange, onPriceChange }: TicketItemProps) {
   const { formatMoney } = useCurrency();
   const [quantityDraft, setQuantityDraft] = useState<string | null>(null);
-  const activePrices = item.product.prices.filter((price) => price.isActive);
+  const activePrices = item.product.prices?.filter((price) => price.isActive) ?? [];
   const prices = activePrices.some((price) => price.id === item.productPriceId)
     ? activePrices
     : [
@@ -37,6 +38,9 @@ export function TicketItem({ item, availableStock, onQuantityChange, onPriceChan
           sortOrder: Number.MAX_SAFE_INTEGER,
         },
       ];
+
+  const hasMultiplePrices = prices.length > 1;
+
   const setQuantity = (quantity: number) => {
     setQuantityDraft(null);
     onQuantityChange(item.productPriceId, quantity);
@@ -46,27 +50,9 @@ export function TicketItem({ item, availableStock, onQuantityChange, onPriceChan
     <div className="flex gap-2 py-3">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{item.product.name}</p>
-        <p className="text-muted-foreground text-xs">{formatMoney(item.unitPrice)} c/u</p>
-        {prices.length > 0 && (
-          <Select
-            value={String(item.productPriceId)}
-            onValueChange={(value) => {
-              const price = prices.find((candidate) => candidate.id === Number(value));
-              if (price) onPriceChange(item.productPriceId, price);
-            }}
-          >
-            <SelectTrigger size="sm" className="mt-1 h-7 w-full max-w-[190px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {prices.map((price) => (
-                <SelectItem key={price.id} value={String(price.id)}>
-                  {price.name} · {formatMoney(price.amount)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <p className="text-muted-foreground text-xs">
+          {formatMoney(item.unitPrice)} c/u{item.priceName ? ` · ${item.priceName}` : ""}
+        </p>
         <div className="mt-2 flex items-center gap-1">
           <Button variant="outline" size="icon-sm" onClick={() => setQuantity(item.quantity - 1)}><Minus weight="bold" /></Button>
           <Input
@@ -79,7 +65,7 @@ export function TicketItem({ item, availableStock, onQuantityChange, onPriceChan
             onChange={(event) => {
               const value = event.target.value;
               setQuantityDraft(value);
-               if (value !== "") onQuantityChange(item.productPriceId, Number(value));
+              if (value !== "") onQuantityChange(item.productPriceId, Number(value));
             }}
             onBlur={() => setQuantityDraft(null)}
           />
@@ -87,8 +73,53 @@ export function TicketItem({ item, availableStock, onQuantityChange, onPriceChan
         </div>
       </div>
       <div className="flex flex-col items-end justify-between">
-         <p className="text-sm font-semibold">{formatMoney(item.unitPrice * item.quantity)}</p>
-        <Button variant="ghost" size="icon-sm" onClick={() => setQuantity(0)}><Trash className="text-destructive" /></Button>
+        {hasMultiplePrices ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="group inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 -mr-1.5 text-sm font-semibold hover:bg-muted text-foreground transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                title="Cambiar precio"
+              >
+                <span>{formatMoney(item.unitPrice * item.quantity)}</span>
+                <CaretDown className="size-3 text-muted-foreground group-hover:text-foreground transition-transform group-data-[state=open]:rotate-180" weight="bold" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                Precios disponibles
+              </DropdownMenuLabel>
+              {prices.map((price) => {
+                const isSelected = price.id === item.productPriceId;
+                return (
+                  <DropdownMenuItem
+                    key={price.id}
+                    onClick={() => onPriceChange(item.productPriceId, price)}
+                    className={cn(
+                      "flex items-center justify-between text-xs cursor-pointer py-2",
+                      isSelected && "bg-accent font-medium text-accent-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {isSelected ? (
+                        <Check className="size-3.5 text-primary shrink-0" weight="bold" />
+                      ) : (
+                        <span className="size-3.5 shrink-0" />
+                      )}
+                      <span className="truncate">{price.name}</span>
+                    </div>
+                    <span className="ml-2 font-mono text-xs text-muted-foreground">{formatMoney(price.amount)}</span>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <p className="text-sm font-semibold">{formatMoney(item.unitPrice * item.quantity)}</p>
+        )}
+        <Button variant="ghost" size="icon-sm" onClick={() => setQuantity(0)} title="Eliminar del ticket">
+          <Trash className="text-destructive" />
+        </Button>
       </div>
     </div>
   );

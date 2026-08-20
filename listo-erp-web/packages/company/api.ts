@@ -1,10 +1,10 @@
 import { api, getApiBaseUrl, useApiMutation, useApiQuery } from "@config";
 import { useMutation } from "@tanstack/react-query";
-import { Company, UpdateCompanyResponse, HierarchyConfig, UpdateHierarchyConfigRequest, CompanyRole, CompanyRoleRequest, Permission } from "./types";
+import { Company, UpdateCompanyResponse, HierarchyConfig, UpdateHierarchyConfigRequest, CompanyRole, CompanyRoleRequest, Permission, Tax, TaxRequest } from "./types";
 
 export const useGetCompany = ( companyId: Company['id'] ) => {
   return useApiQuery<Company>(['company', companyId], `companies/${companyId}`);
-}
+};
 
 export const useUpdateCompany = (companyId: Company['id']) => {
   return useApiMutation<UpdateCompanyResponse, Partial<Company>>(`companies/${companyId}`, 'patch');
@@ -62,4 +62,24 @@ export const useUpdateCompanyRole = (roleId: number) => {
 
 export const useDeleteCompanyRole = (roleId: number) => {
   return useApiMutation<{ message: string }, void>(`access/roles/${roleId}`, "delete");
+};
+
+export const useGetTaxes = () => {
+  return useApiQuery<Tax[]>(["taxes"], "taxes");
+};
+
+export const useGetTax = (taxId: number) => {
+  return useApiQuery<Tax>(["taxes", taxId], `taxes/${taxId}`);
+};
+
+export const useCreateTax = () => {
+  return useApiMutation<Tax, TaxRequest>("taxes", "post");
+};
+
+export const useUpdateTax = (taxId: number) => {
+  return useApiMutation<Tax, Partial<TaxRequest>>(`taxes/${taxId}`, "patch");
+};
+
+export const useDeleteTax = (taxId: number) => {
+  return useApiMutation<{ success: boolean }, void>(`taxes/${taxId}`, "delete");
 };

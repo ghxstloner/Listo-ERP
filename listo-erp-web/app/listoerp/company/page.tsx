@@ -11,6 +11,7 @@ import { CompanyHierarchyConfig } from "@/packages/company/components/company-hi
 import { CompanyRolesConfig } from "@/packages/company/components/company-roles-config";
 import { PaymentMethodsConfig } from "@/packages/payment-methods/components/payment-methods-config";
 import { CompanyUsersConfig } from "@/packages/company/components/company-users-config";
+import { CompanyTaxesConfig } from "@/packages/company/components/company-taxes-config";
 import { CompanyWarehousesConfig } from "@/packages/warehouse/components/company-warehouses-config";
 import { ColombiaElectronicInvoicingConfig } from "@/packages/electronic-invoicing/components/colombia-electronic-invoicing-config";
 import { getApiCompanyId } from "@config";
@@ -83,6 +84,9 @@ export default function CompanyPage() {
           <TabsTrigger value="users">
             {t("company.usersConfiguration")}
           </TabsTrigger>
+          <TabsTrigger value="taxes">
+            Impuestos
+          </TabsTrigger>
           <TabsTrigger value="roles">Roles y permisos</TabsTrigger>
           <TabsTrigger value="warehouses">
             {t("company.warehousesConfiguration")}
@@ -107,6 +111,9 @@ export default function CompanyPage() {
         </TabsContent>
         <TabsContent value="users" className="mt-2 w-full">
           <CompanyUsersConfig companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="taxes" className="mt-2 w-full">
+          <CompanyTaxesConfig />
         </TabsContent>
         <TabsContent value="roles" className="mt-2 w-full">
           <CompanyRolesConfig />
