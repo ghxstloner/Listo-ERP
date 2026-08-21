@@ -1,4 +1,8 @@
-export const SERIES_MODULES = ["ORDERS", "PURCHASE_INVOICES"] as const;
+export const SERIES_MODULES = [
+  "ORDERS",
+  "PURCHASE_INVOICES",
+  "INVENTORY_TRANSFERS",
+] as const;
 export type SeriesModule = (typeof SERIES_MODULES)[number];
 
 export function formatSeriesNumber(

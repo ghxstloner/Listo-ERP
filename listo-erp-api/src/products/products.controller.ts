@@ -90,6 +90,12 @@ export class ProductsController {
     description: 'Filtrar por subcategoría',
   })
   @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Buscar por nombre, SKU, código de barras o referencia',
+  })
+  @ApiQuery({
     name: 'productType',
     required: false,
     enum: ProductType,
@@ -101,6 +107,7 @@ export class ProductsController {
     @Query('subdepartmentId') subdepartmentId?: string,
     @Query('categoryId') categoryId?: string,
     @Query('subcategoryId') subcategoryId?: string,
+    @Query('search') search?: string,
     @Query('productType', new ParseEnumPipe(ProductType, { optional: true }))
     productType?: ProductType,
   ) {
@@ -115,6 +122,7 @@ export class ProductsController {
       subdepartmentId: parseId(subdepartmentId),
       categoryId: parseId(categoryId),
       subcategoryId: parseId(subcategoryId),
+      search,
       productType,
     });
   }

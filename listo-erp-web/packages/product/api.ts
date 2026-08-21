@@ -45,6 +45,7 @@ export interface ProductFilters {
   categoryId?: number;
   subcategoryId?: number;
   productType?: ProductType;
+  search?: string;
 }
 
 export const useCreateProduct = () => {

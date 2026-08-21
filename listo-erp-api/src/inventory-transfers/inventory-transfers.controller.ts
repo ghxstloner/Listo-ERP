@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
@@ -33,18 +32,11 @@ export class InventoryTransfersController {
   @Get() findAll(@CurrentCompanyId() companyId: number) {
     return this.service.findAll(companyId);
   }
-  @Patch(':id/dispatch') @Roles(Role.ADMIN) dispatch(
+  @Get(':id')
+  findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentCompanyId() companyId: number,
-    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.service.dispatch(id, companyId, user.id);
-  }
-  @Patch(':id/receive') @Roles(Role.ADMIN) receive(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentCompanyId() companyId: number,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.service.receive(id, companyId, user.id);
+    return this.service.findOne(id, companyId);
   }
 }

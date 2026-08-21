@@ -41,6 +41,8 @@ import {
 export interface GeneralFormState {
   sku: string;
   name: string;
+  barcode: string;
+  reference: string;
   usesUnit: boolean;
   dianCode: string;
   isActive: boolean;
@@ -80,6 +82,8 @@ function toEditState(product: Product): GeneralFormState {
   return {
     sku: product.sku,
     name: product.name,
+    barcode: product.barcode ?? "",
+    reference: product.reference ?? "",
     usesUnit: Boolean(product.dianCode && product.dianCode !== "ZZ"),
     dianCode: product.dianCode === "ZZ" ? "" : (product.dianCode ?? ""),
     isActive: product.isActive,
@@ -165,6 +169,8 @@ export const ProductGeneralForm = forwardRef<ProductGeneralFormRef, ProductGener
       const request: UpdateProductRequest = {
         sku: state.sku.trim(),
         name: state.name.trim(),
+        barcode: state.barcode?.trim() || null,
+        reference: state.reference?.trim() || null,
         departmentId: state.departmentId!,
         subdepartmentId: state.subdepartmentId,
         categoryId: state.categoryId,
@@ -217,22 +223,31 @@ export const ProductGeneralForm = forwardRef<ProductGeneralFormRef, ProductGener
     const [subdepartmentsResponse] = useGetSubDepartments(state.departmentId ?? undefined);
     const [categoriesResponse] = useGetCategories(state.subdepartmentId ?? undefined);
     const [subcategoriesResponse] = useGetSubCategories(state.categoryId ?? undefined);
-    const departments = departmentsResponse?.data ?? [];
-    const subdepartments = subdepartmentsResponse?.data ?? [];
-    const categories = categoriesResponse?.data ?? [];
-    const subcategories = subcategoriesResponse?.data ?? [];
+
+    const departments = Array.isArray(departmentsResponse)
+      ? departmentsResponse
+      : (departmentsResponse?.data ?? []);
+    const subdepartments = Array.isArray(subdepartmentsResponse)
+      ? subdepartmentsResponse
+      : (subdepartmentsResponse?.data ?? []);
+    const categories = Array.isArray(categoriesResponse)
+      ? categoriesResponse
+      : (categoriesResponse?.data ?? []);
+    const subcategories = Array.isArray(subcategoriesResponse)
+      ? subcategoriesResponse
+      : (subcategoriesResponse?.data ?? []);
 
     const selectField = (
       id: string,
       value: number | null,
       items: Array<{ id: number; name: string }>,
       placeholder: string,
-      onValueChange: (value: number) => void,
+      onValueChange: (value: number | null) => void,
       selectDisabled = false,
     ) => (
       <Select
         value={value?.toString() || ""}
-        onValueChange={(v) => onValueChange(Number(v))}
+        onValueChange={(v) => onValueChange(v ? Number(v) : null)}
         disabled={selectDisabled}
       >
         <SelectTrigger id={id} className="w-full">
@@ -251,10 +266,10 @@ export const ProductGeneralForm = forwardRef<ProductGeneralFormRef, ProductGener
     return (
       <Card>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="text-base">
             {isService
-              ? t("inventory.services.serviceInformation")
-              : t("inventory.products.productInformation")}
+              ? t("inventory.services.generalInformation")
+              : t("inventory.products.generalInformation")}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
@@ -289,6 +304,26 @@ export const ProductGeneralForm = forwardRef<ProductGeneralFormRef, ProductGener
                         ? t("inventory.services.namePlaceholder")
                         : t("inventory.products.namePlaceholder")
                     }
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="barcode">Código de barras</Label>
+                  <Input
+                    id="barcode"
+                    value={state.barcode}
+                    onChange={(e) => setField("barcode", e.target.value)}
+                    placeholder="Ej. 7701234567890"
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reference">Referencia</Label>
+                  <Input
+                    id="reference"
+                    value={state.reference}
+                    onChange={(e) => setField("reference", e.target.value)}
+                    placeholder="Ej. REF-ABC-01"
                     disabled={disabled}
                   />
                 </div>

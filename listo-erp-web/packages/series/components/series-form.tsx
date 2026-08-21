@@ -83,7 +83,7 @@ export function SeriesForm({ series }: SeriesFormProps) {
           ? t("administration.series.seriesUpdated")
           : t("administration.series.seriesCreated"),
       });
-      router.push("/listoerp/company/series");
+      if (!series) router.push("/listoerp/company/series");
     };
     if (series) updateSeries(payload, onSuccess);
     else createSeries(payload, onSuccess);
@@ -144,7 +144,7 @@ export function SeriesForm({ series }: SeriesFormProps) {
               onValueChange={(value) => setModule(value as SeriesModule)}
               disabled={isSaving}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue
                   placeholder={t("administration.series.selectModule")}
                 />
@@ -174,25 +174,20 @@ export function SeriesForm({ series }: SeriesFormProps) {
               disabled={isSaving}
             />
           </div>
+          <div className="flex justify-end border-t pt-6 mt-2 md:col-span-2">
+            <Button
+              onClick={save}
+              disabled={isSaving || !description.trim() || !format.trim()}
+            >
+              {isSaving
+                ? t("common.saving")
+                : series
+                  ? t("company.saveChanges")
+                  : t("administration.series.saveSeries")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
-      <div className="flex justify-end gap-3">
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={isSaving}
-        >
-          {t("common.cancel")}
-        </Button>
-        <Button
-          onClick={save}
-          disabled={isSaving || !description.trim() || !format.trim()}
-        >
-          {isSaving
-            ? t("common.saving")
-            : t("administration.series.saveSeries")}
-        </Button>
-      </div>
     </div>
   );
 }

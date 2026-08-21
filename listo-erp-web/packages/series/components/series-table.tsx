@@ -91,6 +91,7 @@ function getModuleLabel(module: SeriesModule, t: TFunction): string {
   const labels: Record<SeriesModule, string> = {
     ORDERS: t("administration.series.modules.orders"),
     PURCHASE_INVOICES: t("administration.series.modules.purchase_invoices"),
+    INVENTORY_TRANSFERS: t("administration.series.modules.inventory_transfers"),
   };
   return labels[module] || module;
 }

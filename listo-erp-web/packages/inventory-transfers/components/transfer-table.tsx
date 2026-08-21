@@ -7,9 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { showToast } from "@/components/ui/sonner";
-import { ConfirmDialog } from "@/components/ui/use-confirm";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   type Column,
   type ColumnDef,
@@ -21,27 +18,31 @@ import {
 } from "@tanstack/react-table";
 import { DotsThreeVertical } from "@phosphor-icons/react";
 import { ArrowUpDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  useDispatchTransfer,
-  useReceiveTransfer,
-  type InventoryTransfer,
-  type TransferStatus,
-} from "../api";
+import { type InventoryTransferListItem, type TransferStatus } from "../api";
 
 function statusClass(status: TransferStatus) {
   return status === "RECEIVED"
-    ? "bg-emerald-500/10 text-emerald-700"
-    : status === "IN_TRANSIT"
-      ? "bg-amber-500/10 text-amber-700"
-      : "bg-muted text-muted-foreground";
+    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+    : "bg-muted text-muted-foreground";
+}
+
+function formatDate(dateStr?: string | null) {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "-";
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
 }
 
 function SortableHeader({
   column,
   children,
 }: {
-  column: Column<InventoryTransfer, unknown>;
+  column: Column<InventoryTransferListItem, unknown>;
   children: React.ReactNode;
 }) {
   return (
@@ -57,76 +58,55 @@ function SortableHeader({
   );
 }
 
-function TransferAction({ transfer }: { transfer: InventoryTransfer }) {
-  const qc = useQueryClient();
-  const [confirm, setConfirm] = useState(false);
-  const [dispatch, dispatching] = useDispatchTransfer(transfer.id);
-  const [receive, receiving] = useReceiveTransfer(transfer.id);
-  const receivingMode = transfer.status.code === "IN_TRANSIT";
-  const execute = () => {
-    const mutation = receivingMode ? receive : dispatch;
-    mutation(undefined, () => {
-      qc.invalidateQueries({ queryKey: ["inventory-transfers"] });
-      qc.invalidateQueries({ queryKey: ["inventory"] });
-      setConfirm(false);
-      showToast({
-        type: "success",
-        message: receivingMode
-          ? "Transferencia recibida en el almacén destino."
-          : "Transferencia despachada.",
-      });
-    });
-  };
-  if (
-    transfer.status.code !== "PENDING" &&
-    transfer.status.code !== "IN_TRANSIT"
-  )
-    return null;
-  const loading = dispatching || receiving;
+function TransferActions({ transferId }: { transferId: number }) {
+  const router = useRouter();
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="size-8 p-0"
-            disabled={loading}
-          >
-            <DotsThreeVertical className="size-4" />
-            <span className="sr-only">Acciones</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setConfirm(true)}>
-            {receivingMode ? "Recibir" : "Despachar"}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <ConfirmDialog
-        open={confirm}
-        onOpenChange={setConfirm}
-        onConfirm={execute}
-        title={
-          receivingMode
-            ? "¿Recibir transferencia?"
-            : "¿Despachar transferencia?"
-        }
-        description={
-          receivingMode
-            ? "La mercancía se agregará al inventario del almacén destino."
-            : "La mercancía se descontará del inventario del almacén."
-        }
-        confirmText={receivingMode ? "Recibir" : "Despachar"}
-        cancelText="Cancelar"
-        isLoading={loading}
-      />
-    </>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="size-8 p-0">
+          <DotsThreeVertical className="size-4" />
+          <span className="sr-only">Acciones</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() =>
+            router.push(`/listoerp/inventory/warehouse-transfers/${transferId}`)
+          }
+        >
+          Ver detalle
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-function buildColumns(): ColumnDef<InventoryTransfer>[] {
+function buildColumns(): ColumnDef<InventoryTransferListItem>[] {
   return [
+    {
+      id: "documentNumber",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Comprobante</SortableHeader>
+      ),
+      accessorFn: (row) => row.documentNumber ?? `TRF-${row.id}`,
+      cell: ({ row }) => (
+        <div className="font-semibold text-primary">
+          {row.original.documentNumber || `TRF-${row.original.id}`}
+        </div>
+      ),
+    },
+    {
+      id: "createdAt",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Fecha</SortableHeader>
+      ),
+      accessorFn: (row) => row.createdAt,
+      cell: ({ row }) => (
+        <div className="text-sm text-muted-foreground">
+          {formatDate(row.original.createdAt)}
+        </div>
+      ),
+    },
     {
       id: "sourceWarehouse",
       header: ({ column }) => (
@@ -158,16 +138,16 @@ function buildColumns(): ColumnDef<InventoryTransfer>[] {
       ),
     },
     {
-      id: "products",
+      id: "user",
       header: ({ column }) => (
-        <SortableHeader column={column}>Productos</SortableHeader>
+        <SortableHeader column={column}>Usuario</SortableHeader>
       ),
-      accessorFn: (row) =>
-        row.items.map((item) => `${item.product.sku} x${item.quantity}`).join(", "),
-      cell: ({ row }) =>
-        row.original.items
-          .map((item) => `${item.product.sku} x${item.quantity}`)
-          .join(", "),
+      accessorFn: (row) => row.createdByUser?.name ?? "-",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          {row.original.createdByUser?.name ?? "-"}
+        </div>
+      ),
     },
     {
       id: "status",
@@ -177,7 +157,7 @@ function buildColumns(): ColumnDef<InventoryTransfer>[] {
       accessorFn: (row) => row.status.label,
       cell: ({ row }) => (
         <span
-          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusClass(row.original.status.code)}`}
+          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass(row.original.status.code)}`}
         >
           {row.original.status.label}
         </span>
@@ -188,7 +168,7 @@ function buildColumns(): ColumnDef<InventoryTransfer>[] {
       header: () => <div className="text-right">Acciones</div>,
       cell: ({ row }) => (
         <div className="text-right">
-          <TransferAction transfer={row.original} />
+          <TransferActions transferId={row.original.id} />
         </div>
       ),
       enableSorting: false,
@@ -199,7 +179,7 @@ function buildColumns(): ColumnDef<InventoryTransfer>[] {
 export function TransferTable({
   transfers,
 }: {
-  transfers: InventoryTransfer[];
+  transfers: InventoryTransferListItem[];
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo(() => buildColumns(), []);

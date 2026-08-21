@@ -1032,6 +1032,7 @@ export const es: Dictionary = {
       modules: {
         orders: "Pedidos",
         purchase_invoices: "Facturas de proveedores",
+        inventory_transfers: "Transferencias de inventario",
       },
       validation: {
         descriptionRequired: "La descripción es obligatoria",

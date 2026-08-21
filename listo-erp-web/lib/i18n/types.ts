@@ -990,6 +990,7 @@ export interface Dictionary {
       modules: {
         orders: string;
         purchase_invoices: string;
+        inventory_transfers: string;
       };
       validation: {
         descriptionRequired: string;

@@ -189,6 +189,7 @@ model User {
   sales                   Sale[]
   createdOrders           Order[]           @relation("OrderCreatedBy")
   createdPurchaseInvoices PurchaseInvoice[]
+  createdTransfers        InventoryTransfer[] @relation("TransferCreatedBy")
 }
 
 enum AuditAction {
@@ -559,6 +560,8 @@ model Product {
   subcategoryId        Int?
   unit                 String?
   dianCode             String?
+  barcode              String?
+  reference            String?
   image                String? // ruta relativa y nombre del archivo (ej. products/abc123.jpg)
   company              Company                 @relation(fields: [companyId], references: [id])
   department           Department              @relation(fields: [departmentId], references: [id])
@@ -579,6 +582,8 @@ model Product {
   updatedAt            DateTime                @updatedAt
 
   @@unique([companyId, sku])
+  @@index([companyId, barcode])
+  @@index([companyId, reference])
 }
 
 enum ProductType {
@@ -835,6 +840,11 @@ model InventoryTransfer {
   sourceWarehouseId      Int
   destinationWarehouseId Int
   status                 InventoryTransferStatus @default(PENDING)
+  seriesId               Int?
+  consecutive            Int?
+  documentNumber         String?
+  createdByUserId        Int
+  controlStock           Boolean                 @default(true)
   notes                  String?
   dispatchedAt           DateTime?
   dispatchedByUserId     Int?
@@ -846,11 +856,14 @@ model InventoryTransfer {
   company              Company                 @relation(fields: [companyId], references: [id])
   sourceWarehouse      Warehouse               @relation("TransferSourceWarehouse", fields: [sourceWarehouseId], references: [id])
   destinationWarehouse Warehouse               @relation("TransferDestinationWarehouse", fields: [destinationWarehouseId], references: [id])
+  series               Series?                 @relation(fields: [seriesId], references: [id])
+  createdByUser        User                    @relation("TransferCreatedBy", fields: [createdByUserId], references: [id])
   items                InventoryTransferItem[]
 
   @@index([companyId, status])
   @@index([sourceWarehouseId])
   @@index([destinationWarehouseId])
+  @@unique([seriesId, consecutive])
 }
 
 model InventoryTransferItem {
@@ -1147,6 +1160,7 @@ model CompanyHierarchyConfig {
 enum SeriesModule {
   ORDERS
   PURCHASE_INVOICES
+  INVENTORY_TRANSFERS
 }
 
 model Series {
@@ -1160,9 +1174,10 @@ model Series {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  orders           Order[]
-  purchaseInvoices PurchaseInvoice[]
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orders             Order[]
+  purchaseInvoices   PurchaseInvoice[]
+  inventoryTransfers InventoryTransfer[]
 
   @@unique([companyId, module])
   @@index([companyId])

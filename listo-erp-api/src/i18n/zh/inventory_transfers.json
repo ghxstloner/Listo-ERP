@@ -1,1 +1,11 @@
-{"status":{"pending":"待处理","in_transit":"运输中","received":"已接收","cancelled":"已取消"}}
+{
+  "status": {
+    "pending": "待处理",
+    "in_transit": "运输中",
+    "received": "已接收",
+    "cancelled": "已取消"
+  },
+  "errors": {
+    "no_active_series": "没有为库存调拨配置活动的序列。"
+  }
+}

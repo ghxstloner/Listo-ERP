@@ -993,6 +993,7 @@ export const zh: Dictionary = {
       modules: {
         orders: "订单",
         purchase_invoices: "供应商发票",
+        inventory_transfers: "库存调拨",
       },
       validation: {
         descriptionRequired: "描述为必填项",

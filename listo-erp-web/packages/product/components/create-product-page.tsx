@@ -26,6 +26,8 @@ import { useEffect, useState } from "react";
 const defaultGeneralState = (): GeneralFormState => ({
   sku: "",
   name: "",
+  barcode: "",
+  reference: "",
   usesUnit: false,
   dianCode: "",
   isActive: true,
@@ -93,6 +95,8 @@ export function CreateProductPage({ productType = "PRODUCT" }: { productType?: P
     const request: CreateProductRequest = {
       sku: general.sku.trim(),
       name: general.name.trim(),
+      barcode: general.barcode.trim() || undefined,
+      reference: general.reference.trim() || undefined,
       salePrice: derivedSalePrice,
       costPrice: costPrice.trim() ? parseMoney(costPrice) : undefined,
       taxId: taxId ?? undefined,

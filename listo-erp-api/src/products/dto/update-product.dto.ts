@@ -107,6 +107,24 @@ export class UpdateProductDto {
   @MaxLength(20)
   dianCode?: string | null;
 
+  @ApiPropertyOptional({
+    description: 'Código de barras del producto',
+    example: '7701234567890',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  barcode?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Referencia del producto o código de fabricante',
+    example: 'REF-1234',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  reference?: string | null;
+
   @ApiPropertyOptional({ description: 'Producto activo' })
   @IsBoolean()
   @IsOptional()

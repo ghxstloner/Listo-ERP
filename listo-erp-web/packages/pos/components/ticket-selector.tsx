@@ -13,6 +13,7 @@ interface TicketSelectorProps {
   value?: string;
   items: SelectableItem[];
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
 export function TicketSelector({
@@ -20,6 +21,7 @@ export function TicketSelector({
   value,
   items,
   onChange,
+  disabled = false,
 }: TicketSelectorProps) {
   return (
     <label className="grid gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -27,7 +29,7 @@ export function TicketSelector({
       <Select
         value={value}
         onValueChange={onChange}
-        disabled={items.length === 0}
+        disabled={disabled || items.length === 0}
       >
         <SelectTrigger className="w-full bg-muted/40 text-left font-normal normal-case text-foreground">
           <SelectValue placeholder={`Sin ${label.toLocaleLowerCase()}`} />

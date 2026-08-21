@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -27,4 +28,5 @@ export class CreateInventoryTransferDto {
   @Type(() => TransferItemDto)
   items: TransferItemDto[];
   @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsBoolean() controlStock?: boolean;
 }

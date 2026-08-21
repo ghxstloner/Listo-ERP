@@ -112,6 +112,8 @@ export class ProductsService {
             subcategoryId: createProductDto.subcategoryId ?? null,
             unit: null,
             dianCode,
+            barcode: createProductDto.barcode?.trim() || null,
+            reference: createProductDto.reference?.trim() || null,
             isActive: createProductDto.isActive ?? true,
             companyId,
           },
@@ -157,14 +159,24 @@ export class ProductsService {
     companyId: number,
     filters: Pick<
       Prisma.ProductWhereInput,
-      'departmentId'
+      | 'departmentId'
       | 'subdepartmentId'
       | 'categoryId'
       | 'subcategoryId'
       | 'productType'
-    > = {},
+    > & { search?: string } = {},
   ) {
-    const where: Prisma.ProductWhereInput = { companyId, ...filters };
+    const { search, ...restFilters } = filters;
+    const where: Prisma.ProductWhereInput = { companyId, ...restFilters };
+    if (search && search.trim() !== '') {
+      const q = search.trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { sku: { contains: q, mode: 'insensitive' } },
+        { barcode: { contains: q, mode: 'insensitive' } },
+        { reference: { contains: q, mode: 'insensitive' } },
+      ];
+    }
     const products = await this.prisma.product.findMany({
       where,
       select: this.selectWithRelations(),
@@ -271,6 +283,12 @@ export class ProductsService {
     }
     if (updateProductDto.dianCode !== undefined) {
       data.dianCode = this.normalizeDianCode(updateProductDto.dianCode);
+    }
+    if (updateProductDto.barcode !== undefined) {
+      data.barcode = updateProductDto.barcode?.trim() || null;
+    }
+    if (updateProductDto.reference !== undefined) {
+      data.reference = updateProductDto.reference?.trim() || null;
     }
     const targetDefaultPriceId =
       requestedDefaultPriceId !== undefined
@@ -537,6 +555,8 @@ export class ProductsService {
       productType: true,
       unit: true,
       dianCode: true,
+      barcode: true,
+      reference: true,
       image: true,
       isActive: true,
       companyId: true,

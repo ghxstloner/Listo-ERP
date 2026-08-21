@@ -1,1 +1,11 @@
-{"status":{"pending":"Pendente","in_transit":"Em trânsito","received":"Recebida","cancelled":"Cancelada"}}
+{
+  "status": {
+    "pending": "Pendente",
+    "in_transit": "Em trânsito",
+    "received": "Recebida",
+    "cancelled": "Cancelada"
+  },
+  "errors": {
+    "no_active_series": "Não há uma série ativa configurada para transferências de inventário."
+  }
+}

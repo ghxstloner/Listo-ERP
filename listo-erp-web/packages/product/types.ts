@@ -43,6 +43,8 @@ export interface Product {
   productType: ProductType;
   unit: string | null;
   dianCode: string | null;
+  barcode: string | null;
+  reference: string | null;
   image: string | null;
   isActive: boolean;
   companyId: number;
@@ -70,6 +72,8 @@ export interface CreateProductRequest {
   categoryId?: number | null;
   subcategoryId?: number | null;
   dianCode?: string | null;
+  barcode?: string | null;
+  reference?: string | null;
   isActive?: boolean;
   productType?: ProductType;
 }

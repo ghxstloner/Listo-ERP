@@ -2,23 +2,28 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { PageLoading } from "@/components/page-loading";
 import { Input } from "@/components/ui/input";
-import { MagnifyingGlass, Spinner } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { MagnifyingGlass, Plus, Spinner } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useGetInventoryTransfers } from "../api";
-import { CreateTransfer } from "./modals/create-transfer";
 import { TransferTable } from "./transfer-table";
+
 export function TransfersPage() {
+  const router = useRouter();
   const [transfers, loading, error] = useGetInventoryTransfers();
   const [search, setSearch] = useState("");
+
   const filtered = useMemo(
     () =>
       (transfers ?? []).filter((transfer) =>
-        `${transfer.sourceWarehouse.name} ${transfer.destinationWarehouse.name} ${transfer.items.map((item) => item.product.name).join(" ")}`
+        `${transfer.documentNumber ?? ""} ${transfer.sourceWarehouse.name} ${transfer.destinationWarehouse.name} ${transfer.createdByUser?.name ?? ""}`
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
     [transfers, search],
   );
+
   if (loading)
     return (
       <PageLoading
@@ -27,12 +32,14 @@ export function TransfersPage() {
         spin
       />
     );
+
   if (error)
     return (
       <div className="flex min-h-[400px] items-center justify-center text-destructive">
         No se pudieron cargar las transferencias: {error.message}
       </div>
     );
+
   return (
     <Card className="w-full">
       <CardContent>
@@ -48,7 +55,14 @@ export function TransfersPage() {
               />
             </div>
             <div className="flex shrink-0">
-              <CreateTransfer />
+              <Button
+                onClick={() =>
+                  router.push("/listoerp/inventory/warehouse-transfers/new")
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva transferencia
+              </Button>
             </div>
           </div>
           <TransferTable transfers={filtered} />

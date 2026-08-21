@@ -1,4 +1,6 @@
 import { useApiMutation, useApiQuery } from "@config";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/packages/config";
 import type { Series, CreateSeriesRequest, UpdateSeriesRequest } from "./types";
 import type { SeriesModule } from "./constants";
 
@@ -11,10 +13,14 @@ export const useGetSeriesById = (id: Series["id"]) => {
 };
 
 export const useGetActiveSeries = (module: SeriesModule) => {
-  return useApiQuery<Series | null>(
-    ["series", "active", module],
-    `series/active/${module}`,
-  );
+  const query = useQuery<Series | null, Error>({
+    queryKey: ["series", "active", module],
+    queryFn: async () => {
+      const result = await api.get<Series | null>(`series/active/${module}`);
+      return result ?? null;
+    },
+  });
+  return [query.data, query.isLoading, query.error, query] as const;
 };
 
 export const useCreateSeries = () => {

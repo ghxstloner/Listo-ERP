@@ -10,7 +10,12 @@ export function encodeId(id: number): string {
 }
 
 export function decodeId(hash: string): number | null {
-  const decoded = hashids.decode(hash);
+  let decoded: ReturnType<typeof hashids.decode>;
+  try {
+    decoded = hashids.decode(hash);
+  } catch {
+    return null;
+  }
   if (decoded.length !== 1 || typeof decoded[0] !== "number") {
     return null;
   }
